@@ -177,30 +177,3 @@ def gif(
         frames = get_animal_frames(cfg, file, pose_ref_index, start, length, subtract_background, file_format, crop_size)
 
         create_video(path_to_file, file, embed, umap_label, frames, start, length, max_lag, num_points)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

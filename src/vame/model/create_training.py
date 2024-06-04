@@ -381,7 +381,7 @@ def create_trainset(
     """
     config_file = Path(config).resolve()
     cfg = read_config(config_file)
-    legacy = cfg['legacy']
+    # legacy = cfg['legacy']
     fixed = cfg['egocentric_data']
 
     if not os.path.exists(os.path.join(cfg['project_path'],'data','train',"")):

@@ -77,7 +77,7 @@ def get_transition_matrix(adjacency_matrix: np.ndarray, threshold: float = 0.0) 
     transition_matrix = adjacency_matrix/row_sum[:,np.newaxis]
     transition_matrix[transition_matrix <= threshold] = 0
     if np.any(np.isnan(transition_matrix)):
-            transition_matrix=np.nan_to_num(transition_matrix)
+        transition_matrix=np.nan_to_num(transition_matrix)
     return transition_matrix
 
 
