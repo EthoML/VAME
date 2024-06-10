@@ -20,7 +20,8 @@ from pathlib import Path
 from typing import Tuple
 from vame.util.auxiliary import read_config
 from vame.model.dataloader import SEQUENCE_DATASET
-from vame.model.rnn_model import RNN_VAE#, RNN_VAE_LEGACY
+from vame.model.rnn_model import RNN_VAE
+from vame.legacy.rnn_model import RNN_VAE_LEGACY
 from tqdm import tqdm
 
 # make sure torch uses cuda for GPU computing
@@ -357,7 +358,7 @@ def train_model(config: str) -> None:
     """
     config_file = Path(config).resolve()
     cfg = read_config(config_file)
-    #legacy = cfg['legacy']
+    legacy = cfg['legacy']
     model_name = cfg['model_name']
     pretrained_weights = cfg['pretrained_weights']
     pretrained_model = cfg['pretrained_model']
@@ -435,11 +436,10 @@ def train_model(config: str) -> None:
 
     torch.manual_seed(SEED)
 
-    RNN = RNN_VAE
-    # if legacy == False:
-    #     RNN = RNN_VAE
-    # else:
-    #     RNN = RNN_VAE_LEGACY
+    if legacy == False:
+        RNN = RNN_VAE
+    else:
+        RNN = RNN_VAE_LEGACY
     if CUDA:
         torch.cuda.manual_seed(SEED)
         model = RNN(TEMPORAL_WINDOW,ZDIMS,NUM_FEATURES,FUTURE_DECODER,FUTURE_STEPS, hidden_size_layer_1,
