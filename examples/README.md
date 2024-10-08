@@ -6,8 +6,9 @@ The first demo is a simple example of how to use the library.
 
 To run the demo you will need the VAME package installed, follow the installation guide [here](/README.md#Installation).
 You will also need videos and csv files to properly run the demo:
-- `['./Session001.avi']`: A list of video file path(s) will be used as input. You can use the sample video data provided [here](https://github.com/EthoML/VAME/tree/main/examples/sample-videos). Videos in the 'sample-videos' folder has DeepLabCut-labeled videos. Videos in the 'sample-videos-original' folder has videos without pose estimation labels. VAME can support multiple video file types (.mp4, .avi, etc)
-- `['./Session001.csv']`: A list of csv file path(s) will be used as input. You can use the sample pose estimation results provided [here](https://github.com/EthoML/VAME/tree/main/examples/sample-csvs).
+- `['./Session001.avi']`: A list of video file path(s) will be used as input. You can use the sample video data provided [here](https://drive.google.com/drive/folders/15qiWSmEF6s7yUC5mU8DHXDtc8et8We-c?usp=sharing). Videos in the 'sample-videos' folder has DeepLabCut-labeled videos. Videos in the 'sample-videos-original' folder has videos without pose estimation labels. VAME can support multiple video file types (.mp4, .avi, etc)
+- `['./Session001.csv']`: A list of csv file path(s) will be used as input. You can use the sample pose estimation results provided [here](https://drive.google.com/drive/folders/15qiWSmEF6s7yUC5mU8DHXDtc8et8We-c?usp=sharing) in the 'sample-csvs' folder.
+
 Note: If you use the provided sample data to conduct any research beyond this VAME demo, be sure to cite the data set publication [DOI](https://zenodo.org/) 
 
 ## 2. Setting the demo variables
