@@ -44,7 +44,7 @@ vame.train_model(config)
 vame.evaluate_model(config)
 
 # # Step 4: Segment motifs/pose
-vame.pose_segmentation(config)
+vame.segment_session(config)
 
 
 # #------------------------------------------------------------------------------

@@ -14,7 +14,7 @@ def test_pose_segmentation_hmm_files_exists(setup_project_and_train_model, indiv
     mock_config['hmm_trained'] = hmm_trained
     with patch("vame.analysis.pose_segmentation.read_config", return_value=mock_config) as mock_read_config:
         with patch('builtins.input', return_value='yes'):
-            vame.pose_segmentation(setup_project_and_train_model['config_path'], save_logs=True)
+            vame.segment_session(setup_project_and_train_model['config_path'], save_logs=True)
     project_path = setup_project_and_train_model['config_data']['project_path']
     file = setup_project_and_train_model['config_data']['video_sets'][0]
     model_name = setup_project_and_train_model['config_data']['model_name']
@@ -192,7 +192,7 @@ def test_generative_kmeans_wrong_mode(setup_project_and_train_model):
 def test_gif_frames_files_exists(setup_project_and_evaluate_model, label):
 
     with patch("builtins.input", return_value="yes"):
-        vame.pose_segmentation(setup_project_and_evaluate_model["config_path"])
+        vame.segment_session(setup_project_and_evaluate_model["config_path"])
 
     def mock_background(path_to_file=None, filename=None, file_format=None, num_frames=None, save_background=True):
         num_frames = 100

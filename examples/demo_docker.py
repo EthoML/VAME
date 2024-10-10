@@ -29,7 +29,7 @@ def run_pipeline(
     vame.create_trainset(config, check_parameter=False, pose_ref_index=[0,5])
     vame.train_model(config)
     vame.evaluate_model(config)
-    vame.pose_segmentation(config)
+    vame.segment_session(config)
 
     print('Pipeline finished!')
 
