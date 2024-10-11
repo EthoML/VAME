@@ -1,12 +1,9 @@
 [project]
 name = "vame-py"
-version = '0.5.0'
+version = '0.5.1'
 dynamic = ["dependencies"]
 description = "Variational Animal Motion Embedding."
-authors = [
-    {name = "K. Luxem & "},
-    {name = "P. Bauer"}
-]
+authors = [{ name = "K. Luxem & " }, { name = "P. Bauer" }]
 requires-python = ">=3.11"
 keywords = ["vame", "auto-encoder"]
 
@@ -19,7 +16,7 @@ requires = ["setuptools", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.dynamic]
-dependencies = {file = ["requirements.txt"]}
+dependencies = { file = ["requirements.txt"] }
 
 [tool.setuptools]
 package-dir = { "" = "src" }
@@ -28,10 +25,5 @@ package-dir = { "" = "src" }
 where = ["src"]
 
 [tool.pytest.ini_options]
-pythonpath = [
-  ".", "src"
-]
-testpaths = [
-"tests"
-]
-
+pythonpath = [".", "src"]
+testpaths = ["tests"]
