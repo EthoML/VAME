@@ -1,14 +1,3 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Variational Animal Motion Embedding 1.0-alpha Toolbox
-© K. Luxem & P. Bauer, Department of Cellular Neuroscience
-Leibniz Institute for Neurobiology, Magdeburg, Germany
-
-https://github.com/LINCellularNeuroscience/VAME
-Licensed under GNU General Public License v3.0
-"""
-
 import os
 import numpy as np
 from pathlib import Path
@@ -116,7 +105,7 @@ def plot_check_parameter(
 
 def traindata_aligned(
     cfg: dict,
-    files: List[str],
+    sessions: List[str],
     testfraction: float,
     savgol_filter: bool,
     check_parameter: bool,
@@ -128,8 +117,8 @@ def traindata_aligned(
     ----------
     cfg : dict
         Configuration parameters.
-    files : List[str]
-        List of files.
+    sessions : List[str]
+        List of sessions.
     testfraction : float
         Fraction of data to use as test data.
     savgol_filter : bool
@@ -149,12 +138,16 @@ def traindata_aligned(
 
     if check_parameter:
         X_true = []
-        files = [files[0]]
+        sessions = [sessions[0]]
 
-    for file in files:
-        logger.info("z-scoring of file %s" % file)
+    for session in sessions:
+        logger.info("z-scoring of session %s" % session)
         path_to_file = os.path.join(
-            cfg["project_path"], "data", file, file + "-PE-seq.npy"
+            cfg["project_path"],
+            "data",
+            "processed",
+            session,
+            session + "-PE-seq.npy",
         )
         data = np.load(path_to_file)
 
@@ -242,15 +235,31 @@ def traindata_aligned(
     else:
         # save numpy arrays the the test/train info:
         np.save(
-            os.path.join(cfg["project_path"], "data", "train", "train_seq.npy"), z_train
+            os.path.join(
+                cfg["project_path"],
+                "data",
+                "train",
+                "train_seq.npy",
+            ),
+            z_train,
         )
         np.save(
-            os.path.join(cfg["project_path"], "data", "train", "test_seq.npy"), z_test
+            os.path.join(
+                cfg["project_path"],
+                "data",
+                "train",
+                "test_seq.npy",
+            ),
+            z_test,
         )
-        for i, file in enumerate(files):
+        for i, session in enumerate(sessions):
             np.save(
                 os.path.join(
-                    cfg["project_path"], "data", file, file + "-PE-seq-clean.npy"
+                    cfg["project_path"],
+                    "data",
+                    "processed",
+                    session,
+                    session + "-PE-seq-clean.npy",
                 ),
                 X_med[:, pos[i] : pos[i + 1]],
             )
@@ -260,7 +269,7 @@ def traindata_aligned(
 
 def traindata_fixed(
     cfg: dict,
-    files: List[str],
+    sessions: List[str],
     testfraction: float,
     num_features: int,
     savgol_filter: bool,
@@ -274,8 +283,8 @@ def traindata_fixed(
     ----------
     cfg : dict
         Configuration parameters.
-    files : List[str]
-        List of files.
+    sessions : List[str]
+        List of sessions.
     testfraction : float
         Fraction of data to use as test data.
     num_features : int
@@ -298,12 +307,16 @@ def traindata_fixed(
 
     if check_parameter:
         X_true = []
-        files = [files[0]]
+        sessions = [sessions[0]]
 
-    for file in files:
-        logger.info("z-scoring of file %s" % file)
+    for session in sessions:
+        logger.info("z-scoring of file %s" % session)
         path_to_file = os.path.join(
-            cfg["project_path"], "data", file, file + "-PE-seq.npy"
+            cfg["project_path"],
+            "data",
+            "processed",
+            session,
+            session + "-PE-seq.npy",
         )
         data = np.load(path_to_file)
 
@@ -350,7 +363,13 @@ def traindata_fixed(
     z_train = X_med[:, test:]
 
     if check_parameter:
-        plot_check_parameter(cfg, iqr_val, num_frames, X_true, X_med)
+        plot_check_parameter(
+            cfg,
+            iqr_val,
+            num_frames,
+            X_true,
+            X_med,
+        )
 
     else:
         if pose_ref_index is None:
@@ -359,10 +378,22 @@ def traindata_fixed(
             )
         # save numpy arrays the the test/train info:
         np.save(
-            os.path.join(cfg["project_path"], "data", "train", "train_seq.npy"), z_train
+            os.path.join(
+                cfg["project_path"],
+                "data",
+                "train",
+                "train_seq.npy",
+            ),
+            z_train,
         )
         np.save(
-            os.path.join(cfg["project_path"], "data", "train", "test_seq.npy"), z_test
+            os.path.join(
+                cfg["project_path"],
+                "data",
+                "train",
+                "test_seq.npy",
+            ),
+            z_test,
         )
 
         y_shifted_indices = np.arange(0, num_features, 2)
@@ -370,7 +401,7 @@ def traindata_fixed(
         belly_Y_ind = pose_ref_index[0] * 2
         belly_X_ind = (pose_ref_index[0] * 2) + 1
 
-        for i, file in enumerate(files):
+        for i, session in enumerate(sessions):
             # Shifting section added 2/29/2024 PN
             X_med_shifted_file = X_med[:, pos[i] : pos[i + 1]]
             belly_Y_shift = X_med[belly_Y_ind, pos[i] : pos[i + 1]]
@@ -381,7 +412,11 @@ def traindata_fixed(
 
             np.save(
                 os.path.join(
-                    cfg["project_path"], "data", file, file + "-PE-seq-clean.npy"
+                    cfg["project_path"],
+                    "data",
+                    "processed",
+                    session,
+                    session + "-PE-seq-clean.npy",
                 ),
                 X_med_shifted_file,
             )  # saving new shifted file
@@ -403,10 +438,10 @@ def create_trainset(
     Creates the training dataset for VAME at:
     - project_name/
         - data/
-            - filename/
-                - filename-PE-seq-clean.npy
-            - filename/
-                - filename-PE-seq-clean.npy
+            - session00/
+                - session00-PE-seq-clean.npy
+            - session01/
+                - session01-PE-seq-clean.npy
             - train/
                 - test_seq.npy
                 - train_seq.npy
@@ -445,17 +480,16 @@ def create_trainset(
         if not os.path.exists(os.path.join(cfg["project_path"], "data", "train", "")):
             os.mkdir(os.path.join(cfg["project_path"], "data", "train", ""))
 
-        files = []
+        sessions = []
         if cfg["all_data"] == "No":
-            for file in cfg["video_sets"]:
-                use_file = input("Do you want to train on " + file + "? yes/no: ")
-                if use_file == "yes":
-                    files.append(file)
-                if use_file == "no":
+            for session in cfg["session_names"]:
+                use_session = input("Do you want to train on " + session + "? yes/no: ")
+                if use_session == "yes":
+                    sessions.append(session)
+                if use_session == "no":
                     continue
         else:
-            for file in cfg["video_sets"]:
-                files.append(file)
+            sessions = cfg["session_names"]
 
         logger.info("Creating training dataset...")
         if cfg["robust"]:
@@ -470,7 +504,7 @@ def create_trainset(
             )
             traindata_aligned(
                 cfg,
-                files,
+                sessions,
                 cfg["test_fraction"],
                 cfg["savgol_filter"],
                 check_parameter,
@@ -479,7 +513,7 @@ def create_trainset(
             logger.info("Creating trainset from the vame.pose_to_numpy() output ")
             traindata_fixed(
                 cfg,
-                files,
+                sessions,
                 cfg["test_fraction"],
                 cfg["num_features"],
                 cfg["savgol_filter"],

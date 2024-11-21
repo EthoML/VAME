@@ -69,7 +69,7 @@ def load_model(cfg: dict, model_name: str, fixed: bool = True) -> RNN_VAE:
                 cfg["project_path"],
                 "model",
                 "best_model",
-                model_name + "_" + cfg["Project"] + ".pkl",
+                model_name + "_" + cfg["project_name"] + ".pkl",
             )
         )
     )

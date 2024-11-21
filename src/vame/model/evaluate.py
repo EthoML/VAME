@@ -1,14 +1,3 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Variational Animal Motion Embedding 0.1 Toolbox
-© K. Luxem & P. Bauer, Department of Cellular Neuroscience
-Leibniz Institute for Neurobiology, Magdeburg, Germany
-
-https://github.com/LINCellularNeuroscience/VAME
-Licensed under GNU General Public License v3.0
-"""
-
 import os
 import torch
 import numpy as np
@@ -286,7 +275,7 @@ def eval_temporal(
                     cfg["project_path"],
                     "model",
                     "best_model",
-                    model_name + "_" + cfg["Project"] + ".pkl",
+                    model_name + "_" + cfg["project_name"] + ".pkl",
                 )
             )
         )
@@ -313,7 +302,7 @@ def eval_temporal(
                         cfg["project_path"],
                         "model",
                         "best_model",
-                        model_name + "_" + cfg["Project"] + ".pkl",
+                        model_name + "_" + cfg["project_name"] + ".pkl",
                     ),
                     map_location=torch.device("cpu"),
                 )
@@ -434,7 +423,7 @@ def evaluate_model(
                 )
 
         logger.info(
-            "You can find the results of the evaluation in '/Your-VAME-Project-Apr30-2020/model/evaluate/' \n"
+            "You can find the results of the evaluation in '/Your-VAME-Project/model/evaluate/' \n"
             "OPTIONS:\n"
             "- vame.segment_session() to identify behavioral motifs.\n"
             "- re-run the model for further fine tuning. Check again with vame.evaluate_model()"

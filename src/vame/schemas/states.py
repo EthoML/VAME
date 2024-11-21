@@ -4,7 +4,7 @@ from typing import Optional, Dict
 from pathlib import Path
 import json
 from enum import Enum
-from vame.schemas.project import Parametrizations
+from vame.schemas.project import SegmentationAlgorithms
 
 
 class StatesEnum(str, Enum):
@@ -80,11 +80,13 @@ class SegmentSessionFunctionSchema(BaseStateSchema): ...
 
 
 class MotifVideosFunctionSchema(BaseStateSchema):
-    videoType: str = Field(
+    video_type: str = Field(
         title="Type of video",
         default=".mp4",
     )
-    parametrization: Parametrizations = Field(title="Parametrization")
+    segmentation_algorithm: SegmentationAlgorithms = Field(
+        title="Segmentation algorithm"
+    )
     output_video_type: str = Field(
         title="Type of output video",
         default=".mp4",
@@ -93,7 +95,9 @@ class MotifVideosFunctionSchema(BaseStateSchema):
 
 class CommunityFunctionSchema(BaseStateSchema):
     cohort: bool = Field(title="Cohort", default=True)
-    parametrization: Parametrizations = Field(title="Parametrization")
+    segmentation_algorithm: SegmentationAlgorithms = Field(
+        title="Segmentation algorithm"
+    )
     cut_tree: int | None = Field(
         title="Cut tree",
         default=None,
@@ -101,9 +105,11 @@ class CommunityFunctionSchema(BaseStateSchema):
 
 
 class CommunityVideosFunctionSchema(BaseStateSchema):
-    parametrization: Parametrizations = Field(title="Parametrization")
+    segmentation_algorithm: SegmentationAlgorithms = Field(
+        title="Segmentation algorithm"
+    )
     cohort: bool = Field(title="Cohort", default=True)
-    videoType: str = Field(
+    video_type: str = Field(
         title="Type of video",
         default=".mp4",
     )
@@ -114,7 +120,9 @@ class CommunityVideosFunctionSchema(BaseStateSchema):
 
 
 class VisualizationFunctionSchema(BaseStateSchema):
-    parametrization: Parametrizations = Field(title="Parametrization")
+    segmentation_algorithm: SegmentationAlgorithms = Field(
+        title="Segmentation algorithm"
+    )
     label: Optional[str] = Field(
         title="Type of labels to visualize",
         default=None,
@@ -122,7 +130,9 @@ class VisualizationFunctionSchema(BaseStateSchema):
 
 
 class GenerativeModelFunctionSchema(BaseStateSchema):
-    parametrization: Parametrizations = Field(title="Parametrization")
+    segmentation_algorithm: SegmentationAlgorithms = Field(
+        title="Segmentation algorithm"
+    )
     mode: GenerativeModelModeEnum = Field(
         title="Mode for generating samples",
         default=GenerativeModelModeEnum.sampling,

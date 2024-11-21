@@ -1,20 +1,8 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Variational Animal Motion Embedding 1.0-alpha Toolbox
-© K. Luxem & P. Bauer, Department of Cellular Neuroscience
-Leibniz Institute for Neurobiology, Magdeburg, Germany
-
-https://github.com/LINCellularNeuroscience/VAME
-Licensed under GNU General Public License v3.0
-"""
-
-
 import numpy as np
 import networkx as nx
 import random
 from matplotlib import pyplot as plt
-from typing import Dict, List, Tuple, Optional
+from typing import Dict, List, Tuple
 
 
 def hierarchy_pos(
@@ -99,7 +87,7 @@ def hierarchy_pos(
 
 def merge_func(
     transition_matrix: np.ndarray,
-    n_cluster: int,
+    n_clusters: int,
     motif_norm: np.ndarray,
     merge_sel: int,
 ) -> Tuple[np.ndarray, np.ndarray]:
@@ -110,7 +98,7 @@ def merge_func(
     -----------
     transition_matrix : np.ndarray
         The transition matrix of the graph.
-    n_cluster : int
+    n_clusters : int
         The number of clusters.
     motif_norm : np.ndarray
         The normalized motif matrix.
@@ -130,8 +118,8 @@ def merge_func(
         merge_nodes = np.where(cost == transition_matrix)
     elif merge_sel == 1:
         cost_temp = 100
-        for i in range(n_cluster):
-            for j in range(n_cluster):
+        for i in range(n_clusters):
+            for j in range(n_clusters):
                 try:
                     cost = motif_norm[i] + motif_norm[j] / np.abs(
                         transition_matrix[i, j] + transition_matrix[j, i]
@@ -155,7 +143,7 @@ def merge_func(
 def graph_to_tree(
     motif_usage: np.ndarray,
     transition_matrix: np.ndarray,
-    n_cluster: int,
+    n_clusters: int,
     merge_sel: int = 1,
 ) -> nx.Graph:
     """
@@ -167,7 +155,7 @@ def graph_to_tree(
         The motif usage matrix.
     transition_matrix : np.ndarray
         The transition matrix of the graph.
-    n_cluster : int
+    n_clusters : int
         The number of clusters.
     merge_sel : int, optional
         The merge selection criterion. Defaults to 1.
@@ -191,7 +179,7 @@ def graph_to_tree(
     merging_nodes = []
     hierarchy_nodes = []
     trans_mat_temp = transition_matrix.copy()
-    is_leaf = np.ones((n_cluster), dtype="int")
+    is_leaf = np.ones((n_clusters), dtype="int")
     node_label = []
     leaf_idx = []
 
@@ -201,10 +189,10 @@ def graph_to_tree(
     else:
         reduction = 1
 
-    for i in range(n_cluster - reduction):
+    for i in range(n_clusters - reduction):
         nodes = merge_func(
             trans_mat_temp,
-            n_cluster,
+            n_clusters,
             motif_norm_temp,
             merge_sel,
         )
@@ -291,7 +279,7 @@ def graph_to_tree(
     else:
         reduction = 2
 
-    for i in range(n_cluster - reduction)[::-1]:
+    for i in range(n_clusters - reduction)[::-1]:
 
         if leaf_idx[idx - 1] == 1:
             if merge[i, 1] in node_dict:

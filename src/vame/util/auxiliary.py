@@ -1,27 +1,8 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Variational Animal Motion Embedding 1.0-alpha Toolbox
-© K. Luxem & P. Bauer, Department of Cellular Neuroscience
-Leibniz Institute for Neurobiology, Magdeburg, Germany
-
-https://github.com/LINCellularNeuroscience/VAME
-Licensed under GNU General Public License v3.0
-
-The following code is adapted from:
-
-DeepLabCut2.0 Toolbox (deeplabcut.org)
-© A. & M. Mathis Labs
-https://github.com/AlexEMG/DeepLabCut
-Please see AUTHORS for contributors.
-https://github.com/AlexEMG/DeepLabCut/blob/master/AUTHORS
-Licensed under GNU Lesser General Public License v3.0
-"""
-
 import os
+import json
 import yaml
-from pathlib import Path
 import ruamel.yaml
+from pathlib import Path
 from typing import Tuple
 
 
@@ -36,14 +17,14 @@ def create_config_template() -> Tuple[dict, ruamel.yaml.YAML]:
     """
     yaml_str = """\
 # Project configurations
-    Project:
+    project_name:
     model_name:
-    n_cluster:
+    n_clusters:
     pose_confidence:
     \n
 # Project path and videos
     project_path:
-    video_sets:
+    session_names:
     \n
 # Data
     all_data:
@@ -84,10 +65,10 @@ def create_config_template() -> Tuple[dict, ruamel.yaml.YAML]:
     softplus:
     \n
 # Segmentation:
-    parametrization:
+    segmentation_algorithms:
     hmm_trained: False
     load_data:
-    individual_parametrization:
+    individual_segmentation:
     random_state_kmeans:
     n_init_kmeans:
     \n
@@ -100,6 +81,7 @@ def create_config_template() -> Tuple[dict, ruamel.yaml.YAML]:
     random_state:
     num_points:
     \n
+#---------------------------------------------------------------
 # ONLY CHANGE ANYTHING BELOW IF YOU ARE FAMILIAR WITH RNN MODELS
 # RNN encoder hyperparamter:
     hidden_size_layer_1:
@@ -191,3 +173,23 @@ def write_config(
         for key in cfg.keys():
             cfg_file[key] = cfg[key]
         ruamelFile.dump(cfg_file, cf)
+
+
+def read_states(config: dict) -> dict:
+    """
+    Reads the states.json file.
+
+    Parameters
+    ----------
+    config : dict
+        Dictionary containing the config data.
+
+    Returns
+    -------
+    dict
+        The contents of the states.json file as a dictionary.
+    """
+    states_path = Path(config["project_path"]) / "states" / "states.json"
+    with open(states_path, "r") as f:
+        states = json.load(f)
+    return states

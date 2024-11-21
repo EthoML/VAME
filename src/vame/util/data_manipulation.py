@@ -4,13 +4,14 @@ import cv2 as cv
 import os
 from scipy.ndimage import median_filter
 import tqdm
-from vame.logging.logger import VameLogger
 from pynwb import NWBHDF5IO
 from pynwb.file import NWBFile
 from hdmf.utils import LabelledDict
-from vame.schemas.project import PoseEstimationFiletype
 import pandas as pd
-from pathlib import Path
+
+from vame.schemas.project import PoseEstimationFiletype
+from vame.logging.logger import VameLogger
+from vame.io.load_poses import load_vame_dataset
 
 
 logger_config = VameLogger(__name__)
@@ -82,7 +83,7 @@ def get_dataframe_from_pose_nwb_file(
 
 def read_pose_estimation_file(
     file_path: str,
-    file_type: PoseEstimationFiletype,
+    file_type: Optional[PoseEstimationFiletype] = None,
     path_to_pose_nwb_series_data: Optional[str] = None,
 ) -> Tuple[pd.DataFrame, np.ndarray]:
     """
@@ -102,22 +103,26 @@ def read_pose_estimation_file(
     Tuple[pd.DataFrame, np.ndarray]
         Tuple containing the pose estimation data as a pandas DataFrame and a numpy array.
     """
-    if file_type == PoseEstimationFiletype.csv:
-        data = pd.read_csv(file_path, skiprows=2, index_col=0)
-        if "coords" in data:
-            data = data.drop(columns=["coords"], axis=1)
-        data_mat = pd.DataFrame.to_numpy(data)
-        return data, data_mat
-    elif file_type == PoseEstimationFiletype.nwb:
-        if not path_to_pose_nwb_series_data:
-            raise ValueError("Path to pose nwb series data is required.")
-        data = get_dataframe_from_pose_nwb_file(
-            file_path=file_path,
-            path_to_pose_nwb_series_data=path_to_pose_nwb_series_data,
-        )
-        data_mat = pd.DataFrame.to_numpy(data)
-        return data, data_mat
-    raise ValueError(f"Filetype {file_type} not supported")
+    ds = load_vame_dataset(ds_path=file_path)
+    data = nc_to_dataframe(ds)
+    data_mat = pd.DataFrame.to_numpy(data)
+    return data, data_mat
+    # if file_type == PoseEstimationFiletype.csv:
+    #     data = pd.read_csv(file_path, skiprows=2, index_col=0)
+    #     if "coords" in data:
+    #         data = data.drop(columns=["coords"], axis=1)
+    #     data_mat = pd.DataFrame.to_numpy(data)
+    #     return data, data_mat
+    # elif file_type == PoseEstimationFiletype.nwb:
+    #     if not path_to_pose_nwb_series_data:
+    #         raise ValueError("Path to pose nwb series data is required.")
+    #     data = get_dataframe_from_pose_nwb_file(
+    #         file_path=file_path,
+    #         path_to_pose_nwb_series_data=path_to_pose_nwb_series_data,
+    #     )
+    #     data_mat = pd.DataFrame.to_numpy(data)
+    #     return data, data_mat
+    # raise ValueError(f"Filetype {file_type} not supported")
 
 
 def consecutive(
@@ -285,9 +290,9 @@ def crop_and_flip(
 
 
 def background(
-    path_to_file: str,
-    filename: str,
-    file_format: str = ".mp4",
+    project_path: str,
+    session: str,
+    video_path: str,
     num_frames: int = 1000,
     save_background: bool = True,
 ) -> np.ndarray:
@@ -296,12 +301,12 @@ def background(
 
     Parameters
     ----------
-    path_to_file : str
-        Path to the directory containing the video files.
-    filename : str
-        Name of the video file.
-    file_format : str, optional
-        Format of the video file. Defaults to '.mp4'.
+    project_path : str
+        Path to the project directory.
+    session : str
+        Name of the session.
+    video_path : str
+        Path to the video file.
     num_frames : int, optional
         Number of frames to use for background computation. Defaults to 1000.
 
@@ -310,15 +315,11 @@ def background(
     np.ndarray
         Background image.
     """
-    capture = cv.VideoCapture(
-        os.path.join(path_to_file, "videos", filename + file_format)
-    )
+    logger.info("Computing background image ...")
+
+    capture = cv.VideoCapture(video_path)
     if not capture.isOpened():
-        raise Exception(
-            "Unable to open video file: {0}".format(
-                os.path.join(path_to_file, "videos", filename + file_format)
-            )
-        )
+        raise Exception(f"Unable to open video file: {video_path}")
 
     frame_count = int(capture.get(cv.CAP_PROP_FRAME_COUNT))
     ret, frame = capture.read()
@@ -328,7 +329,7 @@ def background(
     for i in tqdm.tqdm(
         range(num_frames),
         disable=not True,
-        desc="Compute background image for video %s" % filename,
+        desc="Compute background image for session %s" % session,
     ):
         rand = np.random.choice(frame_count, replace=False)
         capture.set(1, rand)
@@ -342,9 +343,49 @@ def background(
 
     if save_background:
         np.save(
-            os.path.join(path_to_file, "videos", filename + "-background.npy"),
+            os.path.join(
+                project_path,
+                "data",
+                "processed",
+                session + "-background.npy",
+            ),
             background,
         )
 
     capture.release()
     return background
+
+
+def nc_to_dataframe(nc_data):
+    keypoints = nc_data["keypoints"].values
+    space = nc_data["space"].values
+
+    # Flatten position data
+    position_data = nc_data["position"].isel(individuals=0).values
+    position_column_names = [
+        f"{keypoint}_{sp}" for keypoint in keypoints for sp in space
+    ]
+    position_flattened = position_data.reshape(position_data.shape[0], -1)
+
+    # Create a DataFrame for position data
+    position_df = pd.DataFrame(position_flattened, columns=position_column_names)
+
+    # Extract and flatten confidence data
+    confidence_data = nc_data["confidence"].isel(individuals=0).values
+    confidence_column_names = [f"{keypoint}_confidence" for keypoint in keypoints]
+    confidence_flattened = confidence_data.reshape(confidence_data.shape[0], -1)
+    confidence_df = pd.DataFrame(confidence_flattened, columns=confidence_column_names)
+
+    # Combine position and confidence data
+    combined_df = pd.concat([position_df, confidence_df], axis=1)
+
+    # Reorder columns: keypoint_x, keypoint_y, keypoint_confidence
+    reordered_columns = []
+    for keypoint in keypoints:
+        reordered_columns.extend(
+            [f"{keypoint}_x", f"{keypoint}_y", f"{keypoint}_confidence"]
+        )
+
+    combined_df = combined_df[reordered_columns]
+
+    return combined_df

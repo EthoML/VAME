@@ -1,15 +1,22 @@
 import numpy as np
 import json
 from pathlib import Path
+
+# import matplotlib
 import matplotlib.pyplot as plt
 
 from vame.util.auxiliary import read_config
-from vame.schemas.project import Parametrizations
+from vame.logging.logger import VameLogger
+
+
+# matplotlib.use('Agg')  # For headless rendering
+logger_config = VameLogger(__name__)
+logger = logger_config.logger
 
 
 def report(
     config: str,
-    parametrization: str = "hmm",
+    segmentation_algorithm: str = "hmm",
 ) -> None:
     """
     Report for a project.
@@ -17,15 +24,22 @@ def report(
     config_file = Path(config).resolve()
     cfg = read_config(str(config_file))
     project_path = Path(cfg["project_path"])
-    n_clusters = cfg["n_cluster"]
+    n_clusters = cfg["n_clusters"]
+    model_name = cfg["model_name"]
 
     with open(project_path / "states" / "states.json") as f:
         project_states = json.load(f)
 
     pose_estimation_files = list(
-        (project_path / "videos/pose_estimation").glob("*.csv")
+        (project_path / "data" / "raw").glob("*.nc")
     )
-    video_files = list((project_path / "videos").glob("*.mp4"))
+    video_files = list(
+        (project_path / "data" / "raw").glob("*.mp4")
+    )
+
+    # Create a report folder for the project, if it does not exist
+    report_folder = project_path / "reports"
+    report_folder.mkdir(exist_ok=True)
 
     # Motifs and Communities
     if (
@@ -40,7 +54,10 @@ def report(
 
     ml = np.load(
         project_path
-        / f"results/community_cohort/{parametrization}-{n_clusters}/cohort_{parametrization}_label.npy",
+        / "results"
+        / "community_cohort"
+        / f"{segmentation_algorithm}-{n_clusters}"
+        / f"cohort_{segmentation_algorithm}_label.npy",
         allow_pickle=True,
     )
     motif_labels = dict()
@@ -50,7 +67,10 @@ def report(
 
     cl = np.load(
         project_path
-        / f"results/community_cohort/{parametrization}-{n_clusters}/cohort_community_label.npy",
+        / "results"
+        / "community_cohort"
+        / f"{segmentation_algorithm}-{n_clusters}"
+        / "cohort_community_label.npy",
         allow_pickle=True,
     )
     community_labels = dict()
@@ -60,30 +80,42 @@ def report(
 
     community_bag = np.load(
         project_path
-        / f"results/community_cohort/{parametrization}-{n_clusters}/cohort_community_bag.npy",
+        / "results"
+        / "community_cohort"
+        / f"{segmentation_algorithm}-{n_clusters}"
+        / "cohort_community_bag.npy",
         allow_pickle=True,
     )
 
-    print("Cohort communities:")
+    logger.info("Cohort communities:")
     for ii, bag in enumerate(community_bag):
-        print(f"Community {ii}: {community_labels[ii]} counts")
+        logger.info(f"Community {ii}: {community_labels[ii]} counts")
         for jj in bag:
-            print(f"    Motif {jj}: {motif_labels[jj]} counts")
+            logger.info(f"    Motif {jj}: {motif_labels[jj]} counts")
 
-    plot_community_motifs(
+    fig = plot_community_motifs(
         motif_labels,
         community_labels,
         community_bag,
-        title="Community and Motif Counts - Cohort",
+        title=f"Community and Motif Counts - Cohort - {model_name} - {segmentation_algorithm} - {n_clusters}",
+        save_to_file=True,
+        save_path=str(
+            report_folder
+            / f"community_motifs_cohort_{model_name}_{segmentation_algorithm}-{n_clusters}.png"
+        ),
     )
 
     # Per session file
     for f in pose_estimation_files:
-        file_name = str(f.resolve()).split("/")[-1].split(".")[0]
+        session = f.name.split(".")[0]
 
         fml = np.load(
             project_path
-            / f"results/{file_name}/VAME/{parametrization}-{n_clusters}/{n_clusters}_{parametrization}_label_{file_name}.npy",
+            / "results"
+            / f"{session}"
+            / f"{model_name}"
+            / f"{segmentation_algorithm}-{n_clusters}"
+            / f"{n_clusters}_{segmentation_algorithm}_label_{session}.npy",
             allow_pickle=True,
         )
         file_motif_labels = dict()
@@ -93,7 +125,12 @@ def report(
 
         fcl = np.load(
             project_path
-            / f"results/{file_name}/VAME/{parametrization}-{n_clusters}/community/cohort_community_label_{file_name}.npy",
+            / "results"
+            / f"{session}"
+            / f"{model_name}"
+            / f"{segmentation_algorithm}-{n_clusters}"
+            / "community"
+            / f"cohort_community_label_{session}.npy",
             allow_pickle=True,
         )
         file_community_labels = dict()
@@ -101,11 +138,16 @@ def report(
         for uu, cc in zip(u, c):
             file_community_labels[uu] = cc
 
-        plot_community_motifs(
+        fig = plot_community_motifs(
             file_motif_labels,
             file_community_labels,
             community_bag,
-            title=f"Community and Motif Counts - {file_name}",
+            title=f"Community and Motif Counts - {session} - {model_name} - {segmentation_algorithm} - {n_clusters}",
+            save_to_file=True,
+            save_path=str(
+                report_folder
+                / f"community_motifs_{session}_{model_name}_{segmentation_algorithm}-{n_clusters}.png"
+            ),
         )
 
 
@@ -114,6 +156,8 @@ def plot_community_motifs(
     community_labels,
     community_bag,
     title: str = "Community and Motif Counts",
+    save_to_file: bool = False,
+    save_path: str = "",
 ):
     """
     Generates a bar plot to represent community and motif counts with percentages.
@@ -240,4 +284,9 @@ def plot_community_motifs(
     ax1.set_title(title)
     ax1.legend()
     plt.tight_layout()
-    plt.show()
+
+    if save_to_file:
+        plt.savefig(save_path)
+        logger.info(f"Saved community / motifs plot to {save_path}")
+
+    return fig

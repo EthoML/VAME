@@ -17,25 +17,29 @@ def test_project_name_config(setup_project_not_aligned_data):
     """
     config = Path(setup_project_not_aligned_data["config_path"])
     config_values = read_config(config)
-    assert config_values["Project"] == setup_project_not_aligned_data["project_name"]
+    assert (
+        config_values["project_name"] == setup_project_not_aligned_data["project_name"]
+    )
 
 
 def test_existing_project():
-    project = "test_existing_project"
+    project_name = "test_existing_project"
     videos = ["./tests/tests_project_sample_data/cropped_video.mp4"]
     poses_estimations = ["./tests/tests_project_sample_data/cropped_video.csv"]
     working_directory = "./tests"
 
     config_path_creation = init_new_project(
-        project=project,
+        project_name=project_name,
         videos=videos,
         poses_estimations=poses_estimations,
+        source_software="DeepLabCut",
         working_directory=working_directory,
     )
     config_path_duplicated = init_new_project(
-        project=project,
+        project_name=project_name,
         videos=videos,
         poses_estimations=poses_estimations,
+        source_software="DeepLabCut",
         working_directory=working_directory,
     )
     assert config_path_creation == config_path_duplicated
@@ -45,5 +49,5 @@ def test_existing_project():
 def test_existing_project_from_folder(setup_project_from_folder):
     config = Path(setup_project_from_folder["config_path"])
     config_values = read_config(config)
-    assert config_values["Project"] == setup_project_from_folder["project_name"]
+    assert config_values["project_name"] == setup_project_from_folder["project_name"]
     assert Path(setup_project_from_folder["config_path"]).exists()
