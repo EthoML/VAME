@@ -82,15 +82,9 @@ def embedd_latent_vectors(
                 data_sample_np = data[:, i : temp_win + i].T
                 data_sample_np = np.reshape(data_sample_np, (1, temp_win, num_features))
                 if use_gpu:
-                    h_n = model.encoder(
-                        torch.from_numpy(data_sample_np)
-                        .type("torch.FloatTensor")
-                        .cuda()
-                    )
+                    h_n = model.encoder(torch.from_numpy(data_sample_np).type("torch.FloatTensor").cuda())
                 else:
-                    h_n = model.encoder(
-                        torch.from_numpy(data_sample_np).type("torch.FloatTensor").to()
-                    )
+                    h_n = model.encoder(torch.from_numpy(data_sample_np).type("torch.FloatTensor").to())
                 mu, _, _ = model.lmbda(h_n)
                 latent_vector_list.append(mu.cpu().data.numpy())
 
@@ -406,9 +400,7 @@ def segment_session(
                     )
 
             else:
-                logger.info(
-                    f"\nSegmentation with {n_clusters} k-means clusters already exists for model {model_name}"
-                )
+                logger.info(f"\nSegmentation with {n_clusters} k-means clusters already exists for model {model_name}")
 
                 if os.path.exists(
                     os.path.join(

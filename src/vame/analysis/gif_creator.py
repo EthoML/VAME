@@ -102,9 +102,7 @@ def create_video(
         frame = frames[i]
         ax2.imshow(frame, cmap=cmap_reversed)
         # ax2.set_title("Motif %d,\n Community: %s" % (lbl, motifs[lbl]), fontsize=10)
-        fig.savefig(
-            os.path.join(path_to_file, "gif_frames", session + "gif_%d.png") % i
-        )
+        fig.savefig(os.path.join(path_to_file, "gif_frames", session + "gif_%d.png") % i)
 
 
 def gif(
@@ -205,9 +203,7 @@ def gif(
                 random_state=cfg["random_state"],
             )
 
-            latent_vector = np.load(
-                os.path.join(path_to_file, "", "latent_vector_" + session + ".npy")
-            )
+            latent_vector = np.load(os.path.join(path_to_file, "", "latent_vector_" + session + ".npy"))
 
             num_points = cfg["num_points"]
             if num_points > latent_vector.shape[0]:
@@ -228,12 +224,7 @@ def gif(
             umap_label = np.load(
                 os.path.join(
                     path_to_file,
-                    str(n_clusters)
-                    + "_"
-                    + segmentation_algorithm
-                    + "_label_"
-                    + session
-                    + ".npy",
+                    str(n_clusters) + "_" + segmentation_algorithm + "_label_" + session + ".npy",
                 )
             )
         elif label == "community":

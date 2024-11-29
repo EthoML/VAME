@@ -64,9 +64,7 @@ class VAMEPipeline:
         datasets = list()
         attributes = list()
         for session in sessions:
-            ds_path = (
-                Path(self.config["project_path"]) / "data" / "raw" / f"{session}.nc"
-            )
+            ds_path = Path(self.config["project_path"]) / "data" / "raw" / f"{session}.nc"
             ds = load_vame_dataset(ds_path=ds_path)
             ds = ds.expand_dims({"session": [session]})
             datasets.append(ds)
@@ -78,9 +76,7 @@ class VAMEPipeline:
                 dss_attrs.setdefault(key, []).append(value)
         for key, values in dss_attrs.items():
             unique_values = unique_in_order(values)  # Maintain order of unique values
-            dss_attrs[key] = (
-                unique_values[0] if len(unique_values) == 1 else unique_values
-            )
+            dss_attrs[key] = unique_values[0] if len(unique_values) == 1 else unique_values
         for key, value in dss_attrs.items():
             dss.attrs[key] = value
         return dss

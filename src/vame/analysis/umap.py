@@ -328,12 +328,7 @@ def visualization(
                     os.path.join(
                         path_to_file,
                         "",
-                        str(n_clusters)
-                        + "_"
-                        + segmentation_algorithm
-                        + "_label_"
-                        + session
-                        + ".npy",
+                        str(n_clusters) + "_" + segmentation_algorithm + "_label_" + session + ".npy",
                     )
                 )
                 output_figure = umap_label_vis(

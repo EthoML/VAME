@@ -89,9 +89,7 @@ def pose_to_numpy(
                 i = interpol_first_rows_nans(i)
 
             positions = np.concatenate(pose_list, axis=1)
-            final_positions = np.zeros(
-                (data_mat.shape[0], int(data_mat.shape[1] / 3) * 2)
-            )
+            final_positions = np.zeros((data_mat.shape[0], int(data_mat.shape[1] / 3) * 2))
 
             jdx = 0
             idx = 0
@@ -113,9 +111,7 @@ def pose_to_numpy(
             )
             logger.info("conversion from DeepLabCut csv to numpy complete...")
 
-        logger.info(
-            "Your data is now in right format and you can call vame.create_trainset()"
-        )
+        logger.info("Your data is now in right format and you can call vame.create_trainset()")
     except Exception as e:
         logger.exception(f"{e}")
         raise e

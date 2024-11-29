@@ -1,13 +1,14 @@
-import numpy as np
 from typing import List, Tuple, Optional
+import numpy as np
+import pandas as pd
+import xarray as xr
 import cv2 as cv
 import os
-from scipy.ndimage import median_filter
 import tqdm
+from scipy.ndimage import median_filter
 from pynwb import NWBHDF5IO
 from pynwb.file import NWBFile
 from hdmf.utils import LabelledDict
-import pandas as pd
 
 from vame.schemas.project import PoseEstimationFiletype
 from vame.logging.logger import VameLogger
@@ -85,7 +86,7 @@ def read_pose_estimation_file(
     file_path: str,
     file_type: Optional[PoseEstimationFiletype] = None,
     path_to_pose_nwb_series_data: Optional[str] = None,
-) -> Tuple[pd.DataFrame, np.ndarray]:
+) -> Tuple[pd.DataFrame, np.ndarray, xr.Dataset]:
     """
     Read pose estimation file.
 
@@ -106,7 +107,7 @@ def read_pose_estimation_file(
     ds = load_vame_dataset(ds_path=file_path)
     data = nc_to_dataframe(ds)
     data_mat = pd.DataFrame.to_numpy(data)
-    return data, data_mat
+    return data, data_mat, ds
     # if file_type == PoseEstimationFiletype.csv:
     #     data = pd.read_csv(file_path, skiprows=2, index_col=0)
     #     if "coords" in data:
@@ -211,7 +212,33 @@ def interpol_first_rows_nans(arr: np.ndarray) -> np.ndarray:
     return arr
 
 
-def crop_and_flip(
+def interpolate_nans_with_pandas(data: np.ndarray) -> np.ndarray:
+    """
+    Interpolate NaN values along the time axis of a 3D NumPy array using Pandas.
+
+    Parameters:
+    -----------
+    data : numpy.ndarray
+        Input 3D array of shape (time, keypoints, space).
+
+    Returns:
+    --------
+    numpy.ndarray:
+        Array with NaN values interpolated.
+    """
+    for kp in range(data.shape[1]):  # Loop over keypoints dimension
+        for sp in range(data.shape[2]):  # Loop over space dimension (x, y)
+            series = pd.Series(data[:, kp, sp])
+            series_interpolated = series.interpolate(
+                method="linear",
+                limit_direction="both",
+                axis=0,
+            )
+            data[:, kp, sp] = series_interpolated.values
+    return data
+
+
+def crop_and_flip_legacy(
     rect: Tuple,
     src: np.ndarray,
     points: List[np.ndarray],
@@ -362,9 +389,7 @@ def nc_to_dataframe(nc_data):
 
     # Flatten position data
     position_data = nc_data["position"].isel(individuals=0).values
-    position_column_names = [
-        f"{keypoint}_{sp}" for keypoint in keypoints for sp in space
-    ]
+    position_column_names = [f"{keypoint}_{sp}" for keypoint in keypoints for sp in space]
     position_flattened = position_data.reshape(position_data.shape[0], -1)
 
     # Create a DataFrame for position data
@@ -382,9 +407,7 @@ def nc_to_dataframe(nc_data):
     # Reorder columns: keypoint_x, keypoint_y, keypoint_confidence
     reordered_columns = []
     for keypoint in keypoints:
-        reordered_columns.extend(
-            [f"{keypoint}_x", f"{keypoint}_y", f"{keypoint}_confidence"]
-        )
+        reordered_columns.extend([f"{keypoint}_x", f"{keypoint}_y", f"{keypoint}_confidence"])
 
     combined_df = combined_df[reordered_columns]
 
