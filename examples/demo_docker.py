@@ -6,17 +6,17 @@ import ast
 
 def run_pipeline(
     working_directory: str,
-    project: str,
+    project_name: str,
     videos: list,
     poses_estimations: list,
 ):
 
     config = vame.init_new_project(
-        project=project,
+        project_name=project_name,
         videos=videos,
         poses_estimations=poses_estimations,
         working_directory=working_directory,
-        videotype=".mp4",
+        video_type=".mp4",
     )
 
     config_values = read_config(config)
@@ -54,7 +54,7 @@ if __name__ == "__main__":
 
     run_pipeline(
         working_directory=working_directory,
-        project=project,
+        project_name=project,
         videos=videos,
         poses_estimations=poses_estimations,
     )

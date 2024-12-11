@@ -1,6 +1,6 @@
 [project]
 name = "vame-py"
-version = '0.5.1'
+version = '0.6.0'
 dynamic = ["dependencies", "readme"]
 description = "Variational Animal Motion Embedding."
 authors = [{ name = "K. Luxem & " }, { name = "P. Bauer" }]

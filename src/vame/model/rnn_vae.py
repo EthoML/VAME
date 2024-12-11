@@ -1,14 +1,3 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Variational Animal Motion Embedding 0.1 Toolbox
-© K. Luxem & P. Bauer, Department of Cellular Neuroscience
-Leibniz Institute for Neurobiology, Magdeburg, Germany
-
-https://github.com/LINCellularNeuroscience/VAME
-Licensed under GNU General Public License v3.0
-"""
-
 import torch
 from torch import nn
 import torch.utils.data as Data
@@ -672,7 +661,7 @@ def train_model(config: str, save_logs: bool = False) -> None:
                         cfg["project_path"],
                         "model",
                         "best_model",
-                        pretrained_model + "_" + cfg["Project"] + ".pkl",
+                        pretrained_model + "_" + cfg["project_name"] + ".pkl",
                     )
                 )
                 model.load_state_dict(
@@ -681,7 +670,7 @@ def train_model(config: str, save_logs: bool = False) -> None:
                             cfg["project_path"],
                             "model",
                             "best_model",
-                            pretrained_model + "_" + cfg["Project"] + ".pkl",
+                            pretrained_model + "_" + cfg["project_name"] + ".pkl",
                         )
                     )
                 )
@@ -694,7 +683,7 @@ def train_model(config: str, save_logs: bool = False) -> None:
                         cfg["project_path"],
                         "model",
                         "best_model",
-                        pretrained_model + "_" + cfg["Project"] + ".pkl",
+                        pretrained_model + "_" + cfg["project_name"] + ".pkl",
                     )
                 )
                 try:
@@ -812,7 +801,7 @@ def train_model(config: str, save_logs: bool = False) -> None:
                         cfg["project_path"],
                         "model",
                         "best_model",
-                        model_name + "_" + cfg["Project"] + ".pkl",
+                        model_name + "_" + cfg["project_name"] + ".pkl",
                     ),
                 )
                 convergence = 0
@@ -830,7 +819,7 @@ def train_model(config: str, save_logs: bool = False) -> None:
                         "snapshots",
                         model_name
                         + "_"
-                        + cfg["Project"]
+                        + cfg["project_name"]
                         + "_epoch_"
                         + str(epoch)
                         + ".pkl",

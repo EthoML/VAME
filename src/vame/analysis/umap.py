@@ -1,24 +1,15 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Variational Animal Motion Embedding 1.0-alpha Toolbox
-© K. Luxem & P. Bauer, Department of Cellular Neuroscience
-Leibniz Institute for Neurobiology, Magdeburg, Germany
-
-https://github.com/LINCellularNeuroscience/VAME
-Licensed under GNU General Public License v3.0
-"""
-
 import os
 import umap
 import numpy as np
 from pathlib import Path
 import matplotlib.pyplot as plt
 from typing import Optional, Union
+
 from vame.util.auxiliary import read_config
+from vame.util.cli import get_sessions_from_user_input
 from vame.schemas.states import VisualizationFunctionSchema, save_state
 from vame.logging.logger import VameLogger
-from vame.schemas.project import Parametrizations
+from vame.schemas.project import SegmentationAlgorithms
 
 
 logger_config = VameLogger(__name__)
@@ -27,10 +18,10 @@ logger = logger_config.logger
 
 def umap_embedding(
     cfg: dict,
-    file: str,
+    session: str,
     model_name: str,
-    n_cluster: int,
-    parametrization: str,
+    n_clusters: int,
+    segmentation_algorithm: SegmentationAlgorithms,
 ) -> np.ndarray:
     """
     Perform UMAP embedding for given file and parameters.
@@ -39,14 +30,14 @@ def umap_embedding(
     ----------
     cfg : dict
         Configuration parameters.
-    file : str
-        File path.
+    session : str
+        Session name.
     model_name : str
         Model name.
-    n_cluster : int
+    n_clusters : int
         Number of clusters.
-    parametrization : str
-        parametrization.
+    segmentation_algorithm : str
+        Segmentation algorithm.
 
     Returns
     -------
@@ -59,23 +50,23 @@ def umap_embedding(
         n_neighbors=cfg["n_neighbors"],
         random_state=cfg["random_state"],
     )
-    logger.info("UMAP calculation for file %s" % file)
+    logger.info(f"UMAP calculation for session {session}")
     folder = os.path.join(
         cfg["project_path"],
         "results",
-        file,
+        session,
         model_name,
-        parametrization + "-" + str(n_cluster),
+        segmentation_algorithm + "-" + str(n_clusters),
         "",
     )
-    latent_vector = np.load(os.path.join(folder, "latent_vector_" + file + ".npy"))
+    latent_vector = np.load(os.path.join(folder, "latent_vector_" + session + ".npy"))
     num_points = cfg["num_points"]
     if num_points > latent_vector.shape[0]:
         num_points = latent_vector.shape[0]
-    logger.info("Embedding %d data points.." % num_points)
+    logger.info(f"Embedding {num_points} data points...")
     embed = reducer.fit_transform(latent_vector[:num_points, :])
     np.save(
-        os.path.join(folder, "community", "umap_embedding_" + file + ".npy"),
+        os.path.join(folder, "community", "umap_embedding_" + session + ".npy"),
         embed,
     )
     return embed
@@ -153,7 +144,6 @@ def umap_vis(
 def umap_label_vis(
     embed: np.ndarray,
     label: np.ndarray,
-    n_cluster: int,
     num_points: int,
 ) -> plt.Figure:
     """
@@ -165,8 +155,6 @@ def umap_label_vis(
         UMAP embedding.
     label : np.ndarray
         Motif labels.
-    n_cluster : int
-        Number of clusters.
     num_points : int
         Number of data points to visualize.
 
@@ -184,7 +172,7 @@ def umap_label_vis(
         s=2,
         alpha=0.7,
     )
-    # plt.colorbar(boundaries=np.arange(n_cluster+1)-0.5).set_ticks(np.arange(n_cluster))
+    # plt.colorbar(boundaries=np.arange(n_clusters+1)-0.5).set_ticks(np.arange(n_clusters))
     plt.gca().set_aspect("equal", "datalim")
     plt.grid(False)
     return fig
@@ -231,7 +219,7 @@ def umap_vis_comm(
 @save_state(model=VisualizationFunctionSchema)
 def visualization(
     config: Union[str, Path],
-    parametrization: Parametrizations,
+    segmentation_algorithm: SegmentationAlgorithms,
     label: Optional[str] = None,
     save_logs: bool = False,
 ) -> None:
@@ -245,7 +233,7 @@ def visualization(
         - results/
             - file_name/
                 - model_name/
-                    - parametrization-n_cluster/
+                    - segmentation_algorithm-n_clusters/
                         - community/
                             - umap_embedding_file_name.npy
                             - umap_vis_label_none_file_name.png  (UMAP visualization without labels)
@@ -256,8 +244,8 @@ def visualization(
     ----------
     config : Union[str, Path]
         Path to the configuration file.
-    parametrization : Parametrizations
-        Which parametrization to use. Options are 'hmm' or 'kmeans'.
+    segmentation_algorithm : SegmentationAlgorithms
+        Which segmentation algorithm to use. Options are 'hmm' or 'kmeans'.
     label : str, optional
         Type of labels to visualize. Options are None, 'motif' or 'community'. Default is None.
     save_logs : bool, optional
@@ -270,48 +258,32 @@ def visualization(
     try:
         config_file = Path(config).resolve()
         cfg = read_config(str(config_file))
-        # parametrizations = cfg["parametrizations"]
 
         if save_logs:
             logs_path = Path(cfg["project_path"]) / "logs" / "visualization.log"
             logger_config.add_file_handler(str(logs_path))
 
         model_name = cfg["model_name"]
-        n_cluster = cfg["n_cluster"]
+        n_clusters = cfg["n_clusters"]
 
-        files = []
-        if cfg["all_data"] == "No":
-            all_flag = input(
-                "Do you want to write motif videos for your entire dataset? \n"
-                "If you only want to use a specific dataset type filename: \n"
-                "yes/no/filename "
+        # Get sessions
+        if cfg["all_data"] in ["Yes", "yes"]:
+            sessions = cfg["session_names"]
+        else:
+            sessions = get_sessions_from_user_input(
+                cfg=cfg,
+                action_message="generate visualization",
             )
-        else:
-            all_flag = "yes"
 
-        if all_flag == "yes" or all_flag == "Yes":
-            for file in cfg["video_sets"]:
-                files.append(file)
-
-        elif all_flag == "no" or all_flag == "No":
-            for file in cfg["video_sets"]:
-                use_file = input("Do you want to quantify " + file + "? yes/no: ")
-                if use_file == "yes":
-                    files.append(file)
-                if use_file == "no":
-                    continue
-        else:
-            files.append(all_flag)
-
-        for idx, file in enumerate(files):
+        for idx, session in enumerate(sessions):
             path_to_file = os.path.join(
                 cfg["project_path"],
                 "results",
-                file,
+                session,
                 "",
                 model_name,
                 "",
-                parametrization + "-" + str(n_cluster),
+                segmentation_algorithm + "-" + str(n_clusters),
             )
 
             try:
@@ -321,7 +293,7 @@ def visualization(
                         "",
                         "community",
                         "",
-                        "umap_embedding_" + file + ".npy",
+                        "umap_embedding_" + session + ".npy",
                     )
                 )
                 num_points = cfg["num_points"]
@@ -330,13 +302,13 @@ def visualization(
             except Exception:
                 if not os.path.exists(os.path.join(path_to_file, "community")):
                     os.mkdir(os.path.join(path_to_file, "community"))
-                logger.info("Compute embedding for file %s" % file)
+                logger.info(f"Compute embedding for session {session}")
                 embed = umap_embedding(
                     cfg,
-                    file,
+                    session,
                     model_name,
-                    n_cluster,
-                    parametrization,
+                    n_clusters,
+                    segmentation_algorithm,
                 )
                 num_points = cfg["num_points"]
                 if num_points > embed.shape[0]:
@@ -347,7 +319,7 @@ def visualization(
                 fig_path = os.path.join(
                     path_to_file,
                     "community",
-                    "umap_vis_label_none_" + file + ".png",
+                    "umap_vis_label_none_" + session + ".png",
                 )
                 output_figure.savefig(fig_path)
 
@@ -356,24 +328,23 @@ def visualization(
                     os.path.join(
                         path_to_file,
                         "",
-                        str(n_cluster)
+                        str(n_clusters)
                         + "_"
-                        + parametrization
+                        + segmentation_algorithm
                         + "_label_"
-                        + file
+                        + session
                         + ".npy",
                     )
                 )
                 output_figure = umap_label_vis(
                     embed,
                     motif_label,
-                    n_cluster,
                     num_points,
                 )
                 fig_path = os.path.join(
                     path_to_file,
                     "community",
-                    "umap_vis_motif_" + file + ".png",
+                    "umap_vis_motif_" + session + ".png",
                 )
                 output_figure.savefig(fig_path)
 
@@ -384,14 +355,14 @@ def visualization(
                         "",
                         "community",
                         "",
-                        "cohort_community_label_" + file + ".npy",
+                        "cohort_community_label_" + session + ".npy",
                     )
                 )
                 output_figure = umap_vis_comm(embed, community_label, num_points)
                 fig_path = os.path.join(
                     path_to_file,
                     "community",
-                    "umap_vis_community_" + file + ".png",
+                    "umap_vis_community_" + session + ".png",
                 )
                 output_figure.savefig(fig_path)
     except Exception as e:

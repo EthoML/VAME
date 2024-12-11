@@ -1,12 +1,3 @@
-"""
-Variational Animal Motion Embedding 0.1 Toolbox
-© K. Luxem & J. Kürsch & P. Bauer, Department of Cellular Neuroscience
-Leibniz Institute for Neurobiology, Magdeburg, Germany
-
-https://github.com/LINCellularNeuroscience/VAME
-Licensed under GNU General Public License v3.0
-"""
-
 import os
 import cv2 as cv
 import numpy as np
@@ -31,8 +22,8 @@ logger = logger_config.logger
 
 
 def align_mouse(
-    path_to_file: str,
-    filename: str,
+    project_path: str,
+    session: str,
     video_format: str,
     crop_size: Tuple[int, int],
     pose_list: List[np.ndarray],
@@ -49,10 +40,10 @@ def align_mouse(
 
     Parameters:
     -----------
-    path_to_file : str
-        Path to the file directory.
-    filename : str
-        Name of the video file without the format.
+    project_path : str
+        Path to the project directory.
+    session : str
+        Name of the session.
     video_format : str
         Format of the video file.
     crop_size : Tuple[int, int]
@@ -90,15 +81,17 @@ def align_mouse(
         i = interpol_first_rows_nans(i)
 
     if use_video:
-        capture = cv.VideoCapture(
-            os.path.join(path_to_file, "videos", filename + video_format)
-        )
-        if not capture.isOpened():
-            raise Exception(
-                "Unable to open video file: {0}".format(
-                    os.path.join(path_to_file, "videos", filename + video_format)
-                )
+        video_path = str(
+            os.path.join(
+                project_path,
+                "data",
+                "raw",
+                session + video_format,
             )
+        )
+        capture = cv.VideoCapture(video_path)
+        if not capture.isOpened():
+            raise Exception(f"Unable to open video file: {video_path}")
 
     for idx in tqdm.tqdm(
         range(frame_count),
@@ -246,8 +239,8 @@ def play_aligned_video(
 
 
 def alignment(
-    path_to_file: str,
-    filename: str,
+    project_path: str,
+    session: str,
     pose_ref_index: Tuple[int, int],
     video_format: str,
     crop_size: Tuple[int, int],
@@ -263,10 +256,10 @@ def alignment(
 
     Parameters:
     -----------
-    path_to_file : str
-        Path to the file directory.
-    filename : str
-        Name of the video file without the format.
+    project_path : str
+        Path to the project directory.
+    session : str
+        Name of the session.
     pose_ref_index : List[int]
         Pose reference indices.
     video_format : str
@@ -292,8 +285,7 @@ def alignment(
         Aligned time series data and list of aligned frames.
     """
     # read out data
-    folder_path = os.path.join(path_to_file, "videos", "pose_estimation")
-    file_path = os.path.join(folder_path, filename + "." + pose_estimation_filetype)
+    file_path = str(Path(project_path) / "data" / "raw" / f"{session}.nc")
     data, data_mat = read_pose_estimation_file(
         file_path=file_path,
         file_type=pose_estimation_filetype,
@@ -301,6 +293,7 @@ def alignment(
     )
 
     # get the coordinates for alignment from data table
+    # pose_list dimensions: (num_body_parts, num_frames, 3)
     pose_list = []
     for i in range(int(data_mat.shape[1] / 3)):
         pose_list.append(data_mat[:, i * 3 : (i + 1) * 3])
@@ -313,16 +306,23 @@ def alignment(
 
     if use_video:
         # compute background
-        bg = background(path_to_file, filename, video_format, save_background=False)
-        capture = cv.VideoCapture(
-            os.path.join(path_to_file, "videos", filename + video_format)
-        )
-        if not capture.isOpened():
-            raise Exception(
-                "Unable to open video file: {0}".format(
-                    os.path.join(path_to_file, "videos", filename + video_format)
-                )
+        video_path = str(
+            os.path.join(
+                project_path,
+                "data",
+                "raw",
+                session + video_format,
             )
+        )
+        bg = background(
+            project_path=project_path,
+            session=session,
+            video_path=video_path,
+            save_background=False,
+        )
+        capture = cv.VideoCapture(video_path)
+        if not capture.isOpened():
+            raise Exception(f"Unable to open video file: {video_path}")
         frame_count = int(capture.get(cv.CAP_PROP_FRAME_COUNT))
         capture.release()
     else:
@@ -331,8 +331,8 @@ def alignment(
         frame_count = len(data)
 
     frames, n, time_series = align_mouse(
-        path_to_file=path_to_file,
-        filename=filename,
+        project_path=project_path,
+        session=session,
         video_format=video_format,
         crop_size=crop_size,
         pose_list=pose_list,
@@ -354,7 +354,7 @@ def alignment(
 @save_state(model=EgocentricAlignmentFunctionSchema)
 def egocentric_alignment(
     config: str,
-    pose_ref_index: Tuple[int, int] = (5, 6),
+    pose_ref_index: Tuple[int, int] = (0, 1),
     crop_size: Tuple[int, int] = (300, 300),
     use_video: bool = False,
     video_format: str = ".mp4",
@@ -379,7 +379,7 @@ def egocentric_alignment(
     config : str
         Path for the project config file.
     pose_ref_index : list, optional
-        Pose reference index to be used to align. Defaults to [5,6].
+        Pose reference index to be used to align. Defaults to [0, 1].
     crop_size : tuple, optional
         Size to crop the video. Defaults to (300,300).
     use_video : bool, optional
@@ -409,8 +409,8 @@ def egocentric_alignment(
             tqdm_stream = TqdmToLogger(logger=logger)
 
         logger.info("Starting egocentric alignment")
-        path_to_file = cfg["project_path"]
-        filename = cfg["video_sets"]
+        project_path = cfg["project_path"]
+        sessions = cfg["session_names"]
         confidence = cfg["pose_confidence"]
         num_features = cfg["num_features"]
         video_format = video_format
@@ -423,13 +423,14 @@ def egocentric_alignment(
 
         # call function and save into your VAME data folder
         paths_to_pose_nwb_series_data = cfg["paths_to_pose_nwb_series_data"]
-        for i, file in enumerate(filename):
+        for i, session in enumerate(sessions):
             logger.info(
-                "Aligning data %s, Pose confidence value: %.2f" % (file, confidence)
+                "Aligning session %s, Pose confidence value: %.2f"
+                % (session, confidence)
             )
             egocentric_time_series, frames = alignment(
-                path_to_file=path_to_file,
-                filename=file,
+                project_path=project_path,
+                session=session,
                 pose_ref_index=pose_ref_index,
                 video_format=video_format,
                 crop_size=crop_size,
@@ -456,7 +457,9 @@ def egocentric_alignment(
 
             # Save new shifted file
             np.save(
-                os.path.join(path_to_file, "data", file, file + "-PE-seq.npy"),
+                os.path.join(
+                    project_path, "data", "processed", session, session + "-PE-seq.npy"
+                ),
                 egocentric_time_series_shifted,
             )
 

@@ -1,14 +1,3 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Variational Animal Motion Embedding 1.0-alpha Toolbox
-© K. Luxem & P. Bauer, Department of Cellular Neuroscience
-Leibniz Institute for Neurobiology, Magdeburg, Germany
-
-https://github.com/LINCellularNeuroscience/VAME
-Licensed under GNU General Public License v3.0
-"""
-
 import os
 import tqdm
 import cv2 as cv
@@ -19,6 +8,7 @@ from vame.util.data_manipulation import (
     interpol_first_rows_nans,
     crop_and_flip,
     background,
+    read_pose_estimation_file,
 )
 
 
@@ -28,7 +18,7 @@ logger = logger_config.logger
 
 def get_animal_frames(
     cfg: dict,
-    filename: str,
+    session: str,
     pose_ref_index: list,
     start: int,
     length: int,
@@ -43,8 +33,8 @@ def get_animal_frames(
     -----------
     cfg : dict
         Configuration dictionary containing project information.
-    filename : str
-        Name of the video file.
+    session : str
+        Name of the session.
     pose_ref_index : list
         List of reference coordinate indices for alignment.
     start : int
@@ -63,21 +53,37 @@ def get_animal_frames(
     list:
         List of extracted frames.
     """
-    path_to_file = cfg["project_path"]
+    project_path = cfg["project_path"]
     time_window = cfg["time_window"]
     lag = int(time_window / 2)
-    # read out data
-    data = pd.read_csv(
-        os.path.join(
-            path_to_file,
-            "videos",
-            "pose_estimation",
-            filename + ".csv",
-        ),
-        skiprows=2,
+
+    video_path = os.path.join(
+        project_path,
+        "data",
+        "raw",
+        session + file_format,
     )
-    data_mat = pd.DataFrame.to_numpy(data)
-    data_mat = data_mat[:, 1:]
+
+    # read out data
+    # data = pd.read_csv(
+    #     os.path.join(
+    #         path_to_file,
+    #         "videos",
+    #         "pose_estimation",
+    #         session + ".csv",
+    #     ),
+    #     skiprows=2,
+    # )
+    # data_mat = pd.DataFrame.to_numpy(data)
+    # data_mat = data_mat[:, 1:]
+
+    file_path = os.path.join(
+        project_path,
+        "data",
+        "raw",
+        session + ".nc",
+    )
+    data, data_mat = read_pose_estimation_file(file_path=file_path)
 
     # get the coordinates for alignment from data table
     pose_list = []
@@ -100,17 +106,18 @@ def get_animal_frames(
             logger.info("Loading background image ...")
             bg = np.load(
                 os.path.join(
-                    path_to_file,
-                    "videos",
-                    filename + "-background.npy",
+                    project_path,
+                    "data",
+                    "processed",
+                    session + "-background.npy",
                 )
             )
         except Exception:
             logger.info("Can't find background image... Calculate background image...")
             bg = background(
-                path_to_file,
-                filename,
-                file_format,
+                project_path=project_path,
+                session=session,
+                video_path=video_path,
                 save_background=True,
             )
 
@@ -125,23 +132,9 @@ def get_animal_frames(
     for i in pose_list:
         i = interpol_first_rows_nans(i)
 
-    capture = cv.VideoCapture(
-        os.path.join(
-            path_to_file,
-            "videos",
-            filename + file_format,
-        )
-    )
+    capture = cv.VideoCapture(video_path)
     if not capture.isOpened():
-        raise Exception(
-            "Unable to open video file: {0}".format(
-                os.path.join(
-                    path_to_file,
-                    "videos",
-                    filename + +file_format,
-                )
-            )
-        )
+        raise Exception(f"Unable to open video file: {video_path}")
 
     for idx in tqdm.tqdm(range(length), disable=not True, desc="Align frames"):
         try:
@@ -153,9 +146,7 @@ def get_animal_frames(
                 frame[frame <= 0] = 0
         except Exception:
             logger.info(
-                "Couldn't find a frame in capture.read(). #Frame: %d" % idx
-                + start
-                + lag
+                f"Couldn't find a frame in capture.read(). #Frame: {idx + start + lag}"
             )
             continue
 

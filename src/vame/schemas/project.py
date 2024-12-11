@@ -1,9 +1,10 @@
 from pydantic import BaseModel, Field, ConfigDict
 from typing import List, Optional
+from datetime import datetime, timezone
 from enum import Enum
 
 
-class Parametrizations(str, Enum):
+class SegmentationAlgorithms(str, Enum):
     hmm = "hmm"
     kmeans = "kmeans"
 
@@ -14,6 +15,8 @@ class Parametrizations(str, Enum):
 class PoseEstimationFiletype(str, Enum):
     csv = "csv"
     nwb = "nwb"
+    slp = "slp"
+    h5 = "h5"
 
     class Config:
         use_enum_values = True
@@ -21,15 +24,21 @@ class PoseEstimationFiletype(str, Enum):
 
 class ProjectSchema(BaseModel):
     # Project attributes
-    Project: str = Field(
+    project_name: str = Field(
         ...,
         title="Project name",
+    )
+    creation_datetime: str = Field(
+        default_factory=lambda: datetime.now(timezone.utc).isoformat(
+            timespec="seconds"
+        ),
+        title="Creation datetime",
     )
     model_name: str = Field(
         default="VAME",
         title="Model name",
     )
-    n_cluster: int = Field(
+    n_clusters: int = Field(
         default=15,
         title="Number of clusters",
     )
@@ -43,9 +52,9 @@ class ProjectSchema(BaseModel):
         ...,
         title="Project path",
     )
-    video_sets: List[str] = Field(
+    session_names: List[str] = Field(
         ...,
-        title="Video sets",
+        title="Session names",
     )
     pose_estimation_filetype: PoseEstimationFiletype = Field(
         title="Pose estimation filetype",
@@ -178,12 +187,13 @@ class ProjectSchema(BaseModel):
         default=False,
         title="Softplus",
     )
+
     # Segmentation:
-    parametrizations: List[Parametrizations] = Field(
-        title="Parametrizations",
+    segmentation_algorithms: List[SegmentationAlgorithms] = Field(
+        title="Segmentation algorithms",
         default_factory=lambda: [
-            Parametrizations.hmm.value,
-            Parametrizations.kmeans.value,
+            SegmentationAlgorithms.hmm.value,
+            SegmentationAlgorithms.kmeans.value,
         ],
     )
     hmm_trained: bool = Field(
@@ -194,9 +204,9 @@ class ProjectSchema(BaseModel):
         default="-PE-seq-clean",
         title="Load data",
     )
-    individual_parametrization: bool = Field(
+    individual_segmentation: bool = Field(
         default=False,
-        title="Individual parametrization",
+        title="Individual segmentation",
     )
     random_state_kmeans: int = Field(
         default=42,

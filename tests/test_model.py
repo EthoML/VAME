@@ -97,7 +97,7 @@ def test_train_model_losses_files_exists(setup_project_and_train_model):
 def test_train_model_best_model_file_exists(setup_project_and_train_model):
     project_path = setup_project_and_train_model["config_data"]["project_path"]
     model_name = setup_project_and_train_model["config_data"]["model_name"]
-    project_name = setup_project_and_train_model["config_data"]["Project"]
+    project_name = setup_project_and_train_model["config_data"]["project_name"]
     best_model_path = (
         Path(project_path) / "model" / "best_model" / f"{model_name}_{project_name}.pkl"
     )
