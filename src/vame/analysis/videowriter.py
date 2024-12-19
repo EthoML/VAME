@@ -71,19 +71,12 @@ def create_cluster_videos(
         labels = np.load(
             os.path.join(
                 path_to_file,
-                str(n_clusters)
-                + "_"
-                + segmentation_algorithm
-                + "_label_"
-                + session
-                + ".npy",
+                str(n_clusters) + "_" + segmentation_algorithm + "_label_" + session + ".npy",
             )
         )
     if flag == "community":
         if cohort:
-            logger.info(
-                "Cohort community videos getting created for " + session + " ..."
-            )
+            logger.info("Cohort community videos getting created for " + session + " ...")
             labels = np.load(
                 os.path.join(
                     path_to_file,
@@ -109,9 +102,7 @@ def create_cluster_videos(
     )
     capture = cv.VideoCapture(video_file_path)
     if not capture.isOpened():
-        raise ValueError(
-            f"Video capture could not be opened. Ensure the video file is valid.\n {video_file_path}"
-        )
+        raise ValueError(f"Video capture could not be opened. Ensure the video file is valid.\n {video_file_path}")
     width = capture.get(cv.CAP_PROP_FRAME_WIDTH)
     height = capture.get(cv.CAP_PROP_FRAME_HEIGHT)
     fps = 25  # capture.get(cv.CAP_PROP_FPS)

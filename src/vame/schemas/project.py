@@ -29,9 +29,7 @@ class ProjectSchema(BaseModel):
         title="Project name",
     )
     creation_datetime: str = Field(
-        default_factory=lambda: datetime.now(timezone.utc).isoformat(
-            timespec="seconds"
-        ),
+        default_factory=lambda: datetime.now(timezone.utc).isoformat(timespec="seconds"),
         title="Creation datetime",
     )
     model_name: str = Field(

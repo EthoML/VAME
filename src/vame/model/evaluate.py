@@ -69,18 +69,10 @@ def plot_reconstruction(
     x = x.permute(0, 2, 1)
     if use_gpu:
         data = x[:, :seq_len_half, :].type("torch.FloatTensor").cuda()
-        data_fut = (
-            x[:, seq_len_half : seq_len_half + FUTURE_STEPS, :]
-            .type("torch.FloatTensor")
-            .cuda()
-        )
+        data_fut = x[:, seq_len_half : seq_len_half + FUTURE_STEPS, :].type("torch.FloatTensor").cuda()
     else:
         data = x[:, :seq_len_half, :].type("torch.FloatTensor").to()
-        data_fut = (
-            x[:, seq_len_half : seq_len_half + FUTURE_STEPS, :]
-            .type("torch.FloatTensor")
-            .to()
-        )
+        data_fut = x[:, seq_len_half : seq_len_half + FUTURE_STEPS, :].type("torch.FloatTensor").to()
     if FUTURE_DECODER:
         x_tilde, future, latent, mu, logvar = model(data)
 
@@ -99,9 +91,7 @@ def plot_reconstruction(
 
     if FUTURE_DECODER:
         fig, axs = plt.subplots(2, 5)
-        fig.suptitle(
-            "Reconstruction [top] and future prediction [bottom] of input sequence"
-        )
+        fig.suptitle("Reconstruction [top] and future prediction [bottom] of input sequence")
         for i in range(5):
             axs[0, i].plot(data_orig[i, ...], color="k", label="Sequence Data")
             axs[0, i].plot(
@@ -129,9 +119,7 @@ def plot_reconstruction(
         fig.set_tight_layout(True)
         if not suffix:
             fig.savefig(
-                os.path.join(
-                    filepath, "evaluate", "Reconstruction_" + model_name + ".png"
-                ),
+                os.path.join(filepath, "evaluate", "Reconstruction_" + model_name + ".png"),
                 bbox_inches="tight",
             )
         elif suffix:
@@ -174,12 +162,8 @@ def plot_loss(
     basepath = os.path.join(cfg["project_path"], "model", "model_losses")
     train_loss = np.load(os.path.join(basepath, "train_losses_" + model_name + ".npy"))
     test_loss = np.load(os.path.join(basepath, "test_losses_" + model_name + ".npy"))
-    mse_loss_train = np.load(
-        os.path.join(basepath, "mse_train_losses_" + model_name + ".npy")
-    )
-    mse_loss_test = np.load(
-        os.path.join(basepath, "mse_test_losses_" + model_name + ".npy")
-    )
+    mse_loss_train = np.load(os.path.join(basepath, "mse_train_losses_" + model_name + ".npy"))
+    mse_loss_test = np.load(os.path.join(basepath, "mse_test_losses_" + model_name + ".npy"))
     km_losses = np.load(os.path.join(basepath, "kmeans_losses_" + model_name + ".npy"))
     kl_loss = np.load(os.path.join(basepath, "kl_losses_" + model_name + ".npy"))
     fut_loss = np.load(os.path.join(basepath, "fut_losses_" + model_name + ".npy"))
@@ -196,9 +180,7 @@ def plot_loss(
     ax1.plot(kl_loss, label="KL-Loss")
     ax1.plot(fut_loss, label="Prediction-Loss")
     ax1.legend()
-    fig.savefig(
-        os.path.join(filepath, "evaluate", "MSE-and-KL-Loss" + model_name + ".png")
-    )
+    fig.savefig(os.path.join(filepath, "evaluate", "MSE-and-KL-Loss" + model_name + ".png"))
 
 
 def eval_temporal(
@@ -308,9 +290,7 @@ def eval_temporal(
                 )
             )
         elif snapshot:
-            model.load_state_dict(
-                torch.load(snapshot), map_location=torch.device("cpu")
-            )
+            model.load_state_dict(torch.load(snapshot), map_location=torch.device("cpu"))
     model.eval()  # toggle evaluation mode
 
     testset = SEQUENCE_DATASET(
@@ -320,9 +300,7 @@ def eval_temporal(
         temporal_window=TEMPORAL_WINDOW,
         logger_config=logger_config,
     )
-    test_loader = Data.DataLoader(
-        testset, batch_size=TEST_BATCH_SIZE, shuffle=True, drop_last=True
-    )
+    test_loader = Data.DataLoader(testset, batch_size=TEST_BATCH_SIZE, shuffle=True, drop_last=True)
 
     if not snapshot:
         plot_reconstruction(
@@ -405,13 +383,9 @@ def evaluate_model(
         if not use_snapshots:
             eval_temporal(cfg, use_gpu, model_name, fixed)  # suffix=suffix
         elif use_snapshots:
-            snapshots = os.listdir(
-                os.path.join(cfg["project_path"], "model", "best_model", "snapshots")
-            )
+            snapshots = os.listdir(os.path.join(cfg["project_path"], "model", "best_model", "snapshots"))
             for snap in snapshots:
-                fullpath = os.path.join(
-                    cfg["project_path"], "model", "best_model", "snapshots", snap
-                )
+                fullpath = os.path.join(cfg["project_path"], "model", "best_model", "snapshots", snap)
                 epoch = snap.split("_")[-1]
                 eval_temporal(
                     cfg,
