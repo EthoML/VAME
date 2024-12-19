@@ -175,9 +175,7 @@ def kl_annealing(
         elif function == "sigmoid":
             new_weight = float(1 / (1 + np.exp(-0.9 * (epoch - annealtime))))
         else:
-            raise NotImplementedError(
-                'currently only "linear" and "sigmoid" are implemented'
-            )
+            raise NotImplementedError('currently only "linear" and "sigmoid" are implemented')
 
         return new_weight
     else:
@@ -302,18 +300,10 @@ def train(
         data_item = data_item.permute(0, 2, 1)
         if use_gpu:
             data = data_item[:, :seq_len_half, :].type("torch.FloatTensor").cuda()
-            fut = (
-                data_item[:, seq_len_half : seq_len_half + future_steps, :]
-                .type("torch.FloatTensor")
-                .cuda()
-            )
+            fut = data_item[:, seq_len_half : seq_len_half + future_steps, :].type("torch.FloatTensor").cuda()
         else:
             data = data_item[:, :seq_len_half, :].type("torch.FloatTensor").to()
-            fut = (
-                data_item[:, seq_len_half : seq_len_half + future_steps, :]
-                .type("torch.FloatTensor")
-                .to()
-            )
+            fut = data_item[:, seq_len_half : seq_len_half + future_steps, :].type("torch.FloatTensor").to()
 
         if noise is True:
             data_gaussian = gaussian(data, True, seq_len_half)
@@ -327,12 +317,7 @@ def train(
             kmeans_loss = cluster_loss(latent.T, kloss, klmbda, bsize)
             kl_loss = kullback_leibler_loss(mu, logvar)
             kl_weight = kl_annealing(epoch, kl_start, annealtime, anneal_function)
-            loss = (
-                rec_loss
-                + fut_rec_loss
-                + BETA * kl_weight * kl_loss
-                + kl_weight * kmeans_loss
-            )
+            loss = rec_loss + fut_rec_loss + BETA * kl_weight * kl_loss + kl_weight * kmeans_loss
             fut_loss += fut_rec_loss.item()
         else:
             data_tilde, latent, mu, logvar = model(data_gaussian)
@@ -536,15 +521,9 @@ def train_model(config: str, save_logs: bool = False) -> None:
         fixed = cfg["egocentric_data"]
 
         logger.info("Train Variational Autoencoder - model name: %s \n" % model_name)
-        if not os.path.exists(
-            os.path.join(cfg["project_path"], "model", "best_model", "")
-        ):
+        if not os.path.exists(os.path.join(cfg["project_path"], "model", "best_model", "")):
             os.mkdir(os.path.join(cfg["project_path"], "model", "best_model", ""))
-            os.mkdir(
-                os.path.join(
-                    cfg["project_path"], "model", "best_model", "snapshots", ""
-                )
-            )
+            os.mkdir(os.path.join(cfg["project_path"], "model", "best_model", "snapshots", ""))
             os.mkdir(os.path.join(cfg["project_path"], "model", "model_losses", ""))
 
         # make sure torch uses cuda for GPU computing
@@ -555,9 +534,7 @@ def train_model(config: str, save_logs: bool = False) -> None:
             logger.info("GPU used: {}".format(torch.cuda.get_device_name(0)))
         else:
             torch.device("cpu")
-            logger.info(
-                "warning, a GPU was not found... proceeding with CPU (slow!) \n"
-            )
+            logger.info("warning, a GPU was not found... proceeding with CPU (slow!) \n")
             # raise NotImplementedError('GPU Computing is required!')
 
         # HYPERPARAMETERS
@@ -687,16 +664,12 @@ def train_model(config: str, save_logs: bool = False) -> None:
                     )
                 )
                 try:
-                    logger.info(
-                        "Loading pretrained weights from %s\n" % pretrained_model
-                    )
+                    logger.info("Loading pretrained weights from %s\n" % pretrained_model)
                     model.load_state_dict(torch.load(pretrained_model))
                     KL_START = 0
                     ANNEALTIME = 1
                 except Exception:
-                    logger.error(
-                        "Could not load pretrained model. Check file path in config.yaml."
-                    )
+                    logger.error("Could not load pretrained model. Check file path in config.yaml.")
 
         """ DATASET """
         trainset = SEQUENCE_DATASET(
@@ -712,19 +685,14 @@ def train_model(config: str, save_logs: bool = False) -> None:
             temporal_window=TEMPORAL_WINDOW,
         )
 
-        train_loader = Data.DataLoader(
-            trainset, batch_size=TRAIN_BATCH_SIZE, shuffle=True, drop_last=True
-        )
-        test_loader = Data.DataLoader(
-            testset, batch_size=TEST_BATCH_SIZE, shuffle=True, drop_last=True
-        )
+        train_loader = Data.DataLoader(trainset, batch_size=TRAIN_BATCH_SIZE, shuffle=True, drop_last=True)
+        test_loader = Data.DataLoader(testset, batch_size=TEST_BATCH_SIZE, shuffle=True, drop_last=True)
 
         optimizer = torch.optim.Adam(model.parameters(), lr=LEARNING_RATE, amsgrad=True)
 
         if optimizer_scheduler:
             logger.info(
-                "Scheduler step size: %d, Scheduler gamma: %.2f\n"
-                % (scheduler_step_size, cfg["scheduler_gamma"])
+                "Scheduler step size: %d, Scheduler gamma: %.2f\n" % (scheduler_step_size, cfg["scheduler_gamma"])
             )
             # Thanks to @alexcwsmith for the optimized scheduler contribution
             scheduler = ReduceLROnPlateau(
@@ -737,9 +705,7 @@ def train_model(config: str, save_logs: bool = False) -> None:
                 verbose=True,
             )
         else:
-            scheduler = StepLR(
-                optimizer, step_size=scheduler_step_size, gamma=1, last_epoch=-1
-            )
+            scheduler = StepLR(optimizer, step_size=scheduler_step_size, gamma=1, last_epoch=-1)
 
         logger.info("Start training... ")
         for epoch in tqdm(
@@ -817,12 +783,7 @@ def train_model(config: str, save_logs: bool = False) -> None:
                         "model",
                         "best_model",
                         "snapshots",
-                        model_name
-                        + "_"
-                        + cfg["project_name"]
-                        + "_epoch_"
-                        + str(epoch)
-                        + ".pkl",
+                        model_name + "_" + cfg["project_name"] + "_epoch_" + str(epoch) + ".pkl",
                     ),
                 )
 

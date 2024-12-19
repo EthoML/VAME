@@ -333,12 +333,7 @@ def generative_model(
                     os.path.join(
                         path_to_file,
                         "",
-                        str(n_clusters)
-                        + "_"
-                        + segmentation_algorithm
-                        + "_label_"
-                        + session
-                        + ".npy",
+                        str(n_clusters) + "_" + segmentation_algorithm + "_label_" + session + ".npy",
                     )
                 )
                 return random_generative_samples_motif(

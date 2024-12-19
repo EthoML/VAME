@@ -98,9 +98,7 @@ def plot_check_parameter(
         plt.title("Original signal z-scored")
         plt.legend()
 
-    logger.info(
-        "Please run the function with check_parameter=False if you are happy with the results"
-    )
+    logger.info("Please run the function with check_parameter=False if you are happy with the results")
 
 
 def traindata_aligned(
@@ -170,10 +168,7 @@ def traindata_aligned(
 
         if cfg["robust"]:
             iqr_val = iqr(X_z)
-            logger.info(
-                "IQR value: %.2f, IQR cutoff: %.2f"
-                % (iqr_val, cfg["iqr_factor"] * iqr_val)
-            )
+            logger.info("IQR value: %.2f, IQR cutoff: %.2f" % (iqr_val, cfg["iqr_factor"] * iqr_val))
             for i in range(X_z.shape[0]):
                 for marker in range(X_z.shape[1]):
                     if X_z[i, marker] > cfg["iqr_factor"] * iqr_val:
@@ -330,10 +325,7 @@ def traindata_fixed(
 
         if cfg["robust"]:
             iqr_val = iqr(X_z)
-            logger.info(
-                "IQR value: %.2f, IQR cutoff: %.2f"
-                % (iqr_val, cfg["iqr_factor"] * iqr_val)
-            )
+            logger.info("IQR value: %.2f, IQR cutoff: %.2f" % (iqr_val, cfg["iqr_factor"] * iqr_val))
             for i in range(X_z.shape[0]):
                 for marker in range(X_z.shape[1]):
                     if X_z[i, marker] > cfg["iqr_factor"] * iqr_val:
@@ -373,9 +365,7 @@ def traindata_fixed(
 
     else:
         if pose_ref_index is None:
-            raise ValueError(
-                "Please provide a pose reference index for training on fixed data. E.g. [0,5]"
-            )
+            raise ValueError("Please provide a pose reference index for training on fixed data. E.g. [0,5]")
         # save numpy arrays the the test/train info:
         np.save(
             os.path.join(
@@ -493,15 +483,10 @@ def create_trainset(
 
         logger.info("Creating training dataset...")
         if cfg["robust"]:
-            logger.info(
-                "Using robust setting to eliminate outliers! IQR factor: %d"
-                % cfg["iqr_factor"]
-            )
+            logger.info("Using robust setting to eliminate outliers! IQR factor: %d" % cfg["iqr_factor"])
 
         if not fixed:
-            logger.info(
-                "Creating trainset from the vame.egocentrical_alignment() output "
-            )
+            logger.info("Creating trainset from the vame.egocentrical_alignment() output ")
             traindata_aligned(
                 cfg,
                 sessions,
@@ -522,9 +507,7 @@ def create_trainset(
             )
 
         if not check_parameter:
-            logger.info(
-                "A training and test set has been created. Next step: vame.train_model()"
-            )
+            logger.info("A training and test set has been created. Next step: vame.train_model()")
 
     except Exception as e:
         logger.exception(str(e))

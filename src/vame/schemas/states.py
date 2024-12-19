@@ -84,9 +84,7 @@ class MotifVideosFunctionSchema(BaseStateSchema):
         title="Type of video",
         default=".mp4",
     )
-    segmentation_algorithm: SegmentationAlgorithms = Field(
-        title="Segmentation algorithm"
-    )
+    segmentation_algorithm: SegmentationAlgorithms = Field(title="Segmentation algorithm")
     output_video_type: str = Field(
         title="Type of output video",
         default=".mp4",
@@ -95,9 +93,7 @@ class MotifVideosFunctionSchema(BaseStateSchema):
 
 class CommunityFunctionSchema(BaseStateSchema):
     cohort: bool = Field(title="Cohort", default=True)
-    segmentation_algorithm: SegmentationAlgorithms = Field(
-        title="Segmentation algorithm"
-    )
+    segmentation_algorithm: SegmentationAlgorithms = Field(title="Segmentation algorithm")
     cut_tree: int | None = Field(
         title="Cut tree",
         default=None,
@@ -105,9 +101,7 @@ class CommunityFunctionSchema(BaseStateSchema):
 
 
 class CommunityVideosFunctionSchema(BaseStateSchema):
-    segmentation_algorithm: SegmentationAlgorithms = Field(
-        title="Segmentation algorithm"
-    )
+    segmentation_algorithm: SegmentationAlgorithms = Field(title="Segmentation algorithm")
     cohort: bool = Field(title="Cohort", default=True)
     video_type: str = Field(
         title="Type of video",
@@ -120,9 +114,7 @@ class CommunityVideosFunctionSchema(BaseStateSchema):
 
 
 class VisualizationFunctionSchema(BaseStateSchema):
-    segmentation_algorithm: SegmentationAlgorithms = Field(
-        title="Segmentation algorithm"
-    )
+    segmentation_algorithm: SegmentationAlgorithms = Field(title="Segmentation algorithm")
     label: Optional[str] = Field(
         title="Type of labels to visualize",
         default=None,
@@ -130,9 +122,7 @@ class VisualizationFunctionSchema(BaseStateSchema):
 
 
 class GenerativeModelFunctionSchema(BaseStateSchema):
-    segmentation_algorithm: SegmentationAlgorithms = Field(
-        title="Segmentation algorithm"
-    )
+    segmentation_algorithm: SegmentationAlgorithms = Field(title="Segmentation algorithm")
     mode: GenerativeModelModeEnum = Field(
         title="Mode for generating samples",
         default=GenerativeModelModeEnum.sampling,

@@ -27,9 +27,7 @@ def test_pose_segmentation_hmm_files_exists(
         "individual_segmentation": individual_segmentation,
     }
     mock_config["hmm_trained"] = hmm_trained
-    with patch(
-        "vame.analysis.pose_segmentation.read_config", return_value=mock_config
-    ) as mock_read_config:
+    with patch("vame.analysis.pose_segmentation.read_config", return_value=mock_config) as mock_read_config:
         with patch("builtins.input", return_value="yes"):
             vame.segment_session(
                 setup_project_and_train_model["config_path"],
@@ -39,13 +37,7 @@ def test_pose_segmentation_hmm_files_exists(
     file = setup_project_and_train_model["config_data"]["session_names"][0]
     model_name = setup_project_and_train_model["config_data"]["model_name"]
     n_clusters = setup_project_and_train_model["config_data"]["n_clusters"]
-    save_base_path = (
-        Path(project_path)
-        / "results"
-        / file
-        / model_name
-        / f"{segmentation_algorithm}-{n_clusters}"
-    )
+    save_base_path = Path(project_path) / "results" / file / model_name / f"{segmentation_algorithm}-{n_clusters}"
     latent_vector_path = save_base_path / f"latent_vector_{file}.npy"
     motif_usage_path = save_base_path / f"motif_usage_{file}.npy"
 
@@ -54,9 +46,7 @@ def test_pose_segmentation_hmm_files_exists(
 
 
 @pytest.mark.parametrize("segmentation_algorithm", ["hmm", "kmeans"])
-def test_motif_videos_mp4_files_exists(
-    setup_project_and_train_model, segmentation_algorithm
-):
+def test_motif_videos_mp4_files_exists(setup_project_and_train_model, segmentation_algorithm):
     vame.motif_videos(
         setup_project_and_train_model["config_path"],
         segmentation_algorithm=segmentation_algorithm,
@@ -82,9 +72,7 @@ def test_motif_videos_mp4_files_exists(
 
 
 @pytest.mark.parametrize("segmentation_algorithm", ["hmm", "kmeans"])
-def test_motif_videos_avi_files_exists(
-    setup_project_and_train_model, segmentation_algorithm
-):
+def test_motif_videos_avi_files_exists(setup_project_and_train_model, segmentation_algorithm):
     # Check if the files are created
     vame.motif_videos(
         setup_project_and_train_model["config_path"],
@@ -144,9 +132,7 @@ def test_motif_videos_avi_files_exists(
 
 
 @pytest.mark.parametrize("segmentation_algorithm", ["hmm", "kmeans"])
-def test_cohort_community_files_exists(
-    setup_project_and_train_model, segmentation_algorithm
-):
+def test_cohort_community_files_exists(setup_project_and_train_model, segmentation_algorithm):
     # Check if the files are created
     vame.community(
         setup_project_and_train_model["config_path"],
@@ -158,17 +144,10 @@ def test_cohort_community_files_exists(
     project_path = setup_project_and_train_model["config_data"]["project_path"]
     n_clusters = setup_project_and_train_model["config_data"]["n_clusters"]
 
-    base_path = (
-        Path(project_path)
-        / "results"
-        / "community_cohort"
-        / f"{segmentation_algorithm}-{n_clusters}"
-    )
+    base_path = Path(project_path) / "results" / "community_cohort" / f"{segmentation_algorithm}-{n_clusters}"
     cohort_path = base_path / "cohort_transition_matrix.npy"
     community_path = base_path / "cohort_community_label.npy"
-    cohort_segmentation_algorithm_path = (
-        base_path / f"cohort_{segmentation_algorithm}_label.npy"
-    )
+    cohort_segmentation_algorithm_path = base_path / f"cohort_{segmentation_algorithm}_label.npy"
     cohort_community_bag_path = base_path / "cohort_community_bag.npy"
 
     assert cohort_path.exists()
@@ -268,12 +247,7 @@ def test_visualization_output_files(
     project_path = setup_project_and_train_model["config_data"]["project_path"]
 
     save_base_path = (
-        Path(project_path)
-        / "results"
-        / file
-        / model_name
-        / f"{segmentation_algorithm}-{n_clusters}"
-        / "community"
+        Path(project_path) / "results" / file / model_name / f"{segmentation_algorithm}-{n_clusters}" / "community"
     )
     assert len(list(save_base_path.glob(f"umap_vis*{file}.png"))) > 0
 
@@ -316,9 +290,7 @@ def test_report(
         config=setup_project_and_train_model["config_path"],
         segmentation_algorithm=segmentation_algorithm,
     )
-    reports_path = (
-        Path(setup_project_and_train_model["config_data"]["project_path"]) / "reports"
-    )
+    reports_path = Path(setup_project_and_train_model["config_data"]["project_path"]) / "reports"
     assert len(list(reports_path.glob("*.png"))) > 0
 
 

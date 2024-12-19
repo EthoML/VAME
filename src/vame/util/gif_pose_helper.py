@@ -6,7 +6,7 @@ import pandas as pd
 from vame.logging.logger import VameLogger
 from vame.util.data_manipulation import (
     interpol_first_rows_nans,
-    crop_and_flip,
+    crop_and_flip_legacy,
     background,
     read_pose_estimation_file,
 )
@@ -145,9 +145,7 @@ def get_animal_frames(
                 frame = frame - bg
                 frame[frame <= 0] = 0
         except Exception:
-            logger.info(
-                f"Couldn't find a frame in capture.read(). #Frame: {idx + start + lag}"
-            )
+            logger.info(f"Couldn't find a frame in capture.read(). #Frame: {idx + start + lag}")
             continue
 
         # Read coordinates and add border
@@ -191,7 +189,7 @@ def get_animal_frames(
         center, size, theta = rect
 
         # crop image
-        out, shifted_points = crop_and_flip(
+        out, shifted_points = crop_and_flip_legacy(
             rect,
             img,
             pose_list_bordered,

@@ -111,13 +111,13 @@ def create_config_template() -> Tuple[dict, ruamel.yaml.YAML]:
     return (cfg_file, ruamelFile)
 
 
-def read_config(configname: str) -> dict:
+def read_config(config_file: str) -> dict:
     """
     Reads structured config file defining a project.
 
     Parameters
     ----------
-    configname : str
+    config_file : str
         Path to the config file.
 
     Returns
@@ -126,24 +126,21 @@ def read_config(configname: str) -> dict:
         The contents of the config file as a dictionary.
     """
     ruamelFile = ruamel.yaml.YAML()
-    path = Path(configname)
+    path = Path(config_file)
     if os.path.exists(path):
         try:
             with open(path, "r") as f:
                 cfg = ruamelFile.load(f)
-                curr_dir = os.path.dirname(configname)
+                curr_dir = os.path.dirname(config_file)
                 if cfg["project_path"] != curr_dir:
                     cfg["project_path"] = curr_dir
-                    write_config(configname, cfg)
+                    write_config(config_file, cfg)
         except Exception as err:
             if len(err.args) > 2:
-                if (
-                    err.args[2]
-                    == "could not determine a constructor for the tag '!!python/tuple'"
-                ):
+                if err.args[2] == "could not determine a constructor for the tag '!!python/tuple'":
                     with open(path, "r") as ymlfile:
                         cfg = yaml.load(ymlfile, Loader=yaml.SafeLoader)
-                        write_config(configname, cfg)
+                        write_config(config_file, cfg)
                 else:
                     raise
     else:

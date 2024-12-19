@@ -42,9 +42,7 @@ def hierarchy_pos(
         raise TypeError("cannot use hierarchy_pos on a graph that is not a tree")
     if root is None:
         if isinstance(G, nx.DiGraph):
-            root = next(
-                iter(nx.topological_sort(G))
-            )  # allows back compatibility with nx version 1.11
+            root = next(iter(nx.topological_sort(G)))  # allows back compatibility with nx version 1.11
         else:
             root = random.choice(list(G.nodes))
 
@@ -121,9 +119,7 @@ def merge_func(
         for i in range(n_clusters):
             for j in range(n_clusters):
                 try:
-                    cost = motif_norm[i] + motif_norm[j] / np.abs(
-                        transition_matrix[i, j] + transition_matrix[j, i]
-                    )
+                    cost = motif_norm[i] + motif_norm[j] / np.abs(transition_matrix[i, j] + transition_matrix[j, i])
                 except ZeroDivisionError:
                     print(
                         "Error: Transition probabilities between motif "

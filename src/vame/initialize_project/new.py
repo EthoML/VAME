@@ -9,7 +9,7 @@ from vame.schemas.project import ProjectSchema, PoseEstimationFiletype
 from vame.schemas.states import VAMEPipelineStatesSchema
 from vame.logging.logger import VameLogger
 from vame.util.auxiliary import write_config
-from vame.util.video import get_video_frame_rate
+from vame.video.video import get_video_frame_rate
 from vame.io.load_poses import load_pose_estimation
 
 
@@ -110,20 +110,14 @@ def init_new_project(
     for i in videos:
         # Check if it is a folder
         if os.path.isdir(i):
-            vids_in_dir = [
-                os.path.join(i, vp) for vp in os.listdir(i) if video_type in vp
-            ]
+            vids_in_dir = [os.path.join(i, vp) for vp in os.listdir(i) if video_type in vp]
             vids = vids + vids_in_dir
             if len(vids_in_dir) == 0:
                 logger.info(f"No videos found in {i}")
-                logger.info(
-                    f"Perhaps change the video_type, which is currently set to: {video_type}"
-                )
+                logger.info(f"Perhaps change the video_type, which is currently set to: {video_type}")
             else:
                 videos = vids
-                logger.info(
-                    f"{len(vids_in_dir)} videos from the directory {i} were added to the project."
-                )
+                logger.info(f"{len(vids_in_dir)} videos from the directory {i} were added to the project.")
         else:
             if os.path.isfile(i):
                 vids = vids + [i]
@@ -210,9 +204,7 @@ def init_new_project(
 
     unique_num_features = list(set(num_features_list))
     if len(unique_num_features) > 1:
-        raise ValueError(
-            "All pose estimation files must have the same number of features."
-        )
+        raise ValueError("All pose estimation files must have the same number of features.")
 
     if config_kwargs is None:
         config_kwargs = {}

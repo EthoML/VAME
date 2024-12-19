@@ -24,6 +24,4 @@ def get_sessions_from_user_input(
         if user_input in cfg["session_names"]:
             sessions = [user_input]
         else:
-            raise ValueError(
-                "Invalid input. Please enter yes, no, or a valid session name."
-            )
+            raise ValueError("Invalid input. Please enter yes, no, or a valid session name.")

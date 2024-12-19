@@ -250,12 +250,7 @@ def get_motif_labels(
         file_labels = np.load(
             os.path.join(
                 path_to_dir,
-                str(n_clusters)
-                + "_"
-                + segmentation_algorithm
-                + "_label_"
-                + session
-                + ".npy",
+                str(n_clusters) + "_" + segmentation_algorithm + "_label_" + session + ".npy",
             )
         )
         shape = len(file_labels)
@@ -276,12 +271,7 @@ def get_motif_labels(
         file_labels = np.load(
             os.path.join(
                 path_to_dir,
-                str(n_clusters)
-                + "_"
-                + segmentation_algorithm
-                + "_label_"
-                + session
-                + ".npy",
+                str(n_clusters) + "_" + segmentation_algorithm + "_label_" + session + ".npy",
             )
         )[:min_frames]
         community_label.extend(file_labels)
@@ -390,11 +380,7 @@ def create_cohort_community_bag(
                     add = input("Extend list or add in the end? (ext/end)")
                     if add == "ext":
                         motif_idx = int(input("Which motif number? "))
-                        list_idx = int(
-                            input(
-                                "At which position in the list? (pythonic indexing starts at 0) "
-                            )
-                        )
+                        list_idx = int(input("At which position in the list? (pythonic indexing starts at 0) "))
                         community_bag[list_idx].append(motif_idx)
                     if add == "end":
                         motif_idx = int(input("Which motif number? "))
@@ -440,9 +426,7 @@ def get_cohort_community_labels(
         for j in range(len(clust)):
             find_clust = np.where(motif_labels == clust[j])[0]
             community_labels[find_clust] = i
-    community_labels = np.int64(
-        scipy.signal.medfilt(community_labels, median_filter_size)
-    )
+    community_labels = np.int64(scipy.signal.medfilt(community_labels, median_filter_size))
     community_labels_all.append(community_labels)
     return community_labels_all
 
@@ -468,12 +452,7 @@ def save_cohort_community_labels_per_file(
         file_labels = np.load(
             os.path.join(
                 path_to_dir,
-                str(n_clusters)
-                + "_"
-                + segmentation_algorithm
-                + "_label_"
-                + session
-                + ".npy",
+                str(n_clusters) + "_" + segmentation_algorithm + "_label_" + session + ".npy",
             )
         )
         community_labels = get_cohort_community_labels(
@@ -640,9 +619,7 @@ def community(
                 ),
                 cohort_community_bag,
             )
-            with open(
-                os.path.join(path_to_dir, "hierarchy" + ".pkl"), "wb"
-            ) as fp:  # Pickling
+            with open(os.path.join(path_to_dir, "hierarchy" + ".pkl"), "wb") as fp:  # Pickling
                 pickle.dump(cohort_community_bag, fp)
 
             # Added by Luiz - 11/10/2024
@@ -659,9 +636,7 @@ def community(
 
         # # Work in Progress - cohort is False
         else:
-            raise NotImplementedError(
-                "Community analysis for cohort=False is not supported yet."
-            )
+            raise NotImplementedError("Community analysis for cohort=False is not supported yet.")
         #     labels = get_labels(cfg, files, model_name, n_clusters, parametrization)
         #     transition_matrices = compute_transition_matrices(
         #         files,
