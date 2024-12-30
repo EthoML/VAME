@@ -7536,6 +7536,20 @@ a.anchor-link {
 <div class="jp-InputArea jp-Cell-inputArea">
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-ipython3"><pre><span></span><span class="o">%</span><span class="n">load_ext</span> <span class="n">autoreload</span>
+<span class="o">%</span><span class="n">autoreload</span> <span class="mi">2</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="kn">import</span> <span class="nn">pprint</span>
 <span class="kn">from</span> <span class="nn">vame.pipeline</span> <span class="kn">import</span> <span class="n">VAMEPipeline</span>
 <span class="kn">from</span> <span class="nn">vame.util.sample_data</span> <span class="kn">import</span> <span class="n">download_sample_data</span>
@@ -7596,13 +7610,13 @@ a.anchor-link {
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="c1"># Set up your working directory and project name</span>
 <span class="n">working_directory</span> <span class="o">=</span> <span class="s1">'.'</span>
-<span class="n">project_name</span> <span class="o">=</span> <span class="s1">'pipeline_example'</span>
+<span class="n">project_name</span> <span class="o">=</span> <span class="s1">'pipeline_example_0'</span>
 
 <span class="c1"># Customize the configuration for the project</span>
 <span class="n">config_kwargs</span> <span class="o">=</span> <span class="p">{</span>
     <span class="s2">"n_clusters"</span><span class="p">:</span> <span class="mi">15</span><span class="p">,</span>
     <span class="s2">"pose_confidence"</span><span class="p">:</span> <span class="mf">0.9</span><span class="p">,</span>
-    <span class="s2">"max_epochs"</span><span class="p">:</span> <span class="mi">300</span><span class="p">,</span>
+    <span class="s2">"max_epochs"</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span> <span class="c1">#300,</span>
 <span class="p">}</span>
 
 <span class="c1"># Instantiate the pipeline</span>
@@ -7689,11 +7703,25 @@ a.anchor-link {
 <div class="jp-InputArea jp-Cell-inputArea">
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-ipython3"><pre><span></span><span class="n">pipeline</span><span class="o">.</span><span class="n">visualize_prepocessing</span><span class="p">(</span>
-    <span class="n">scatter</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-    <span class="n">timeseries</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<div class="highlight hl-ipython3"><pre><span></span><span class="n">pipeline</span><span class="o">.</span><span class="n">visualize_preprocessing</span><span class="p">(</span>
     <span class="n">show_figure</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
     <span class="n">save_to_file</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-ipython3"><pre><span></span><span class="n">pipeline</span><span class="o">.</span><span class="n">visualize_model_losses</span><span class="p">(</span>
+    <span class="n">save_to_file</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="n">show_figure</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
 <span class="p">)</span>
 </pre></div>
 </div>
@@ -7710,7 +7738,31 @@ a.anchor-link {
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">pipeline</span><span class="o">.</span><span class="n">visualize_umap</span><span class="p">(</span>
     <span class="n">label</span><span class="o">=</span><span class="s2">"community"</span><span class="p">,</span>
     <span class="n">segmentation_algorithm</span><span class="o">=</span><span class="s2">"hmm"</span><span class="p">,</span>
+    <span class="n">show_figure</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
 <span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h2 id="Produce-the-pipeline-report">Produce the pipeline report<a class="anchor-link" href="#Produce-the-pipeline-report">¶</a></h2>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-ipython3"><pre><span></span><span class="n">pipeline</span><span class="o">.</span><span class="n">report</span><span class="p">()</span>
 </pre></div>
 </div>
 </div>
@@ -7734,7 +7786,7 @@ Example: resuming from community clustering step</p>
 <div class="jp-InputArea jp-Cell-inputArea">
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-ipython3"><pre><span></span><span class="n">pipeline</span><span class="o">.</span><span class="n">run_pipeline</span><span class="p">(</span><span class="n">from_step</span><span class="o">=</span><span class="mi">6</span><span class="p">)</span>
+<div class="highlight hl-ipython3"><pre><span></span><span class="n">pipeline</span><span class="o">.</span><span class="n">run_pipeline</span><span class="p">(</span><span class="n">from_step</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
