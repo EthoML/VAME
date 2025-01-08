@@ -414,7 +414,6 @@ def create_cohort_community_bag(
 def get_cohort_community_labels(
     motif_labels: List[np.ndarray],
     cohort_community_bag: list,
-    median_filter_size: int = 7,
 ) -> List[np.ndarray]:
     """
     Transform kmeans/hmm parameterized latent vector motifs into communities.
@@ -426,8 +425,6 @@ def get_cohort_community_labels(
         List of label arrays.
     cohort_community_bag : np.ndarray
         List of community bags. Dimensions: (n_communities, n_clusters_in_community)
-    median_filter_size : int, optional
-        Size of the median filter, in number of frames. Defaults to 7.
 
     Returns
     -------
@@ -442,7 +439,6 @@ def get_cohort_community_labels(
         for j in range(len(clust)):
             find_clust = np.where(motif_labels == clust[j])[0]
             community_labels[find_clust] = i
-    community_labels = np.int64(scipy.signal.medfilt(community_labels, median_filter_size))
     community_labels_all.append(community_labels)
     return community_labels_all
 
