@@ -1,0 +1,4 @@
+# pydoc-markdown==4.8.2
+git+https://github.com/luiztauffer/pydoc-markdown.git@develop
+nbconvert==7.16.4
+mistune==2.0.4

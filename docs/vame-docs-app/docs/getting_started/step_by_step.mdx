@@ -1,0 +1,194 @@
+---
+title: VAME step-by-step
+sidebar_position: 2
+---
+
+The VAME workflow consists of four main steps, plus optional steps to analyse your data:
+1. Initialize project: This is step is responsible by starting the project, getting your pose estimation data into the right format
+2. Preprocess: This step is responsible for cleaning, filtering and aligning the pose estimation data
+3. Train neural network:
+    - Create a training dataset for the VAME deep learning model.
+    - Train a variational autoencoder which is parameterized with recurrent neural network to embed behavioural dynamics.
+    - Evaluate the performance of the trained model based on its reconstruction capabilities
+4. Segment behavior:
+    - Segment pose estimation time series into behavioral motifs, using HMM or K-means.
+    - Group similar motifs into communities, using hierarchical clustering.
+5. Analysis:
+    - Optional: Create motif videos to get insights about the fine grained poses.
+    - Optional: Create community videos to get more insights about behaviour on a hierarchical scale.
+    - Optional: Visualization and projection of latent vectors onto a 2D plane via UMAP.
+    - Optional: Use the generative model (reconstruction decoder) to sample from the learned data distribution, reconstruct random real samples or visualize the cluster centre for validation.
+    - Optional: Create a video of an egocentrically aligned animal + path through the community space.
+
+
+In this tutorial we will show you how to run the VAME workflow using a simple example. The code below can also be found in the `demo.py` script in our Github repository ([link here](https://github.com/EthoML/VAME/blob/main/examples/demo.py)).
+
+:::tip
+Check out also the published VAME Workflow Guide, including more hands-on recommendations [HERE](https://www.nature.com/articles/s42003-022-04080-7#Sec8).
+:::
+
+:::tip
+You can run an entire VAME workflow with just a few lines, using the [Pipeline method](/docs/getting_started/pipeline).
+:::
+
+
+## 0. [Optional] Download input data
+To run VAME you will need a video and a pose estimation file. If you don't have your own data, you download sample data:
+
+```python
+from vame.util.sample_data import download_sample_data
+
+source_software = "DeepLabCut"              # "DeepLabCut", "SLEAP" or "LightningPose"
+ps = download_sample_data(source_software)  # Data will be downloaded to ~/.movement/data/
+videos = [ps["video"]]                      # List of paths to the video files
+poses_estimations = [ps["poses"]]           # List of paths to the pose estimation files
+```
+
+
+## 1. Initialize the project
+VAME organizes around projects. To start a new project, you need to define a few things:
+
+```python
+import vame
+
+working_directory = "."      # The directory where the project will be saved
+project = "my-vame-project"  # The name of the project
+
+# [Optional] Customized configuration for the project
+config_kwargs = {
+    "n_clusters": 15,
+    "pose_confidence": 0.9,
+    "max_epochs": 100,
+}
+
+config_path, config = vame.init_new_project(
+    project_name=project_name,
+    videos=videos,
+    poses_estimations=poses_estimations,
+    source_software=source_software,
+    working_directory=working_directory,
+    config_kwargs=config_kwargs,
+)
+```
+
+This command will create a project folder in the defined working directory with the project name you defined.
+In this folder you can find a config file called [config.yaml](/docs/project-config) which holds the main parameters for the VAME workflow.
+The videos and pose estimation files will be linked or copied to the project folder.
+
+## 2. Preprocess the data
+The preprocessing step is responsible for cleaning, filtering and aligning the pose estimation data.
+
+```python
+vame.preprocessing(
+    config=config,
+    centered_reference_keypoint=centered_reference_keypoint,
+    orientation_reference_keypoint=orientation_reference_keypoint,
+)
+```
+
+Internally, this function will:
+
+### 2.1 Clean low confidence data points
+Pose estimation data points with confidence below the threshold will be cleared and interpolated.
+
+### 2.2 Egocentric alignment
+Based on two reference keypoints, the data will be aligned to an egocentric coordinate system:
+- `centered_reference_keypoint`: The keypoint that will be centered in the frame.
+- `orientation_reference_keypoint`: The keypoint that will be used to determine the rotation of the frame.
+
+By consequence, the `x` and `y` coordinates of the `centered_reference_keypoint` and the `x` coordinate of the `orientation_reference_keypoint` will be set to an array of zeros, and further removed from the dataset.
+
+### 2.3 Clean outliers
+Outliers will be removed based on the interquartile range (IQR) method. This means that data points that are below `Q1 - iqr_factor * IQR` or above `Q3 + iqr_factor * IQR` will be cleared and interpolated.
+
+### 2.4 Savitzky-Golay filter
+The data will be further smoothed using a Savitzky-Golay filter.
+
+
+
+## 3. Train the neural network
+At this point, we will prepare the data for training the VAME model, run the training and evaluate the model.
+
+### 3.1 Create the training dataset
+To create the training dataset, which will put the data in the right format for the VAME model, and split it into training and test sets, you can run:
+
+```python
+vame.create_trainset(config=config)
+```
+
+### 3.2 Training the model
+Training the vame model might take a while depending on the size of your dataset and your machine settings. To train the model you can run:
+
+```python
+vame.train_model(config=config)
+```
+
+### 3.3 Evaluate the model
+THe model evaluation produces two plots, one showing the loss of the model during training and the other showing the reconstruction and future prediction of input sequence.
+
+```python
+vame.evaluate_model(config=config)
+```
+
+## 4. Segment behavior
+Behavioral segmentation in VAME is done in two steps: pose segmentation into motifs and community detection.
+
+### 4.1 Pose segmentation
+To perform pose segmentation you can run:
+```python
+vame.segmentat_session(config=config)
+```
+
+This will perfomr the segmentation using two different algorithms: HMM and K-means. The results will be saved in the project folder.
+
+### 4.2 Community detection
+Community detection is done by grouping similar motifs into communities using hierarchical clustering. To run community detection you can run:
+
+```python
+vame.community(
+    config=config,
+    segmentation_algorithm="hmm",
+    cut_tree=2,
+)
+```
+
+where `segmentation_algorithm` can be either "hmm" or "kmeans" and `cut_tree` is the cut level for the hierarchical clustering.
+
+
+## 5. Visualize and analyze
+
+### 5.1 Creating motif and community videos
+To create motif videos and get insights about the fine grained poses you can run:
+
+```python
+vame.motif_videos(
+    config=config,
+    segmentation_algorithm="hmm",
+    video_type=".mp4",
+)
+```
+
+Create community videos:
+```python
+vame.community_videos(
+    config=config,
+    segmentation_algorithm="hmm",
+    video_type=".mp4",
+)
+```
+
+### 5.2 UMAP visualization
+To visualize and project latent vectors onto a 2D plane via UMAP you can run:
+
+```python
+from vame.visualization.umap import visualize_umap
+
+visualize_umap(
+    config=config,
+    label="motif",
+    segmentation_algorithm="hmm",
+)
+```
+
+where `label` can be either None, "motif" or "community", and `segmentation_algorithm` can be either 'hmm' or 'kmeans'.
+

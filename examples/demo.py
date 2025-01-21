@@ -1,26 +1,21 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Variational Animal Motion Embedding 1.0-alpha Toolbox
-© K. Luxem & P. Bauer, Department of Cellular Neuroscience
-Leibniz Institute for Neurobiology, Magdeburg, Germany
-
-https://github.com/LINCellularNeuroscience/VAME
-Licensed under GNU General Public License v3.0
-"""
-
 import vame
-from pathlib import Path
+
 
 # These paths have to be set manually
-working_directory = './'
-project = 'my-vame-project'
-videos = ['./video-1.mp4']
-poses_estimations = ['./video-1.csv']
+working_directory = "./"
+project = "my-vame-project"
+videos = ["./video-1.mp4"]
+poses_estimations = ["./video-1.csv"]
 
 
 # Step 1.1: Initialize your project
-config = vame.init_new_project(project=project, videos=videos, poses_estimations=poses_estimations, working_directory=working_directory, videotype='.mp4')
+config = vame.init_new_project(
+    project_name=project,
+    videos=videos,
+    poses_estimations=poses_estimations,
+    working_directory=working_directory,
+    video_type=".mp4",
+)
 
 # After the inital creation of your project you can always access the config.yaml file
 # via specifying the path to your project
@@ -35,7 +30,11 @@ vame.egocentric_alignment(config, pose_ref_index=[0, 5])
 vame.csv_to_numpy(config)
 
 # Step 1.3: create the training set for the VAME model
-vame.create_trainset(config, check_parameter=False, pose_ref_index=[0,5])
+vame.create_trainset(
+    config,
+    check_parameter=False,
+    pose_ref_index=[0, 5],
+)
 
 # # Step 2: Train VAME
 vame.train_model(config)
@@ -53,7 +52,7 @@ vame.segment_session(config)
 # # community videos
 
 # # OPTIONAL: Create motif videos to get insights about the fine grained poses
-# vame.motif_videos(config, videoType='.mp4')
+# vame.motif_videos(config, video_type='.mp4')
 
 # # OPTIONAL: Create behavioural hierarchies via community detection
 # vame.community(config, cut_tree=2)

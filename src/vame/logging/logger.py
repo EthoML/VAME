@@ -6,8 +6,7 @@ from datetime import datetime
 
 class VameLogger:
     LOG_FORMAT = (
-        "%(asctime)-15s.%(msecs)d %(levelname)-5s --- [%(threadName)s]"
-        " %(name)-15s : %(lineno)d : %(message)s"
+        "%(asctime)-15s.%(msecs)d %(levelname)-5s --- [%(threadName)s]" " %(name)-15s : %(lineno)d : %(message)s"
     )
     LOG_DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
 
@@ -19,9 +18,7 @@ class VameLogger:
     ):
         self.log_level = log_level
         self.file_handler = None
-        logging.basicConfig(
-            level=log_level, format=self.LOG_FORMAT, datefmt=self.LOG_DATE_FORMAT
-        )
+        logging.basicConfig(level=log_level, format=self.LOG_FORMAT, datefmt=self.LOG_DATE_FORMAT)
         self.logger = logging.getLogger(f"{base_name}")
         if self.logger.hasHandlers():
             self.logger.handlers.clear()
@@ -29,9 +26,7 @@ class VameLogger:
         self.logger.setLevel(self.log_level)
         # Stream handler for logging to stdout
         stream_handler = logging.StreamHandler()
-        stream_handler.setFormatter(
-            logging.Formatter(self.LOG_FORMAT, self.LOG_DATE_FORMAT)
-        )
+        stream_handler.setFormatter(logging.Formatter(self.LOG_FORMAT, self.LOG_DATE_FORMAT))
         self.logger.addHandler(stream_handler)
         self.logger.propagate = False
 
@@ -56,9 +51,7 @@ class VameLogger:
             f.write(f"{line_break}[LOGGING STARTED AT: {handler_datetime}]")
 
         self.file_handler = logging.FileHandler(file_path, mode="a")
-        self.file_handler.setFormatter(
-            logging.Formatter(self.LOG_FORMAT, self.LOG_DATE_FORMAT)
-        )
+        self.file_handler.setFormatter(logging.Formatter(self.LOG_FORMAT, self.LOG_DATE_FORMAT))
         self.logger.addHandler(self.file_handler)
 
     def remove_file_handler(self):
@@ -73,6 +66,7 @@ class TqdmToLogger(io.StringIO):
     Output stream for TQDM which will output to logger module instead of
     the StdOut.
     """
+
     logger = None
     level = None
     buf = ""

@@ -112,3 +112,6 @@ venv_docs/
 
 # mypy
 .mypy_cache/
+
+# Others
+**/pipeline_example/**

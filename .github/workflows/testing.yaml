@@ -5,8 +5,10 @@ on:
     branches:
       - main
       - dev
-      - luiz-modifications
-
+    paths:
+      - '.github/workflows/testing.yaml'
+      - 'src/**'
+      - 'tests/**'
 
 jobs:
   run:
@@ -32,7 +34,7 @@ jobs:
           pip install -r tests/requirements-tests.txt --no-cache-dir
 
       - name: Run tests.
-        run: pytest --cov=src/vame --cov-report=xml --cov-report=term-missing -v
+        run: pytest --cov=src/vame --cov-report=xml --cov-report=term-missing -vx
 
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v4.0.1

@@ -1,25 +1,13 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Variational Animal Motion Embedding 1.0-alpha Toolbox
-© K. Luxem & P. Bauer, Department of Cellular Neuroscience
-Leibniz Institute for Neurobiology, Magdeburg, Germany
-
-https://github.com/LINCellularNeuroscience/VAME
-Licensed under GNU General Public License v3.0
-"""
-
 import os
 import numpy as np
 import pandas as pd
 from pathlib import Path
+
 from vame.util.auxiliary import read_config
 from vame.schemas.states import PoseToNumpyFunctionSchema, save_state
 from vame.logging.logger import VameLogger
-from vame.util.data_manipulation import (
-    interpol_first_rows_nans,
-    read_pose_estimation_file,
-)
+from vame.util.data_manipulation import interpol_first_rows_nans
+from vame.io.load_poses import read_pose_estimation_file
 
 
 logger_config = VameLogger(__name__)
@@ -28,7 +16,7 @@ logger = logger_config.logger
 
 @save_state(model=PoseToNumpyFunctionSchema)
 def pose_to_numpy(
-    config: str,
+    config: dict,
     save_logs=False,
 ) -> None:
     """
@@ -38,8 +26,8 @@ def pose_to_numpy(
 
     Parameters
     ----------
-    config : str
-        Path to the config.yaml file.
+    config : dict
+        Configuration dictionary.
     save_logs : bool, optional
         If True, the logs will be saved to a file, by default False.
 
@@ -49,27 +37,28 @@ def pose_to_numpy(
         If the config.yaml file indicates that the data is not egocentric.
     """
     try:
-        config_file = Path(config).resolve()
-        cfg = read_config(str(config_file))
-
         if save_logs:
-            log_path = Path(cfg["project_path"]) / "logs" / "pose_to_numpy.log"
+            log_path = Path(config["project_path"]) / "logs" / "pose_to_numpy.log"
             logger_config.add_file_handler(str(log_path))
 
-        path_to_file = cfg["project_path"]
-        filename = cfg["video_sets"]
-        confidence = cfg["pose_confidence"]
-        if not cfg["egocentric_data"]:
+        project_path = config["project_path"]
+        sessions = config["session_names"]
+        confidence = config["pose_confidence"]
+        if not config["egocentric_data"]:
             raise ValueError(
                 "The config.yaml indicates that the data is not egocentric. Please check the parameter egocentric_data"
             )
 
-        folder_path = os.path.join(path_to_file, "videos", "pose_estimation")
-        file_type = cfg["file_type"]
-        file_path = os.path.join(folder_path, filename[0] + "." + file_type)
-        paths_to_pose_nwb_series_data = cfg["paths_to_pose_nwb_series_data"]
-        for i, file in enumerate(filename):
-            data, data_mat = read_pose_estimation_file(
+        file_type = config["pose_estimation_filetype"]
+        paths_to_pose_nwb_series_data = config["paths_to_pose_nwb_series_data"]
+        for i, session in enumerate(sessions):
+            file_path = os.path.join(
+                project_path,
+                "data",
+                "raw",
+                session + ".nc",
+            )
+            data, data_mat, ds = read_pose_estimation_file(
                 file_path=file_path,
                 file_type=file_type,
                 path_to_pose_nwb_series_data=(
@@ -96,9 +85,7 @@ def pose_to_numpy(
                 i = interpol_first_rows_nans(i)
 
             positions = np.concatenate(pose_list, axis=1)
-            final_positions = np.zeros(
-                (data_mat.shape[0], int(data_mat.shape[1] / 3) * 2)
-            )
+            final_positions = np.zeros((data_mat.shape[0], int(data_mat.shape[1] / 3) * 2))
 
             jdx = 0
             idx = 0
@@ -109,14 +96,17 @@ def pose_to_numpy(
 
             # save the final_positions array with np.save()
             np.save(
-                os.path.join(path_to_file, "data", file, file + "-PE-seq.npy"),
+                os.path.join(
+                    project_path,
+                    "data",
+                    "processed",
+                    session + "-PE-seq.npy",
+                ),
                 final_positions.T,
             )
             logger.info("conversion from DeepLabCut csv to numpy complete...")
 
-        logger.info(
-            "Your data is now in right format and you can call vame.create_trainset()"
-        )
+        logger.info("Your data is now in right format and you can call vame.create_trainset()")
     except Exception as e:
         logger.exception(f"{e}")
         raise e

@@ -14,3 +14,6 @@ pydantic==2.7.4
 imageio==2.34.1
 imageio-ffmpeg==0.5.1
 pynwb==2.8.1
+tables>=3.10.0
+movement==0.0.20
+# netCDF4>=1.7.2

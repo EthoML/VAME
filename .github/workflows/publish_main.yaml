@@ -1,0 +1,77 @@
+name: Publish from Main
+
+on:
+  push:
+    branches:
+        - main
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install build twine tomli
+
+      - name: Extract version from pyproject.toml
+        id: get_version
+        run: |
+          python -c "import tomli; version=tomli.load(open('pyproject.toml', 'rb'))['project']['version']; print(version)" > version.txt
+          echo "version=$(cat version.txt)" >> $GITHUB_OUTPUT
+
+      - name: Determine Tag Name
+        id: determine_tag
+        run: |
+          version="${{ steps.get_version.outputs.version }}"
+          tag_name="v${version}"
+          echo "tag_name=$tag_name" >> $GITHUB_OUTPUT
+
+      - name: Check if tag exists on GitHub
+        id: check_tag
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const tagName = "${{ steps.determine_tag.outputs.tag_name }}";
+            const { data: tags } = await github.request('GET /repos/{owner}/{repo}/tags', {
+                owner: context.repo.owner,
+                repo: context.repo.repo
+            });
+            const tagExists = tags.some(tag => tag.name === tagName);
+            core.info(`TAG_EXISTS=${tagExists.toString()}`);
+            core.exportVariable('TAG_EXISTS', tagExists.toString());
+
+      - name: Fail if tag already exists
+        if: env.TAG_EXISTS == 'true'
+        run: |
+          echo "Tag ${{ steps.determine_tag.outputs.tag_name }} already exists for this version. Cannot create a new release."
+
+      - name: Build package
+        if: env.TAG_EXISTS == 'false'
+        run: python -m build
+
+      - name: Create GitHub Release
+        if: env.TAG_EXISTS == 'false'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.determine_tag.outputs.tag_name }}
+          name: ${{ steps.determine_tag.outputs.tag_name }}
+          body: "Release for version ${{ steps.determine_tag.outputs.tag_name }}"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish to PyPI
+        if: env.TAG_EXISTS == 'false'
+        env:
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }}
+        run: twine upload dist/*

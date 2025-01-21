@@ -4,7 +4,7 @@ from typing import Optional, Dict
 from pathlib import Path
 import json
 from enum import Enum
-from vame.schemas.project import Parametrizations
+from vame.schemas.project import SegmentationAlgorithms
 
 
 class StatesEnum(str, Enum):
@@ -22,7 +22,7 @@ class GenerativeModelModeEnum(str, Enum):
 
 
 class BaseStateSchema(BaseModel):
-    config: str = Field(title="Configuration file path")
+    config: dict = Field(title="Configuration dictionary")
     execution_state: StatesEnum | None = Field(
         title="Method execution state",
         default=None,
@@ -52,21 +52,16 @@ class EgocentricAlignmentFunctionSchema(BaseStateSchema):
     )
 
 
-class PoseToNumpyFunctionSchema(BaseStateSchema): ...
+class PoseToNumpyFunctionSchema(BaseStateSchema):
+    ...
 
 
 class CreateTrainsetFunctionSchema(BaseStateSchema):
-    pose_ref_index: Optional[list] = Field(
-        title="Pose reference index",
-        default=None,
-    )
-    check_parameter: bool = Field(
-        title="Check parameter",
-        default=False,
-    )
+    ...
 
 
-class TrainModelFunctionSchema(BaseStateSchema): ...
+class TrainModelFunctionSchema(BaseStateSchema):
+    ...
 
 
 class EvaluateModelFunctionSchema(BaseStateSchema):
@@ -76,15 +71,16 @@ class EvaluateModelFunctionSchema(BaseStateSchema):
     )
 
 
-class SegmentSessionFunctionSchema(BaseStateSchema): ...
+class SegmentSessionFunctionSchema(BaseStateSchema):
+    ...
 
 
 class MotifVideosFunctionSchema(BaseStateSchema):
-    videoType: str = Field(
+    video_type: str = Field(
         title="Type of video",
         default=".mp4",
     )
-    parametrization: Parametrizations = Field(title="Parametrization")
+    segmentation_algorithm: SegmentationAlgorithms = Field(title="Segmentation algorithm")
     output_video_type: str = Field(
         title="Type of output video",
         default=".mp4",
@@ -93,7 +89,7 @@ class MotifVideosFunctionSchema(BaseStateSchema):
 
 class CommunityFunctionSchema(BaseStateSchema):
     cohort: bool = Field(title="Cohort", default=True)
-    parametrization: Parametrizations = Field(title="Parametrization")
+    segmentation_algorithm: SegmentationAlgorithms = Field(title="Segmentation algorithm")
     cut_tree: int | None = Field(
         title="Cut tree",
         default=None,
@@ -101,9 +97,9 @@ class CommunityFunctionSchema(BaseStateSchema):
 
 
 class CommunityVideosFunctionSchema(BaseStateSchema):
-    parametrization: Parametrizations = Field(title="Parametrization")
+    segmentation_algorithm: SegmentationAlgorithms = Field(title="Segmentation algorithm")
     cohort: bool = Field(title="Cohort", default=True)
-    videoType: str = Field(
+    video_type: str = Field(
         title="Type of video",
         default=".mp4",
     )
@@ -113,8 +109,8 @@ class CommunityVideosFunctionSchema(BaseStateSchema):
     )
 
 
-class VisualizationFunctionSchema(BaseStateSchema):
-    parametrization: Parametrizations = Field(title="Parametrization")
+class VisualizeUmapFunctionSchema(BaseStateSchema):
+    segmentation_algorithm: SegmentationAlgorithms = Field(title="Segmentation algorithm")
     label: Optional[str] = Field(
         title="Type of labels to visualize",
         default=None,
@@ -122,7 +118,7 @@ class VisualizationFunctionSchema(BaseStateSchema):
 
 
 class GenerativeModelFunctionSchema(BaseStateSchema):
-    parametrization: Parametrizations = Field(title="Parametrization")
+    segmentation_algorithm: SegmentationAlgorithms = Field(title="Segmentation algorithm")
     mode: GenerativeModelModeEnum = Field(
         title="Mode for generating samples",
         default=GenerativeModelModeEnum.sampling,
@@ -166,7 +162,7 @@ class VAMEPipelineStatesSchema(BaseModel):
         title="Community videos",
         default={},
     )
-    visualization: Optional[VisualizationFunctionSchema | Dict] = Field(
+    visualize_umap: Optional[VisualizeUmapFunctionSchema | Dict] = Field(
         title="Visualization",
         default={},
     )
@@ -176,14 +172,11 @@ class VAMEPipelineStatesSchema(BaseModel):
     )
 
 
-def _save_state(model: BaseModel, function_name: str, state: StatesEnum) -> None:
+def _save_state(model: BaseStateSchema, function_name: str, state: StatesEnum) -> None:
     """
     Save the state of the function to the project states json file.
     """
-    config_file_path = Path(model.config)
-    project_path = config_file_path.parent
-    states_file_path = project_path / "states/states.json"
-
+    states_file_path = Path(model.config["project_path"]) / "states" / "states.json"
     with open(states_file_path, "r") as f:
         states = json.load(f)
 
@@ -200,6 +193,7 @@ def save_state(model: BaseModel):
     Decorator responsible for validating function arguments using pydantic and
     saving the state of the called function to the project states json file.
     """
+
     def decorator(func: callable):
         @wraps(func)
         def wrapper(*args, **kwargs):

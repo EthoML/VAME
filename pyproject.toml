@@ -1,7 +1,7 @@
 [project]
 name = "vame-py"
-version = '0.5.1'
-dynamic = ["dependencies"]
+version = '0.7.0'
+dynamic = ["dependencies", "readme"]
 description = "Variational Animal Motion Embedding."
 authors = [{ name = "K. Luxem & " }, { name = "P. Bauer" }]
 requires-python = ">=3.11"
@@ -17,6 +17,7 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools.dynamic]
 dependencies = { file = ["requirements.txt"] }
+readme = { file = 'README.md', content-type = 'text/markdown' }
 
 [tool.setuptools]
 package-dir = { "" = "src" }
@@ -27,3 +28,6 @@ where = ["src"]
 [tool.pytest.ini_options]
 pythonpath = [".", "src"]
 testpaths = ["tests"]
+
+[tool.black]
+line-length = 119

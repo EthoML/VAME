@@ -1,0 +1,11 @@
+loaders:
+  - type: python
+    search_path: ["../src/vame"]
+processors:
+  - type: numpy
+renderer:
+  type: docusaurus
+  docs_base_path: vame-docs-app/docs
+  relative_output_path: reference
+  relative_sidebar_path: sidebar.json
+  sidebar_top_level_label: null

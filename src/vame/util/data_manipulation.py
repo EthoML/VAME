@@ -1,124 +1,16 @@
+from typing import List, Tuple
 import numpy as np
-from typing import List, Tuple, Optional
+import pandas as pd
 import cv2 as cv
 import os
-from scipy.ndimage import median_filter
 import tqdm
+from scipy.ndimage import median_filter
+
 from vame.logging.logger import VameLogger
-from pynwb import NWBHDF5IO
-from pynwb.file import NWBFile
-from hdmf.utils import LabelledDict
-from vame.schemas.project import PoseEstimationFiletype
-import pandas as pd
-from pathlib import Path
 
 
 logger_config = VameLogger(__name__)
 logger = logger_config.logger
-
-
-def get_pose_data_from_nwb_file(
-    nwbfile: NWBFile,
-    path_to_pose_nwb_series_data: str,
-) -> LabelledDict:
-    """
-    Get pose data from nwb file using a inside path to the nwb data.
-
-    Parameters:
-    ----------
-    nwbfile : NWBFile)
-        NWB file object.
-    path_to_pose_nwb_series_data : str
-        Path to the pose data inside the nwb file.
-
-    Returns
-    -------
-    LabelledDict
-        Pose data.
-    """
-    if not path_to_pose_nwb_series_data:
-        raise ValueError("Path to pose nwb series data is required.")
-    pose_data = nwbfile
-    for key in path_to_pose_nwb_series_data.split("/"):
-        if isinstance(pose_data, dict):
-            pose_data = pose_data.get(key)
-            continue
-        pose_data = getattr(pose_data, key)
-    return pose_data
-
-
-def get_dataframe_from_pose_nwb_file(
-    file_path: str,
-    path_to_pose_nwb_series_data: str,
-) -> pd.DataFrame:
-    """
-    Get pose data from nwb file and return it as a pandas DataFrame.
-
-    Parameters
-    ----------
-    file_path : str
-        Path to the nwb file.
-    path_to_pose_nwb_series_data : str
-        Path to the pose data inside the nwb file.
-
-    Returns
-    -------
-    pd.DataFrame
-        Pose data as a pandas DataFrame.
-    """
-    with NWBHDF5IO(file_path, "r") as io:
-        nwbfile = io.read()
-        # TODO - change to use variable as path to pose estimation in nwb
-        pose = get_pose_data_from_nwb_file(nwbfile, path_to_pose_nwb_series_data)
-        dataframes = []
-        for label, pose_series in pose.items():
-            data = pose_series.data[:]
-            confidence = pose_series.confidence[:]
-            df = pd.DataFrame(data, columns=[f"{label}_x", f"{label}_y"])
-            df[f"likelihood_{label}"] = confidence
-            dataframes.append(df)
-        final_df = pd.concat(dataframes, axis=1)
-    return final_df
-
-
-def read_pose_estimation_file(
-    file_path: str,
-    file_type: PoseEstimationFiletype,
-    path_to_pose_nwb_series_data: Optional[str] = None,
-) -> Tuple[pd.DataFrame, np.ndarray]:
-    """
-    Read pose estimation file.
-
-    Parameters
-    ----------
-    file_path : str
-        Path to the pose estimation file.
-    file_type : PoseEstimationFiletype
-        Type of the pose estimation file. Supported types are 'csv' and 'nwb'.
-    path_to_pose_nwb_series_data : str, optional
-        Path to the pose data inside the nwb file, by default None
-
-    Returns
-    -------
-    Tuple[pd.DataFrame, np.ndarray]
-        Tuple containing the pose estimation data as a pandas DataFrame and a numpy array.
-    """
-    if file_type == PoseEstimationFiletype.csv:
-        data = pd.read_csv(file_path, skiprows=2, index_col=0)
-        if "coords" in data:
-            data = data.drop(columns=["coords"], axis=1)
-        data_mat = pd.DataFrame.to_numpy(data)
-        return data, data_mat
-    elif file_type == PoseEstimationFiletype.nwb:
-        if not path_to_pose_nwb_series_data:
-            raise ValueError("Path to pose nwb series data is required.")
-        data = get_dataframe_from_pose_nwb_file(
-            file_path=file_path,
-            path_to_pose_nwb_series_data=path_to_pose_nwb_series_data,
-        )
-        data_mat = pd.DataFrame.to_numpy(data)
-        return data, data_mat
-    raise ValueError(f"Filetype {file_type} not supported")
 
 
 def consecutive(
@@ -163,25 +55,25 @@ def nan_helper(y: np.ndarray) -> Tuple:
     return np.isnan(y), lambda z: z.nonzero()[0]
 
 
-def interpol_all_nans(arr: np.ndarray) -> np.ndarray:
-    """
-    Interpolates all NaN values in the given array.
+# def interpol_all_nans(arr: np.ndarray) -> np.ndarray:
+#     """
+#     Interpolates all NaN values in the given array.
 
-    Parameters
-    ----------
-    arr : np.ndarray
-        Input array containing NaN values.
+#     Parameters
+#     ---------
+#     arr : np.ndarray
+#         Input array containing NaN values.
 
-    Returns
-    -------
-    np.ndarray
-        Array with NaN values replaced by interpolated values.
-    """
-    y = np.transpose(arr)
-    nans, x = nan_helper(y)
-    y[nans] = np.interp(x(nans), x(~nans), y[~nans])
-    arr = np.transpose(y)
-    return arr
+#     Returns
+#     -------
+#     np.ndarray
+#         Array with NaN values replaced by interpolated values.
+#     """
+#     y = np.transpose(arr)
+#     nans, x = nan_helper(y)
+#     y[nans] = np.interp(x(nans), x(~nans), y[~nans])
+#     arr = np.transpose(y)
+#     return arr
 
 
 def interpol_first_rows_nans(arr: np.ndarray) -> np.ndarray:
@@ -207,7 +99,33 @@ def interpol_first_rows_nans(arr: np.ndarray) -> np.ndarray:
     return arr
 
 
-def crop_and_flip(
+def interpolate_nans_with_pandas(data: np.ndarray) -> np.ndarray:
+    """
+    Interpolate NaN values along the time axis of a 3D NumPy array using Pandas.
+
+    Parameters
+    ----------
+    data : numpy.ndarray
+        Input 3D array of shape (time, keypoints, space).
+
+    Returns
+    -------
+    numpy.ndarray:
+        Array with NaN values interpolated.
+    """
+    for kp in range(data.shape[1]):  # Loop over keypoints dimension
+        for sp in range(data.shape[2]):  # Loop over space dimension (x, y)
+            series = pd.Series(data[:, kp, sp])
+            series_interpolated = series.interpolate(
+                method="linear",
+                limit_direction="both",
+                axis=0,
+            )
+            data[:, kp, sp] = series_interpolated.values
+    return data
+
+
+def crop_and_flip_legacy(
     rect: Tuple,
     src: np.ndarray,
     points: List[np.ndarray],
@@ -286,9 +204,9 @@ def crop_and_flip(
 
 
 def background(
-    path_to_file: str,
-    filename: str,
-    file_format: str = ".mp4",
+    project_path: str,
+    session: str,
+    video_path: str,
     num_frames: int = 1000,
     save_background: bool = True,
 ) -> np.ndarray:
@@ -297,12 +215,12 @@ def background(
 
     Parameters
     ----------
-    path_to_file : str
-        Path to the directory containing the video files.
-    filename : str
-        Name of the video file.
-    file_format : str, optional
-        Format of the video file. Defaults to '.mp4'.
+    project_path : str
+        Path to the project directory.
+    session : str
+        Name of the session.
+    video_path : str
+        Path to the video file.
     num_frames : int, optional
         Number of frames to use for background computation. Defaults to 1000.
 
@@ -311,15 +229,11 @@ def background(
     np.ndarray
         Background image.
     """
-    capture = cv.VideoCapture(
-        os.path.join(path_to_file, "videos", filename + file_format)
-    )
+    logger.info("Computing background image ...")
+
+    capture = cv.VideoCapture(video_path)
     if not capture.isOpened():
-        raise Exception(
-            "Unable to open video file: {0}".format(
-                os.path.join(path_to_file, "videos", filename + file_format)
-            )
-        )
+        raise Exception(f"Unable to open video file: {video_path}")
 
     frame_count = int(capture.get(cv.CAP_PROP_FRAME_COUNT))
     ret, frame = capture.read()
@@ -329,7 +243,7 @@ def background(
     for i in tqdm.tqdm(
         range(num_frames),
         disable=not True,
-        desc="Compute background image for video %s" % filename,
+        desc="Compute background image for session %s" % session,
     ):
         rand = np.random.choice(frame_count, replace=False)
         capture.set(1, rand)
@@ -343,7 +257,12 @@ def background(
 
     if save_background:
         np.save(
-            os.path.join(path_to_file, "videos", filename + "-background.npy"),
+            os.path.join(
+                project_path,
+                "data",
+                "processed",
+                session + "-background.npy",
+            ),
             background,
         )
 

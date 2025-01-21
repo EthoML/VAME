@@ -1,0 +1,94 @@
+---
+title: Project Configuration
+sidebar_position: 3
+slug: /project-config
+---
+
+The project configuration YAML file exists in the root of the project folder and holds the main parameters for the VAME workflow. The configuration file is created when initializing a new project with the [init_new_project](/docs/reference/initialize_project/new) function.
+
+The configuration file contains the following parameters:
+
+### Project parameters
+- **project_name** (`str`): The name of the project.
+- **creation_datetime** (`str`): The creation datetime of the project.
+- **model_name** (`str`): The name of the model.
+- **n_clusters** (`int`): The number of clusters.
+- **pose_confidence** (`float`): The pose confidence.
+- **project_path** (`str`): The path to the project.
+- **session_names** (`List[str]`): The names of the sessions.
+- **pose_estimation_filetype** (`PoseEstimationFiletype`): The pose estimation filetype.
+- **paths_to_pose_nwb_series_data** (`Optional[List[str]]`): Paths to pose series data in nwb files.
+
+### Data
+- **all_data** (`str`): All data.
+- **egocentric_data** (`bool`): Egocentric data.
+- **robust** (`bool`): Robust data.
+- **iqr_factor** (`int`): IQR factor.
+- **axis** (`str`): Axis.
+- **savgol_filter** (`bool`): Savgol filter.
+- **savgol_length** (`int`): Savgol length.
+- **savgol_order** (`int`): Savgol order.
+- **test_fraction** (`float`): Test fraction.
+
+### RNN model general hyperparameters
+- **pretrained_model** (`str`): Pretrained model.
+- **pretrained_weights** (`bool`): Pretrained weights.
+- **num_features** (`int`): Number of features.
+- **batch_size** (`int`): Batch size.
+- **max_epochs** (`int`): Max epochs.
+- **model_snapshot** (`int`): Model snapshot.
+- **model_convergence** (`int`): Model convergence.
+- **transition_function** (`str`): Transition function.
+- **beta** (`float`): Beta.
+- **beta_norm** (`bool`): Beta normalization.
+- **zdims** (`int`): Zdims.
+- **learning_rate** (`float`): Learning rate.
+- **time_window** (`int`): Time window.
+- **prediction_decoder** (`int`): Prediction decoder.
+- **prediction_steps** (`int`): Prediction steps.
+- **noise** (`bool`): Noise.
+- **scheduler** (`int`): Scheduler.
+- **scheduler_step_size** (`int`): Scheduler step size.
+- **scheduler_gamma** (`float`): Scheduler gamma.
+- **scheduler_threshold** (`float`): Scheduler threshold.
+- **softplus** (`bool`): Softplus.
+
+### Segmentation
+- **segmentation_algorithms** (`List[SegmentationAlgorithms]`): Segmentation algorithms.
+- **hmm_trained** (`bool`): HMM trained.
+- **load_data** (`str`): Load data.
+- **individual_segmentation** (`bool`): Individual segmentation.
+- **random_state_kmeans** (`int`): Random state kmeans.
+- **n_init_kmeans** (`int`): N init kmeans.
+
+### Video writer
+- **length_of_motif_video** (`int`): Length of motif video.
+
+### UMAP parameter
+- **min_dist** (`float`): Min dist.
+- **n_neighbors** (`int`): N neighbors.
+- **random_state** (`int`): Random state.
+- **num_points** (`int`): Num points.
+
+### RNN encoder hyperparameters
+- **hidden_size_layer_1** (`int`): Hidden size layer 1.
+- **hidden_size_layer_2** (`int`): Hidden size layer 2.
+- **dropout_encoder** (`float`): Dropout encoder.
+
+### RNN reconstruction hyperparameters
+- **hidden_size_rec** (`int`): Hidden size rec.
+- **dropout_rec** (`float`): Dropout rec.
+- **n_layers** (`int`): N layers.
+
+### RNN prediction hyperparameters
+- **hidden_size_pred** (`int`): Hidden size pred.
+- **dropout_pred** (`float`): Dropout pred.
+
+### RNN loss hyperparameters
+- **mse_reconstruction_reduction** (`str`): MSE reconstruction reduction.
+- **mse_prediction_reduction** (`str`): MSE prediction reduction.
+- **kmeans_loss** (`int`): Kmeans loss.
+- **kmeans_lambda** (`float`): Kmeans lambda.
+- **anneal_function** (`str`): Anneal function.
+- **kl_start** (`int`): KL start.
+- **annealtime** (`int`): Annealtime.

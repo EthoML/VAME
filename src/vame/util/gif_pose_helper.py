@@ -1,25 +1,14 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Variational Animal Motion Embedding 1.0-alpha Toolbox
-© K. Luxem & P. Bauer, Department of Cellular Neuroscience
-Leibniz Institute for Neurobiology, Magdeburg, Germany
-
-https://github.com/LINCellularNeuroscience/VAME
-Licensed under GNU General Public License v3.0
-"""
-
 import os
-import h5py
 import tqdm
-import scipy
 import cv2 as cv
 import numpy as np
 import pandas as pd
+
 from vame.logging.logger import VameLogger
+from vame.io.load_poses import read_pose_estimation_file
 from vame.util.data_manipulation import (
     interpol_first_rows_nans,
-    crop_and_flip,
+    crop_and_flip_legacy,
     background,
 )
 
@@ -30,7 +19,7 @@ logger = logger_config.logger
 
 def get_animal_frames(
     cfg: dict,
-    filename: str,
+    session: str,
     pose_ref_index: list,
     start: int,
     length: int,
@@ -41,29 +30,61 @@ def get_animal_frames(
     """
     Extracts frames of an animal from a video file and returns them as a list.
 
-    Args:
-        cfg (dict): Configuration dictionary containing project information.
-        filename (str): Name of the video file.
-        pose_ref_index (list): List of reference coordinate indices for alignment.
-        start (int): Starting frame index.
-        length (int): Number of frames to extract.
-        subtract_background (bool): Whether to subtract background or not.
-        file_format (str, optional): Format of the video file. Defaults to '.mp4'.
-        crop_size (tuple, optional): Size of the cropped area. Defaults to (300, 300).
+    Parameters
+    ----------
+    cfg : dict
+        Configuration dictionary containing project information.
+    session : str
+        Name of the session.
+    pose_ref_index : list
+        List of reference coordinate indices for alignment.
+    start : int
+        Starting frame index.
+    length : int
+        Number of frames to extract.
+    subtract_background : bool
+        Whether to subtract background or not.
+    file_format : str, optional
+        Format of the video file. Defaults to '.mp4'.
+    crop_size : tuple, optional
+        Size of the cropped area. Defaults to (300, 300).
 
-    Returns:
-        list: List of extracted frames.
+    Returns
+    -------
+    list:
+        List of extracted frames.
     """
-    path_to_file = cfg["project_path"]
+    project_path = cfg["project_path"]
     time_window = cfg["time_window"]
     lag = int(time_window / 2)
-    # read out data
-    data = pd.read_csv(
-        os.path.join(path_to_file, "videos", "pose_estimation", filename + ".csv"),
-        skiprows=2,
+
+    video_path = os.path.join(
+        project_path,
+        "data",
+        "raw",
+        session + file_format,
     )
-    data_mat = pd.DataFrame.to_numpy(data)
-    data_mat = data_mat[:, 1:]
+
+    # read out data
+    # data = pd.read_csv(
+    #     os.path.join(
+    #         path_to_file,
+    #         "videos",
+    #         "pose_estimation",
+    #         session + ".csv",
+    #     ),
+    #     skiprows=2,
+    # )
+    # data_mat = pd.DataFrame.to_numpy(data)
+    # data_mat = data_mat[:, 1:]
+
+    file_path = os.path.join(
+        project_path,
+        "data",
+        "raw",
+        session + ".nc",
+    )
+    data, data_mat, ds = read_pose_estimation_file(file_path=file_path)
 
     # get the coordinates for alignment from data table
     pose_list = []
@@ -85,11 +106,21 @@ def get_animal_frames(
         try:
             logger.info("Loading background image ...")
             bg = np.load(
-                os.path.join(path_to_file, "videos", filename + "-background.npy")
+                os.path.join(
+                    project_path,
+                    "data",
+                    "processed",
+                    session + "-background.npy",
+                )
             )
         except Exception:
             logger.info("Can't find background image... Calculate background image...")
-            bg = background(path_to_file, filename, file_format, save_background=True)
+            bg = background(
+                project_path=project_path,
+                session=session,
+                video_path=video_path,
+                save_background=True,
+            )
 
     images = []
     points = []
@@ -102,15 +133,9 @@ def get_animal_frames(
     for i in pose_list:
         i = interpol_first_rows_nans(i)
 
-    capture = cv.VideoCapture(
-        os.path.join(path_to_file, "videos", filename + file_format)
-    )
+    capture = cv.VideoCapture(video_path)
     if not capture.isOpened():
-        raise Exception(
-            "Unable to open video file: {0}".format(
-                os.path.join(path_to_file, "videos", filename + +file_format)
-            )
-        )
+        raise Exception(f"Unable to open video file: {video_path}")
 
     for idx in tqdm.tqdm(range(length), disable=not True, desc="Align frames"):
         try:
@@ -121,11 +146,7 @@ def get_animal_frames(
                 frame = frame - bg
                 frame[frame <= 0] = 0
         except Exception:
-            logger.info(
-                "Couldn't find a frame in capture.read(). #Frame: %d" % idx
-                + start
-                + lag
-            )
+            logger.info(f"Couldn't find a frame in capture.read(). #Frame: {idx + start + lag}")
             continue
 
         # Read coordinates and add border
@@ -169,10 +190,12 @@ def get_animal_frames(
         center, size, theta = rect
 
         # crop image
-        out, shifted_points = crop_and_flip(
-            rect, img, pose_list_bordered, pose_flip_ref
+        out, shifted_points = crop_and_flip_legacy(
+            rect,
+            img,
+            pose_list_bordered,
+            pose_flip_ref,
         )
-
         images.append(out)
         points.append(shifted_points)
 

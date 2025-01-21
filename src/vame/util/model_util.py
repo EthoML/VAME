@@ -1,8 +1,4 @@
 import os
-import yaml
-import ruamel.yaml
-from pathlib import Path
-from typing import Tuple
 import torch
 from vame.logging.logger import VameLogger
 from vame.model.rnn_model import RNN_VAE
@@ -20,7 +16,7 @@ def load_model(cfg: dict, model_name: str, fixed: bool = True) -> RNN_VAE:
         model_name (str): Name of the model.
         fixed (bool): Fixed or variable length sequences.
 
-    Returns:
+    Returns
         RNN_VAE: Loaded VAME model.
     """
     # load Model
@@ -31,7 +27,7 @@ def load_model(cfg: dict, model_name: str, fixed: bool = True) -> RNN_VAE:
     NUM_FEATURES = cfg["num_features"]
 
     if not fixed:
-        NUM_FEATURES = NUM_FEATURES - 2
+        NUM_FEATURES = NUM_FEATURES - 3
     hidden_size_layer_1 = cfg["hidden_size_layer_1"]
     hidden_size_layer_2 = cfg["hidden_size_layer_2"]
     hidden_size_rec = cfg["hidden_size_rec"]
@@ -69,7 +65,7 @@ def load_model(cfg: dict, model_name: str, fixed: bool = True) -> RNN_VAE:
                 cfg["project_path"],
                 "model",
                 "best_model",
-                model_name + "_" + cfg["Project"] + ".pkl",
+                model_name + "_" + cfg["project_name"] + ".pkl",
             )
         )
     )
