@@ -473,7 +473,7 @@ def test(
 
     logger.info(
         "Test loss: {:.3f}, MSE-Loss: {:.3f}, KL-Loss: {:.3f}, Kmeans-Loss: {:.3f}, loss: {:.3f}".format(
-            avg_test_loss
+            avg_test_loss,
             avg_mse_loss,
             BETA * kl_weight * avg_kullback_loss, # order of operations error..?
             kl_weight * avg_kmeans_losses, # order of operations error..?
@@ -812,8 +812,8 @@ def train_model(
                 'kmeans_losses_' : kmeans_losses,
                 'kl_losses_' : kl_losses,
                 'weight_values_' : weight_values,
-                'mse_train_losseses_' : mse_train_losseses,
-                'mse_test_losseses_' : mse_test_losseses,
+                'mse_train_losseses_' : mse_train_losses,
+                'mse_test_losseses_' : mse_test_losses,
                 'total_losses_' : total_losses,
                 'fut_losses_' : fut_losses
             }
