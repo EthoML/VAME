@@ -295,15 +295,15 @@ def train(
     loss = 0.0
     seq_len_half = int(seq_len / 2)
 
-    for idx, data_item in enumerate(train_loader):
+    for data_item in train_loader:
         data_item = Variable(data_item)
         data_item = data_item.permute(0, 2, 1)
         if use_gpu:
             data = data_item[:, :seq_len_half, :].type("torch.FloatTensor").cuda()
             fut = data_item[:, seq_len_half : seq_len_half + future_steps, :].type("torch.FloatTensor").cuda()
         else:
-            data = data_item[:, :seq_len_half, :].type("torch.FloatTensor").to()
-            fut = data_item[:, seq_len_half : seq_len_half + future_steps, :].type("torch.FloatTensor").to()
+            data = data_item[:, :seq_len_half, :].type("torch.FloatTensor")
+            fut = data_item[:, seq_len_half : seq_len_half + future_steps, :].type("torch.FloatTensor")
 
         if noise is True:
             data_gaussian = gaussian(data, True, seq_len_half)
@@ -343,36 +343,44 @@ def train(
 
     # be sure scheduler is called before optimizer in >1.1 pytorch
     scheduler.step(loss)
+    num_batches = len(train_loader)
+
+    avg_train_loss = train_loss / num_batches
+    avg_mse_loss = mse_loss / num_batches
+    avg_kullback_loss = kullback_loss / num_batches
+    avg_kmeans_losses = kmeans_losses / num_batches
+    avg_fut_loss = 0.0
 
     if future_decoder:
+        avg_fut_loss = fut_loss / num_batches
         logger.info(
             "Train loss: {:.3f}, MSE-Loss: {:.3f}, MSE-Future-Loss {:.3f}, KL-Loss: {:.3f}, Kmeans-Loss: {:.3f}, weight: {:.2f}".format(
-                train_loss / idx,
-                mse_loss / idx,
-                fut_loss / idx,
-                BETA * kl_weight * kullback_loss / idx,
-                kl_weight * kmeans_losses / idx,
+                avg_train_loss,
+                avg_mse_loss,
+                avg_fut_loss,
+                BETA * kl_weight * avg_kullback_loss,
+                kl_weight * avg_kmeans_losses,
                 kl_weight,
             )
         )
     else:
         logger.info(
             "Train loss: {:.3f}, MSE-Loss: {:.3f}, KL-Loss: {:.3f}, Kmeans-Loss: {:.3f}, weight: {:.2f}".format(
-                train_loss / idx,
-                mse_loss / idx,
-                BETA * kl_weight * kullback_loss / idx,
-                kl_weight * kmeans_losses / idx,
+                avg_train_loss,
+                avg_mse_loss,
+                BETA * kl_weight * avg_kullback_loss,
+                kl_weight * avg_kmeans_losses,
                 kl_weight,
             )
         )
 
     return (
         kl_weight,
-        train_loss / idx,
-        kl_weight * kmeans_losses / idx,
-        kullback_loss / idx,
-        mse_loss / idx,
-        fut_loss / idx,
+        avg_train_loss,
+        kl_weight * avg_kmeans_losses,
+        avg_kullback_loss,
+        avg_mse_loss,
+        avg_fut_loss,
     )
 
 
@@ -426,48 +434,54 @@ def test(
     mse_loss = 0.0
     kullback_loss = 0.0
     kmeans_losses = 0.0
-    loss = 0.0
+    total_loss = 0.0
     seq_len_half = int(seq_len / 2)
+    num_batches = len(test_loader)
 
     with torch.no_grad():
-        for idx, data_item in enumerate(test_loader):
+        for data_item in test_loader:
             # we're only going to infer, so no autograd at all required
             data_item = Variable(data_item)
             data_item = data_item.permute(0, 2, 1)
             if use_gpu:
                 data = data_item[:, :seq_len_half, :].type("torch.FloatTensor").cuda()
             else:
-                data = data_item[:, :seq_len_half, :].type("torch.FloatTensor").to()
+                data = data_item[:, :seq_len_half, :].type("torch.FloatTensor")
 
             if future_decoder:
                 recon_images, _, latent, mu, logvar = model(data)
-                rec_loss = reconstruction_loss(data, recon_images, mse_red)
-                kl_loss = kullback_leibler_loss(mu, logvar)
-                kmeans_loss = cluster_loss(latent.T, kloss, klmbda, bsize)
-                loss = rec_loss + BETA * kl_weight * kl_loss + kl_weight * kmeans_loss
-
             else:
                 recon_images, latent, mu, logvar = model(data)
-                rec_loss = reconstruction_loss(data, recon_images, mse_red)
-                kl_loss = kullback_leibler_loss(mu, logvar)
-                kmeans_loss = cluster_loss(latent.T, kloss, klmbda, bsize)
-                loss = rec_loss + BETA * kl_weight * kl_loss + kl_weight * kmeans_loss
-
+            
+            rec_loss = reconstruction_loss(data, recon_images, mse_red)
+            kl_loss = kullback_leibler_loss(mu, logvar)
+            kmeans_loss = cluster_loss(latent.T, kloss, klmbda, bsize)
+            loss = rec_loss + BETA * kl_weight * kl_loss + kl_weight * kmeans_loss
             # torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm = 5)
 
             test_loss += loss.item()
             mse_loss += rec_loss.item()
             kullback_loss += kl_loss.item()
             kmeans_losses += kmeans_loss.item()
+            total_loss += loss
+    
+    avg_test_loss = test_loss / num_batches
+    avg_mse_loss = mse_loss / num_batches
+    avg_kullback_loss = kullback_loss / num_batches
+    avg_kmeans_losses = kmeans_losses / num_batches
+    avg_loss = total_loss / num_batches
+
     logger.info(
-        "Test loss: {:.3f}, MSE-Loss: {:.3f}, KL-Loss: {:.3f}, Kmeans-Loss: {:.3f}".format(
-            test_loss / idx,
-            mse_loss / idx,
-            BETA * kl_weight * kullback_loss / idx,
-            kl_weight * kmeans_losses / idx,
+        "Test loss: {:.3f}, MSE-Loss: {:.3f}, KL-Loss: {:.3f}, Kmeans-Loss: {:.3f}, loss: {:.3f}".format(
+            avg_test_loss
+            avg_mse_loss,
+            BETA * kl_weight * avg_kullback_loss, # order of operations error..?
+            kl_weight * avg_kmeans_losses, # order of operations error..?
+            avg_loss
         )
     )
-    return mse_loss / idx, test_loss / idx, kl_weight * kmeans_losses
+    return avg_loss, avg_mse_loss, avg_test_loss, kl_weight * kmeans_losses
+    # why not use loss..?
 
 
 @save_state(model=TrainModelFunctionSchema)
@@ -592,45 +606,31 @@ def train_model(
         kmeans_losses = []
         kl_losses = []
         weight_values = []
-        mse_losses = []
+        mse_train_losses = []
+        mse_test_losses = []
+        total_losses = []
         fut_losses = []
 
         torch.manual_seed(SEED)
         RNN = RNN_VAE
+        torch.cuda.manual_seed(SEED)
+        model = RNN(
+                TEMPORAL_WINDOW,
+                ZDIMS,
+                NUM_FEATURES,
+                FUTURE_DECODER,
+                FUTURE_STEPS,
+                hidden_size_layer_1,
+                hidden_size_layer_2,
+                hidden_size_rec,
+                hidden_size_pred,
+                dropout_encoder,
+                dropout_rec,
+                dropout_pred,
+                softplus,
+            )
         if CUDA:
-            torch.cuda.manual_seed(SEED)
-            model = RNN(
-                TEMPORAL_WINDOW,
-                ZDIMS,
-                NUM_FEATURES,
-                FUTURE_DECODER,
-                FUTURE_STEPS,
-                hidden_size_layer_1,
-                hidden_size_layer_2,
-                hidden_size_rec,
-                hidden_size_pred,
-                dropout_encoder,
-                dropout_rec,
-                dropout_pred,
-                softplus,
-            ).cuda()
-        else:  # cpu support ...
-            torch.cuda.manual_seed(SEED)
-            model = RNN(
-                TEMPORAL_WINDOW,
-                ZDIMS,
-                NUM_FEATURES,
-                FUTURE_DECODER,
-                FUTURE_STEPS,
-                hidden_size_layer_1,
-                hidden_size_layer_2,
-                hidden_size_rec,
-                hidden_size_pred,
-                dropout_encoder,
-                dropout_rec,
-                dropout_pred,
-                softplus,
-            ).to()
+            model = model.cuda()
 
         if pretrained_weights:
             try:
@@ -687,8 +687,8 @@ def train_model(
             temporal_window=TEMPORAL_WINDOW,
         )
 
-        train_loader = Data.DataLoader(trainset, batch_size=TRAIN_BATCH_SIZE, shuffle=True, drop_last=True)
-        test_loader = Data.DataLoader(testset, batch_size=TEST_BATCH_SIZE, shuffle=True, drop_last=True)
+        train_loader = Data.DataLoader(trainset, batch_size=TRAIN_BATCH_SIZE, shuffle=True, drop_last=True, num_workers = 8)
+        test_loader = Data.DataLoader(testset, batch_size=TEST_BATCH_SIZE, shuffle=True, drop_last=True, num_workers = 8)
 
         optimizer = torch.optim.Adam(model.parameters(), lr=LEARNING_RATE, amsgrad=True)
 
@@ -717,7 +717,7 @@ def train_model(
             file=tqdm_logger_stream,
         ):
             # print("Epoch: %d" %epoch)
-            weight, train_loss, km_loss, kl_loss, mse_loss, fut_loss = train(
+            weight, train_loss, km_loss, kl_loss, mse_train_loss, fut_loss = train(
                 train_loader,
                 epoch,
                 model,
@@ -737,7 +737,7 @@ def train_model(
                 TRAIN_BATCH_SIZE,
                 noise,
             )
-            current_loss, test_loss, test_list = test(
+            current_loss, mse_test_loss, test_loss, test_list = test(
                 test_loader,
                 model,
                 BETA,
@@ -756,7 +756,9 @@ def train_model(
             kmeans_losses.append(km_loss)
             kl_losses.append(kl_loss)
             weight_values.append(weight)
-            mse_losses.append(mse_loss)
+            mse_train_losses.append(mse_train_loss)
+            mse_test_losses.append(mse_test_loss)
+            total_losses.append(current_loss)
             fut_losses.append(fut_loss)
 
             # save best model
@@ -804,78 +806,28 @@ def train_model(
                 break
 
             # save logged losses
-            np.save(
+            loss_dict = {
+                'train_losses_': train_losses,
+                'test_losses_': test_losses,
+                'kmeans_losses_' : kmeans_losses,
+                'kl_losses_' : kl_losses,
+                'weight_values_' : weight_values,
+                'mse_train_losseses_' : mse_train_losseses,
+                'mse_test_losseses_' : mse_test_losseses,
+                'total_losses_' : total_losses,
+                'fut_losses_' : fut_losses
+            }
+            for name, loss in loss_dict.items():
+                np.save(
                 os.path.join(
                     cfg["project_path"],
                     "model",
                     "model_losses",
-                    "train_losses_" + model_name,
-                ),
-                train_losses,
-            )
-            np.save(
-                os.path.join(
-                    cfg["project_path"],
-                    "model",
-                    "model_losses",
-                    "test_losses_" + model_name,
-                ),
-                test_losses,
-            )
-            np.save(
-                os.path.join(
-                    cfg["project_path"],
-                    "model",
-                    "model_losses",
-                    "kmeans_losses_" + model_name,
-                ),
-                kmeans_losses,
-            )
-            np.save(
-                os.path.join(
-                    cfg["project_path"],
-                    "model",
-                    "model_losses",
-                    "kl_losses_" + model_name,
-                ),
-                kl_losses,
-            )
-            np.save(
-                os.path.join(
-                    cfg["project_path"],
-                    "model",
-                    "model_losses",
-                    "weight_values_" + model_name,
-                ),
-                weight_values,
-            )
-            np.save(
-                os.path.join(
-                    cfg["project_path"],
-                    "model",
-                    "model_losses",
-                    "mse_train_losses_" + model_name,
-                ),
-                mse_losses,
-            )
-            np.save(
-                os.path.join(
-                    cfg["project_path"],
-                    "model",
-                    "model_losses",
-                    "mse_test_losses_" + model_name,
-                ),
-                current_loss,
-            )
-            np.save(
-                os.path.join(
-                    cfg["project_path"],
-                    "model",
-                    "model_losses",
-                    "fut_losses_" + model_name,
-                ),
-                fut_losses,
-            )
+                    f"{name}" + model_name,
+                    ),
+                    loss,
+                )
+                
             logger.info("\n")
 
         if convergence < cfg["model_convergence"]:
