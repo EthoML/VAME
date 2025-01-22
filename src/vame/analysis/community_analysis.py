@@ -11,12 +11,12 @@ from vame.analysis.tree_hierarchy import (
     graph_to_tree,
     bag_nodes_by_cutline,
 )
-from vame.util.data_manipulation import consecutive
 from vame.util.cli import get_sessions_from_user_input
 from vame.visualization.community import draw_tree
 from vame.schemas.states import save_state, CommunityFunctionSchema
 from vame.schemas.project import SegmentationAlgorithms
 from vame.logging.logger import VameLogger
+from vame.analysis.pose_segmentation import get_motif_usage
 
 
 logger_config = VameLogger(__name__)
@@ -97,125 +97,15 @@ def get_transition_matrix(
         transition_matrix = np.nan_to_num(transition_matrix)
     return transition_matrix
 
-
-def fill_motifs_with_zero_counts(
-    unique_motif_labels: np.ndarray,
-    motif_counts: np.ndarray,
-    n_clusters: int,
-) -> np.ndarray:
-    """
-    Find motifs that never occur in the dataset, and fill the motif_counts array with zeros for those motifs.
-    Example 1:
-        - unique_motif_labels = [0, 1, 3, 4]
-        - motif_counts = [10, 20, 30, 40],
-        - n_clusters = 5
-        - the function will return [10, 20, 0, 30, 40].
-    Example 2:
-        - unique_motif_labels = [0, 1, 3, 4]
-        - motif_counts = [10, 20, 30, 40],
-        - n_clusters = 6
-        - the function will return [10, 20, 0, 30, 40, 0].
-
-    Parameters
-    ----------
-    unique_motif_labels : np.ndarray
-        Array of unique motif labels.
-    motif_counts : np.ndarray
-        Array of motif counts (in number of frames).
-    n_clusters : int
-        Number of clusters.
-
-    Returns
-    -------
-    np.ndarray
-        List of motif counts (in number of frame) with 0's for motifs that never happened.
-    """
-    cons = consecutive(unique_motif_labels)
-    usage_list = list(motif_counts)
-    if len(cons) != 1:  # if missing motif is in the middle of the list
-        logger.info("Go")
-        if 0 not in cons[0]:
-            first_id = cons[0][0]
-            for k in range(first_id):
-                usage_list.insert(k, 0)
-
-        for i in range(len(cons) - 1):
-            a = cons[i + 1][0]
-            b = cons[i][-1]
-            d = (a - b) - 1
-            for j in range(1, d + 1):
-                index = cons[i][-1] + j
-                usage_list.insert(index, 0)
-        if len(usage_list) < n_clusters:
-            usage_list.insert(n_clusters, 0)
-
-    elif len(cons[0]) != n_clusters:  # if missing motif is at the front or end of list
-        # diff = n_clusters - cons[0][-1]
-        usage_list = list(motif_counts)
-        if cons[0][0] != 0:  # missing motif at front of list
-            usage_list.insert(0, 0)
-        else:  # missing motif at end of list
-            usage_list.insert(n_clusters - 1, 0)
-
-    if len(usage_list) < n_clusters:  # if there's more than one motif missing
-        for k in range(len(usage_list), n_clusters):
-            usage_list.insert(k, 0)
-
-    usage = np.array(usage_list)
-    return usage
-
-
-def augment_motif_timeseries(
-    labels: np.ndarray,
-    n_clusters: int,
-) -> Tuple[np.ndarray, np.ndarray]:
-    """
-    Augment motif time series by filling zero motifs.
-
-    Parameters
-    ----------
-    labels : np.ndarray
-        Original array of labels.
-    n_clusters : int
-        Number of clusters.
-
-    Returns
-    -------
-    Tuple[np.ndarray, np.ndarray]
-        Tuple with:
-            - Array of labels augmented with motifs that never occurred, artificially inputed
-            at the end of the original labels array
-            - Indices of the motifs that never occurred.
-    """
-    augmented_labels = labels.copy()
-    unique_motif_labels, motif_counts = np.unique(augmented_labels, return_counts=True)
-    augmented_motif_counts = fill_motifs_with_zero_counts(
-        unique_motif_labels=unique_motif_labels,
-        motif_counts=motif_counts,
-        n_clusters=n_clusters,
-    )
-    motifs_with_zero_counts = np.where(augmented_motif_counts == 0)[0]
-    logger.info(f"Zero motifs: {motifs_with_zero_counts}")
-    # TODO - this seems to be filling the labels array with random motifs that have zero counts
-    # is this intended? and why?
-    idx = -1
-    for i in range(len(motifs_with_zero_counts)):
-        for j in range(20):
-            x = np.random.choice(motifs_with_zero_counts)
-            augmented_labels[idx] = x
-            idx -= 1
-    return augmented_labels, motifs_with_zero_counts
-
-
 def get_motif_labels(
     config: dict,
     sessions: List[str],
     model_name: str,
     n_clusters: int,
     segmentation_algorithm: str,
-) -> np.ndarray:
+) -> Tuple[np.ndarray, np.ndarray]:
     """
-    Get motif labels for given files.
+    Get motif labels and motif counts for the entire cohort.
 
     Parameters
     ----------
@@ -232,8 +122,10 @@ def get_motif_labels(
 
     Returns
     -------
-    np.ndarray
-        Array of community labels (integers).
+    Tuple [np.ndarray, np.ndarray]
+        Tuple with:
+            - Array of motif labels (integers) of the entire cohort
+            - Array of motif counts of the entire cohort
     """
     # TODO  - this is limiting the number of frames to the minimum number of frames in all files
     # Is this intended behavior? and why?
@@ -250,15 +142,19 @@ def get_motif_labels(
         file_labels = np.load(
             os.path.join(
                 path_to_dir,
-                str(n_clusters) + "_" + segmentation_algorithm + "_label_" + session + ".npy",
+                str(n_clusters)
+                + "_"
+                + segmentation_algorithm
+                + "_label_"
+                + session
+                + ".npy",
             )
         )
         shape = len(file_labels)
         shapes.append(shape)
     shapes = np.array(shapes)
-    min_frames = min(shapes)
 
-    community_label = []
+    cohort_motif_labels = []
     for session in sessions:
         path_to_dir = os.path.join(
             config["project_path"],
@@ -271,12 +167,19 @@ def get_motif_labels(
         file_labels = np.load(
             os.path.join(
                 path_to_dir,
-                str(n_clusters) + "_" + segmentation_algorithm + "_label_" + session + ".npy",
+                str(n_clusters)
+                + "_"
+                + segmentation_algorithm
+                + "_label_"
+                + session
+                + ".npy",
             )
-        )[:min_frames]
-        community_label.extend(file_labels)
-    community_label = np.array(community_label)
-    return community_label
+        )
+        cohort_motif_labels.extend(file_labels) #add each element to community_label for example [1,2,3] instead of [1, [2,3]] #RENAME TO MOTIF_LABELS
+    cohort_motif_labels = np.array(cohort_motif_labels) 
+    cohort_motif_counts = get_motif_usage(cohort_motif_labels, n_clusters)
+
+    return cohort_motif_labels, cohort_motif_counts 
 
 
 def compute_transition_matrices(
@@ -566,47 +469,74 @@ def community(
                     segmentation_algorithm + "-" + str(n_clusters),
                 )
             )
-
+            
             if not path_to_dir.exists():
                 path_to_dir.mkdir(parents=True, exist_ok=True)
 
-            motif_labels = get_motif_labels(
+            #STEP 1
+            cohort_motif_labels, cohort_motif_counts = get_motif_labels(
                 config=config,
                 sessions=sessions,
                 model_name=model_name,
                 n_clusters=n_clusters,
                 segmentation_algorithm=segmentation_algorithm,
             )
-            augmented_labels, motifs_with_zero_counts = augment_motif_timeseries(
-                labels=motif_labels,
-                n_clusters=n_clusters,
+            np.save(
+                os.path.join(
+                    path_to_dir,
+                    "cohort_" + segmentation_algorithm + "_labels" + ".npy",
+                ),
+                cohort_motif_labels,
             )
+            logger.info(f"Cohort motif labels from {segmentation_algorithm} saved")
+            np.save(
+                os.path.join(
+                    path_to_dir,
+                    "cohort_" + segmentation_algorithm + "_counts" + ".npy",
+                ),
+                cohort_motif_counts,
+            )
+            logger.info(f"Cohort motif counts from {segmentation_algorithm} saved")
+            logger.info(cohort_motif_counts)
+
+            #STEP 2
             _, trans_mat_full, _ = get_adjacency_matrix(
-                labels=augmented_labels,
+                labels=cohort_motif_labels,
                 n_clusters=n_clusters,
             )
-            cohort_community_bag = create_cohort_community_bag(
-                config=config,
-                motif_labels=motif_labels,
-                trans_mat_full=trans_mat_full,
-                cut_tree=cut_tree,
-                n_clusters=n_clusters,
-                segmentation_algorithm=segmentation_algorithm,
-            )
-            community_labels_all = get_cohort_community_labels(
-                motif_labels=motif_labels,
-                cohort_community_bag=cohort_community_bag,
-            )
-
-            # convert cohort_community_bag to dtype object numpy array because it is an inhomogeneous list
-            cohort_community_bag = np.array(cohort_community_bag, dtype=object)
-
             np.save(
                 os.path.join(
                     path_to_dir,
                     "cohort_transition_matrix" + ".npy",
                 ),
                 trans_mat_full,
+            )
+            logger.info("Cohort transition matrix saved")
+
+            #STEP 3
+            cohort_community_bag = create_cohort_community_bag(
+                config=config,
+                motif_labels=cohort_motif_labels,
+                trans_mat_full=trans_mat_full,
+                cut_tree=cut_tree,
+                n_clusters=n_clusters,
+                segmentation_algorithm=segmentation_algorithm,
+            )
+            # convert cohort_community_bag to dtype object numpy array because it is an inhomogeneous list
+            cohort_community_bag = np.array(cohort_community_bag, dtype=object)
+            np.save(
+                os.path.join(
+                    path_to_dir,
+                    "cohort_community_bag" + ".npy",
+                ),
+                cohort_community_bag,
+            )
+            logger.info("Community bag saved")
+
+            #STEP 4
+            community_labels_all = get_cohort_community_labels(
+                motif_labels=cohort_motif_labels,
+                cohort_community_bag=cohort_community_bag,
             )
             np.save(
                 os.path.join(
@@ -615,20 +545,9 @@ def community(
                 ),
                 community_labels_all,
             )
-            np.save(
-                os.path.join(
-                    path_to_dir,
-                    "cohort_" + segmentation_algorithm + "_label" + ".npy",
-                ),
-                motif_labels,
-            )
-            np.save(
-                os.path.join(
-                    path_to_dir,
-                    "cohort_community_bag" + ".npy",
-                ),
-                cohort_community_bag,
-            )
+            logger.info("Community labels saved")
+            
+
             with open(os.path.join(path_to_dir, "hierarchy" + ".pkl"), "wb") as fp:  # Pickling
                 pickle.dump(cohort_community_bag, fp)
 
