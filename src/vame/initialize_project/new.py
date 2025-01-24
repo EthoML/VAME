@@ -16,8 +16,6 @@ from vame.io.load_poses import load_pose_estimation
 logger_config = VameLogger(__name__)
 logger = logger_config.logger
 
-logger.info(f"Name test--------------------" )
-
 def init_new_project(
     project_name: str,
     videos: List[str],
