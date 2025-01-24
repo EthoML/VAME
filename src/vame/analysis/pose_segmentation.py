@@ -155,7 +155,7 @@ def same_segmentation(
         Tuple of labels, cluster centers, and motif usages.
     """
     # List of arrays containing each session's motif labels #[SRM, 10/28/24], recommend rename this and similar variables to allsessions_labels
-    labels = [] #List of array containing each session's motif labels
+    labels = []
     cluster_centers = []  # List of arrays containing each session's cluster centers
     motif_usages = []  # List of arrays containing each session's motif usages
 
@@ -204,10 +204,6 @@ def same_segmentation(
         motif_usage = get_motif_usage(label[idx : idx + file_len], n_clusters)
         motif_usages.append(motif_usage)
         idx += file_len  # updating the session start index
-
-        #SAVE SESSION DATA HERE? if so then do we need to return any values?
-        #we need to save the data for ind_segmentation, so might be better to write a saving function
-        #to pass the generated data and session# as parameters
 
     return labels, cluster_centers, motif_usages
 
@@ -318,31 +314,31 @@ def segment_session(
         fixed = config["egocentric_data"]
         segmentation_algorithms = config["segmentation_algorithms"]
         ind_seg = config["individual_segmentation"]
-        use_gpu = torch.cuda.is_available()
-        if use_gpu:
-            logger.info("Using CUDA")
-            logger.info("GPU active: {}".format(torch.cuda.is_available()))
-            logger.info("GPU used: {}".format(torch.cuda.get_device_name(0)))
-        else:
-            logger.info("CUDA is not working! Attempting to use the CPU...")
-            torch.device("cpu")
+
         logger.info("Pose segmentation for VAME model: %s \n" % model_name)
         logger.info(f"Segmentation algorithms: {segmentation_algorithms}")
 
         for seg in segmentation_algorithms:
             logger.info(f"Running pose segmentation using {seg} algorithm...")
-            #Check if each session results path exists
             for session in config["session_names"]:
-                session_results_path = os.path.join(
-                                            str(project_path),
-                                            "results",
-                                            session,
-                                            model_name,
-                                            "",
-                                        ) #what is this last ""?
-                if not os.path.exists(session_results_path):
-                    os.mkdir(session_results_path)
-            #end of session loop
+                if not os.path.exists(
+                    os.path.join(
+                        str(project_path),
+                        "results",
+                        session,
+                        model_name,
+                        "",
+                    )
+                ):
+                    os.mkdir(
+                        os.path.join(
+                            str(project_path),
+                            "results",
+                            session,
+                            model_name,
+                            "",
+                        )
+                    )
 
             # Get sessions
             if config["all_data"] in ["Yes", "yes"]:
@@ -353,21 +349,28 @@ def segment_session(
                     action_message="run segmentation",
                 )
 
-            
+            use_gpu = torch.cuda.is_available()
+            if use_gpu:
+                logger.info("Using CUDA")
+                logger.info("GPU active: {}".format(torch.cuda.is_available()))
+                logger.info("GPU used: {}".format(torch.cuda.get_device_name(0)))
+            else:
+                logger.info("CUDA is not working! Attempting to use the CPU...")
+                torch.device("cpu")
 
             if not os.path.exists(
                 os.path.join(
                     str(project_path),
                     "results",
-                    sessions[0], #why are we just looking at the first index?
+                    sessions[0],
                     model_name,
                     seg + "-" + str(n_clusters),
                     "",
                 )
-            ): #why are we checking this?
+            ):
                 new = True
                 model = load_model(config, model_name, fixed)
-                latent_vectors = embedd_latent_vectors( 
+                latent_vectors = embedd_latent_vectors(
                     config,
                     sessions,
                     model,
@@ -396,22 +399,31 @@ def segment_session(
                         n_clusters=n_clusters,
                         segmentation_algorithm=seg,
                     )
-                    logger.info("first mention of same segmentation")
-                    logger.info("segmentation method applied for {session}")
 
-            else: #else results session[0] path exists
+            else:
                 logger.info(f"\nSegmentation with {n_clusters} k-means clusters already exists for model {model_name}")
 
-                flag = input(
-                    "WARNING: A segmentation for the chosen model and cluster size already exists! \n"
-                    "Do you want to continue? A new segmentation will be computed! (yes/no) "
-                )
-                flag = "yes"
+                if os.path.exists(
+                    os.path.join(
+                        str(project_path),
+                        "results",
+                        sessions[0],
+                        model_name,
+                        seg + "-" + str(n_clusters),
+                        "",
+                    )
+                ):
+                    flag = input(
+                        "WARNING: A segmentation for the chosen model and cluster size already exists! \n"
+                        "Do you want to continue? A new segmentation will be computed! (yes/no) "
+                    )
+                else:
+                    flag = "yes"
 
                 if flag == "yes":
                     new = True
-                    latent_vectors = [] #list of session latent vectors
-                    for session in sessions: #session loop to build latent_vector list
+                    latent_vectors = []
+                    for session in sessions:
                         path_to_latent_vector = os.path.join(
                             str(project_path),
                             "results",
@@ -427,7 +439,6 @@ def segment_session(
                             )
                         )
                         latent_vectors.append(latent_vector)
-                        logger.info(f"Latent vector appended for {session}")
 
                     if ind_seg:
                         logger.info(
@@ -452,59 +463,75 @@ def segment_session(
                             n_clusters=n_clusters,
                             segmentation_algorithm=seg,
                         )
-                        logger.info("second mention of same segmentation")
-                        logger.info(f"segmentation of latent vectors applied for {session}")
                 else:
                     logger.info("No new segmentation has been calculated.")
                     new = False
 
             if new:
-                # saving session data #potentially move this into a saving function to call
+                # saving session data
                 for idx, session in enumerate(sessions):
-                    # logger.info(
-                    #     os.path.join(
-                    #         project_path,
-                    #         "results",
-                    #         session,
-                    #         "",
-                    #         model_name,
-                    #         seg + "-" + str(n_clusters),
-                    #         "",
-                    #     )
-                    # )
-                    session_results_path = os.path.join(
-                                                str(project_path),
-                                                "results",
-                                                session,
-                                                model_name,
-                                                seg + "-" + str(n_clusters),
-                                                "",
-                                            ) #double check what the extra "" after session does
-                    logger.info(session_results_path)
-                    if not os.path.exists(session_results_path):
+                    logger.info(
+                        os.path.join(
+                            project_path,
+                            "results",
+                            session,
+                            "",
+                            model_name,
+                            seg + "-" + str(n_clusters),
+                            "",
+                        )
+                    )
+                    if not os.path.exists(
+                        os.path.join(
+                            project_path,
+                            "results",
+                            session,
+                            model_name,
+                            seg + "-" + str(n_clusters),
+                            "",
+                        )
+                    ):
                         try:
-                            os.mkdir(session_results_path)
+                            os.mkdir(
+                                os.path.join(
+                                    project_path,
+                                    "results",
+                                    session,
+                                    "",
+                                    model_name,
+                                    seg + "-" + str(n_clusters),
+                                    "",
+                                )
+                            )
                         except OSError as error:
                             logger.error(error)
 
+                    save_data = os.path.join(
+                        str(project_path),
+                        "results",
+                        session,
+                        model_name,
+                        seg + "-" + str(n_clusters),
+                        "",
+                    )
                     np.save(
                         os.path.join(
-                            session_results_path,
+                            save_data,
                             str(n_clusters) + "_" + seg + "_label_" + session,
                         ),
                         labels[idx],
                     )
                     if seg == "kmeans":
                         np.save(
-                            os.path.join(session_results_path, "cluster_center_" + session),
+                            os.path.join(save_data, "cluster_center_" + session),
                             cluster_center[idx],
                         )
                     np.save(
-                        os.path.join(session_results_path, "latent_vector_" + session),
+                        os.path.join(save_data, "latent_vector_" + session),
                         latent_vectors[idx],
                     )
                     np.save(
-                        os.path.join(session_results_path, "motif_usage_" + session),
+                        os.path.join(save_data, "motif_usage_" + session),
                         motif_usages[idx],
                     )
 
