@@ -16,7 +16,6 @@ from vame.io.load_poses import load_pose_estimation
 logger_config = VameLogger(__name__)
 logger = logger_config.logger
 
-
 def init_new_project(
     project_name: str,
     videos: List[str],
@@ -84,11 +83,13 @@ def init_new_project(
     """
     creation_datetime = datetime.now(timezone.utc).isoformat(timespec="seconds")
     project_path = Path(working_directory).resolve() / project_name
+    # Check if project exists
     if project_path.exists():
         logger.info('Project "{}" already exists!'.format(project_path))
         projconfigfile = os.path.join(str(project_path), "config.yaml")
         return projconfigfile, read_config(projconfigfile)
 
+    #  Paths
     data_path = project_path / "data"
     data_raw_path = data_path / "raw"
     data_processed_path = data_path / "processed"
@@ -96,6 +97,7 @@ def init_new_project(
     model_path = project_path / "model"
     model_evaluate_path = model_path / "evaluate"
     model_pretrained_path = model_path / "pretrained_model"
+    # Make dirs from path
     for p in [
         data_path,
         data_raw_path,
@@ -108,23 +110,26 @@ def init_new_project(
         p.mkdir(parents=True)
         logger.info('Created "{}"'.format(p))
 
-    vids = []
-    for i in videos:
-        # Check if it is a folder
-        if os.path.isdir(i):
-            vids_in_dir = [os.path.join(i, vp) for vp in os.listdir(i) if video_type in vp]
-            vids = vids + vids_in_dir
-            if len(vids_in_dir) == 0:
-                logger.info(f"No videos found in {i}")
-                logger.info(f"Perhaps change the video_type, which is currently set to: {video_type}")
-            else:
-                videos = vids
-                logger.info(f"{len(vids_in_dir)} videos from the directory {i} were added to the project.")
-        else:
-            if os.path.isfile(i):
-                vids = vids + [i]
-            videos = vids
+    videos_paths = []
+    for video in videos:
+        # Check video files
+        if os.path.isdir(video):
+            vids_in_dir = [
+                Path(video, vp).resolve() 
+                for vp in os.listdir(video) 
+                if video_type in vp
+            ]
+            vids.extend(vids_in_dir)
 
+            if vids_in_dir:
+                logger.info(f"{len(vids_in_dir)} videos from the directory {video} were added to the project.")
+            else:
+                logger.info(f"No videos found in {video}")
+                logger.info(f"Perhaps change the video_type, which is currently set to: {video_type}")
+
+        elif os.path.isfile(video):
+            vids.append(Path(video).resolve())
+    
     pose_estimations_paths = []
     for pose_estimation_path in poses_estimations:
         if os.path.isdir(pose_estimation_path):
@@ -163,10 +168,8 @@ def init_new_project(
         )
 
     # Session names
-    videos_paths = [Path(vp).resolve() for vp in videos]
-    session_names = []
-    for s in videos_paths:
-        session_names.append(s.stem)
+    session_names = [s.stem for s in video_paths]
+
 
     # # Creates directories under project/data/processed/
     # dirs_processed_data = [data_processed_path / Path(i.stem) for i in videos_paths]
@@ -174,7 +177,7 @@ def init_new_project(
     #     p.mkdir(parents=True, exist_ok=True)
 
     # Creates directories under project/results/
-    dirs_results = [results_path / Path(i.stem) for i in videos_paths]
+    dirs_results = [results_path / Path(video_file.stem) for video_file in videos_paths]
     for p in dirs_results:
         p.mkdir(parents=True, exist_ok=True)
 
@@ -192,26 +195,35 @@ def init_new_project(
         fps = get_video_frame_rate(str(videos_paths[0]))
 
     logger.info("Copying pose estimation raw data...\n")
+    
     num_features_list = []
-    for pes_path, video_path in zip(pose_estimations_paths, videos_paths):
-        ds = load_pose_estimation(
-            pose_estimation_file=pes_path,
-            video_file=video_path,
-            fps=fps,
-            source_software=source_software,
-        )
-        output_name = data_raw_path / Path(video_path).stem
-        ds.to_netcdf(
-            path=f"{output_name}.nc",
-            engine="scipy",
-        )
-        num_features_list.append(ds.space.shape[0] * ds.keypoints.shape[0])
+    zip(pose_estimations_paths, videos_paths)
+    for session_name in session_names:
+        # Match files to session number
+        session_num = int(extract_session_number(session_name))
+        pes_path = find_matching_session_files(pose_estimations_paths, session_num)[0]
+        video_path = find_matching_session_files(video_path, session_num)[0]
+        if pes_path and video_path:
+            ds = load_pose_estimation(
+                pose_estimation_file=pes_path,
+                video_file=video_path,
+                fps=fps,
+                source_software=source_software,
+            )
+            output_name = data_raw_path /session_name
+            ds.to_netcdf(
+                path=f"{output_name}.nc",
+                engine="scipy",
+            )
+            num_features_list.append(ds.space.shape[0] * ds.keypoints.shape[0])
 
-        output_processed_name = data_processed_path / Path(video_path).stem
-        ds.to_netcdf(
-            path=f"{output_processed_name}_processed.nc",
-            engine="scipy",
-        )
+            output_processed_name = data_processed_path / session_name
+            ds.to_netcdf(
+                path=f"{output_processed_name}_processed.nc",
+                engine="scipy",
+            )
+        else:
+            logger.info(f"Could not find matching video and pose estimation files for Session{session_num}.")
 
     unique_num_features = list(set(num_features_list))
     if len(unique_num_features) > 1:
