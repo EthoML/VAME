@@ -168,7 +168,7 @@ def init_new_project(
         )
 
     # Session names
-    session_names = [s.stem for s in video_paths]
+    session_names = [s.stem for s in videos_paths]
 
 
     # # Creates directories under project/data/processed/
