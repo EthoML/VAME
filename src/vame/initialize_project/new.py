@@ -119,7 +119,7 @@ def init_new_project(
                 for vp in os.listdir(video) 
                 if video_type in vp
             ]
-            vids.extend(vids_in_dir)
+            videos_paths.extend(vids_in_dir)
 
             if vids_in_dir:
                 logger.info(f"{len(vids_in_dir)} videos from the directory {video} were added to the project.")
@@ -128,7 +128,7 @@ def init_new_project(
                 logger.info(f"Perhaps change the video_type, which is currently set to: {video_type}")
 
         elif os.path.isfile(video):
-            vids.append(Path(video).resolve())
+            videos_paths.append(Path(video).resolve())
     
     pose_estimations_paths = []
     for pose_estimation_path in poses_estimations:
