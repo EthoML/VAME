@@ -1,7 +1,7 @@
 import cv2
 from typing import List
 import numpy as np
-
+import re
 
 def get_video_frame_rate(video_path):
     video = cv2.VideoCapture(video_path)
@@ -11,8 +11,7 @@ def get_video_frame_rate(video_path):
     video.release()
     return frame_rate
 
-
-def extract_session_number(filename:str, pattern = r'(?:Session)0*(\d+)\D'):
+def extract_session_number(filename:str, pattern = r'(?:Session)0*(\d+)\D?'):
     """
     Takes a filename and finds a match based on a regex pattern string
 
@@ -50,10 +49,9 @@ def find_matching_session_files(files:list, session_num)-> list:
     list
         list of files with the matching session number
     """
-    pattern = rf'(Session)0*({session_num})\D'
-    matches = [f for f in files if re.findall(pattern, f, flags=re.I)]
+    pattern = rf'(Session)0*({session_num})\D?'
+    matches = [f for f in files if re.findall(pattern, str(f), flags=re.I)]
     return matches
-
 
 # def play_aligned_video(
 #     a: List[np.ndarray],
