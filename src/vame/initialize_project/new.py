@@ -9,13 +9,12 @@ from vame.schemas.project import ProjectSchema, PoseEstimationFiletype
 from vame.schemas.states import VAMEPipelineStatesSchema
 from vame.logging.logger import VameLogger
 from vame.util.auxiliary import write_config, read_config
-from vame.video.video import get_video_frame_rate
+from vame.video.video import get_video_frame_rate, extract_session_number, find_matching_session_files
 from vame.io.load_poses import load_pose_estimation
 
 
 logger_config = VameLogger(__name__)
 logger = logger_config.logger
-
 def init_new_project(
     project_name: str,
     videos: List[str],
@@ -110,7 +109,7 @@ def init_new_project(
         p.mkdir(parents=True)
         logger.info('Created "{}"'.format(p))
 
-    videos_paths = []
+    video_paths = []
     for video in videos:
         # Check video files
         if os.path.isdir(video):
@@ -119,7 +118,7 @@ def init_new_project(
                 for vp in os.listdir(video) 
                 if video_type in vp
             ]
-            vids.extend(vids_in_dir)
+            video_paths.extend(vids_in_dir)
 
             if vids_in_dir:
                 logger.info(f"{len(vids_in_dir)} videos from the directory {video} were added to the project.")
@@ -128,7 +127,7 @@ def init_new_project(
                 logger.info(f"Perhaps change the video_type, which is currently set to: {video_type}")
 
         elif os.path.isfile(video):
-            vids.append(Path(video).resolve())
+            video_paths.append(Path(video).resolve())
     
     pose_estimations_paths = []
     for pose_estimation_path in poses_estimations:
@@ -167,23 +166,19 @@ def init_new_project(
             "If the pose estimation file is in nwb format, you must provide the path to the pose series data for each nwb file."
         )
 
-    # Session names
-    session_names = [s.stem for s in video_paths]
-
-
     # # Creates directories under project/data/processed/
-    # dirs_processed_data = [data_processed_path / Path(i.stem) for i in videos_paths]
+    # dirs_processed_data = [data_processed_path / Path(i.stem) for i in video_paths]
     # for p in dirs_processed_data:
     #     p.mkdir(parents=True, exist_ok=True)
 
     # Creates directories under project/results/
-    dirs_results = [results_path / Path(video_file.stem) for video_file in videos_paths]
+    dirs_results = [results_path / Path(video_file.stem) for video_file in video_paths]
     for p in dirs_results:
         p.mkdir(parents=True, exist_ok=True)
 
     logger.info("Copying / linking the video files... \n")
-    destinations = [data_raw_path / vp.name for vp in videos_paths]
-    for src, dst in zip(videos_paths, destinations):
+    destinations = [data_raw_path / vp.name for vp in video_paths]
+    for src, dst in zip(video_paths, destinations):
         if copy_videos:
             logger.info(f"Copying {src} to {dst}")
             shutil.copy(os.fspath(src), os.fspath(dst))
@@ -192,25 +187,29 @@ def init_new_project(
             os.symlink(os.fspath(src), os.fspath(dst))
 
     if fps is None:
-        fps = get_video_frame_rate(str(videos_paths[0]))
+        fps = get_video_frame_rate(str(video_paths[0]))
 
     logger.info("Copying pose estimation raw data...\n")
     
     num_features_list = []
-    zip(pose_estimations_paths, videos_paths)
-    for session_name in session_names:
+    session_names = []
+    for pes_path in pose_estimations_paths:
         # Match files to session number
-        session_num = int(extract_session_number(session_name))
-        pes_path = find_matching_session_files(pose_estimations_paths, session_num)[0]
-        video_path = find_matching_session_files(video_path, session_num)[0]
-        if pes_path and video_path:
+        try:
+            session_num = extract_session_number(pes_path)
+        except:
+            raise ValueError(f"Count not find the session number, ensure that the filename contains 'session' (case insensitive) followed by the session number. File: {pes_path}")
+        try:
+            video_path = find_matching_session_files(video_paths, session_num)[0]
+            logger.info(f"{video_path}")
             ds = load_pose_estimation(
                 pose_estimation_file=pes_path,
                 video_file=video_path,
                 fps=fps,
                 source_software=source_software,
             )
-            output_name = data_raw_path /session_name
+            session_name = f"Session{session_num.zfill(4)}"
+            output_name = data_raw_path / session_name
             ds.to_netcdf(
                 path=f"{output_name}.nc",
                 engine="scipy",
@@ -222,8 +221,9 @@ def init_new_project(
                 path=f"{output_processed_name}_processed.nc",
                 engine="scipy",
             )
-        else:
-            logger.info(f"Could not find matching video and pose estimation files for Session{session_num}.")
+            session_names.append(session_name)
+        except:
+            raise ValueError(f"Could not find matching video and pose estimation files for Session {session_num}.")
 
     unique_num_features = list(set(num_features_list))
     if len(unique_num_features) > 1:
