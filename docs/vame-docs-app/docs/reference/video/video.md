@@ -12,7 +12,8 @@ def get_video_frame_rate(video_path)
 #### extract\_session\_number
 
 ```python
-def extract_session_number(filename: str, pattern=r'(?:Session)0*(\d+)\D')
+def extract_session_number(filename: str,
+                           pattern=r"(?:Session)0*(\d+)\D") -> str | None
 ```
 
 Takes a filename and finds a match based on a regex pattern string
