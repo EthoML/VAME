@@ -125,7 +125,7 @@ def init_new_project(
     if videos:
         videos_paths = []
         for i in videos:
-            # Check if it is a folder
+            # Check if it is a folder  -- WE SHOULD PROBABLY REMOVE THIS OPTION
             if os.path.isdir(i):
                 vids_in_dir = [os.path.join(i, vp) for vp in os.listdir(i) if video_type in vp]
                 if len(vids_in_dir) == 0:
@@ -139,7 +139,7 @@ def init_new_project(
                     videos_paths.append(i)
 
         logger.info("Copying / linking the video files... \n")
-        destinations = [data_raw_path / vp.name for vp in videos_paths]
+        destinations = [data_raw_path / Path(vp).name for vp in videos_paths]
         for src, dst in zip(videos_paths, destinations):
             if copy_videos:
                 logger.info(f"Copying {src} to {dst}")
@@ -193,8 +193,8 @@ def init_new_project(
         creation_datetime=creation_datetime,
         project_path=str(project_path),
         session_names=session_names,
-        pose_estimation_filetype=pose_estimation_filetype,
-        paths_to_pose_nwb_series_data=paths_to_pose_nwb_series_data,
+        pose_estimation_filetype=PoseEstimationFiletype(pose_estimation_filetype),
+        paths_to_pose_nwb_series_data=[paths_to_pose_nwb_series_data] if paths_to_pose_nwb_series_data else None,
         **config_kwargs,
     )
     cfg_data = new_project.model_dump()
