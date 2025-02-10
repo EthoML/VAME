@@ -134,9 +134,11 @@ def init_new_project(
                 else:
                     videos_paths.extend(vids_in_dir)
                     logger.info(f"{len(vids_in_dir)} videos from the directory {i} were added to the project.")
+            elif os.path.isfile(i):
+                videos_paths.append(i)
             else:
-                if os.path.isfile(i):
-                    videos_paths.append(i)
+                logger.info(f"Invalid video path: {i}")
+                raise FileNotFoundError(f"Invalid video path: {i}")
 
         logger.info("Copying / linking the video files... \n")
         destinations = [data_raw_path / Path(vp).name for vp in videos_paths]
