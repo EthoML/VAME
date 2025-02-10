@@ -196,9 +196,12 @@ def init_new_project(
     zip(pose_estimations_paths, videos_paths)
     for session_name in session_names:
         # Match files to session number
-        session_num = int(extract_session_number(session_name))
+        sn = extract_session_number(session_name)
+        if sn is None:
+            raise ValueError(f"Could not extract session number from {session_name}")
+        session_num = int(sn)
         pes_path = find_matching_session_files(pose_estimations_paths, session_num)[0]
-        video_path = find_matching_session_files(video_path, session_num)[0]
+        video_path = find_matching_session_files(videos_paths, session_num)[0]
         if pes_path and video_path:
             ds = load_pose_estimation(
                 pose_estimation_file=pes_path,

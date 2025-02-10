@@ -1,6 +1,5 @@
 import cv2
-from typing import List
-import numpy as np
+import re
 
 
 def get_video_frame_rate(video_path):
