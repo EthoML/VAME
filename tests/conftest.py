@@ -72,28 +72,28 @@ def cleanup_directory(directory):
             print(f"Final cleanup failed: {final_error}")
 
 
-@fixture(scope="session")
-def setup_project_from_folder():
-    project_name = "test_project_from_folder"
-    videos = [str(Path("./tests/tests_project_sample_data").resolve())]
-    poses_estimations = [str(Path("./tests/tests_project_sample_data").resolve())]
-    working_directory = str(Path("./tests").resolve())
+# @fixture(scope="session")
+# def setup_project_from_folder():
+#     project_name = "test_project_from_folder"
+#     videos = [str(Path("./tests/tests_project_sample_data").resolve())]
+#     poses_estimations = [str(Path("./tests/tests_project_sample_data").resolve())]
+#     working_directory = str(Path("./tests").resolve())
 
-    # Initialize project
-    project_data = init_project(
-        project_name=project_name,
-        videos=videos,
-        poses_estimations=poses_estimations,
-        source_software="DeepLabCut",
-        working_directory=working_directory,
-        egocentric_data=False,
-    )
+#     # Initialize project
+#     project_data = init_project(
+#         project_name=project_name,
+#         videos=videos,
+#         poses_estimations=poses_estimations,
+#         source_software="DeepLabCut",
+#         working_directory=working_directory,
+#         egocentric_data=False,
+#     )
 
-    yield project_data
+#     yield project_data
 
-    # Clean up
-    config_path = project_data["config_path"]
-    cleanup_directory(Path(config_path).parent)
+#     # Clean up
+#     config_path = project_data["config_path"]
+#     cleanup_directory(Path(config_path).parent)
 
 
 @fixture(scope="session")
