@@ -9,12 +9,13 @@ from vame.schemas.project import ProjectSchema, PoseEstimationFiletype
 from vame.schemas.states import VAMEPipelineStatesSchema
 from vame.logging.logger import VameLogger
 from vame.util.auxiliary import write_config, read_config
-from vame.video.video import get_video_frame_rate
+from vame.video.video import get_video_frame_rate, extract_session_number, find_matching_session_files
 from vame.io.load_poses import load_pose_estimation
 
 
 logger_config = VameLogger(__name__)
 logger = logger_config.logger
+
 
 def init_new_project(
     project_name: str,
@@ -114,11 +115,7 @@ def init_new_project(
     for video in videos:
         # Check video files
         if os.path.isdir(video):
-            vids_in_dir = [
-                Path(video, vp).resolve() 
-                for vp in os.listdir(video) 
-                if video_type in vp
-            ]
+            vids_in_dir = [Path(video, vp).resolve() for vp in os.listdir(video) if video_type in vp]
             videos_paths.extend(vids_in_dir)
 
             if vids_in_dir:
@@ -129,7 +126,7 @@ def init_new_project(
 
         elif os.path.isfile(video):
             videos_paths.append(Path(video).resolve())
-    
+
     pose_estimations_paths = []
     for pose_estimation_path in poses_estimations:
         if os.path.isdir(pose_estimation_path):
@@ -170,7 +167,6 @@ def init_new_project(
     # Session names
     session_names = [s.stem for s in videos_paths]
 
-
     # # Creates directories under project/data/processed/
     # dirs_processed_data = [data_processed_path / Path(i.stem) for i in videos_paths]
     # for p in dirs_processed_data:
@@ -195,7 +191,7 @@ def init_new_project(
         fps = get_video_frame_rate(str(videos_paths[0]))
 
     logger.info("Copying pose estimation raw data...\n")
-    
+
     num_features_list = []
     zip(pose_estimations_paths, videos_paths)
     for session_name in session_names:
@@ -210,7 +206,7 @@ def init_new_project(
                 fps=fps,
                 source_software=source_software,
             )
-            output_name = data_raw_path /session_name
+            output_name = data_raw_path / session_name
             ds.to_netcdf(
                 path=f"{output_name}.nc",
                 engine="scipy",

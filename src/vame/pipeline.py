@@ -376,14 +376,20 @@ class VAMEPipeline:
         None
         """
         n_clusters = self.config["n_clusters"]
-        fig_path = Path(self.config["project_path"]) / "results" / "community_cohort" / f"{segmentation_algorithm}-{n_clusters}" / "tree.png"
+        fig_path = (
+            Path(self.config["project_path"])
+            / "results"
+            / "community_cohort"
+            / f"{segmentation_algorithm}-{n_clusters}"
+            / "tree.png"
+        )
         if not fig_path.exists():
             logger.error(f"Tree figure not found at {fig_path}.")
             return
         img = plt.imread(fig_path)
         plt.figure(figsize=(n_clusters, n_clusters))
         plt.imshow(img)
-        plt.axis('off')  # Hide axes
+        plt.axis("off")  # Hide axes
         plt.show()
 
     def visualize_umap(
