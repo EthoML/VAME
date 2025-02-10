@@ -19,10 +19,10 @@ logger = logger_config.logger
 
 def init_new_project(
     project_name: str,
-    videos: List[str],
     poses_estimations: List[str],
     source_software: Literal["DeepLabCut", "SLEAP", "LightningPose"],
     working_directory: str = ".",
+    videos: Optional[List[str]] = None,
     video_type: str = ".mp4",
     fps: int | None = None,
     copy_videos: bool = False,
@@ -108,119 +108,86 @@ def init_new_project(
         p.mkdir(parents=True)
         logger.info('Created "{}"'.format(p))
 
-    vids = []
-    for i in videos:
-        # Check if it is a folder
-        if os.path.isdir(i):
-            vids_in_dir = [os.path.join(i, vp) for vp in os.listdir(i) if video_type in vp]
-            vids = vids + vids_in_dir
-            if len(vids_in_dir) == 0:
-                logger.info(f"No videos found in {i}")
-                logger.info(f"Perhaps change the video_type, which is currently set to: {video_type}")
-            else:
-                videos = vids
-                logger.info(f"{len(vids_in_dir)} videos from the directory {i} were added to the project.")
-        else:
-            if os.path.isfile(i):
-                vids = vids + [i]
-            videos = vids
-
-    pose_estimations_paths = []
-    for pose_estimation_path in poses_estimations:
-        if os.path.isdir(pose_estimation_path):
-            pose_estimation_files = [
-                os.path.join(pose_estimation_path, p)
-                for p in os.listdir(pose_estimation_path)
-                if ".csv" in p or ".nwb" in p
-            ]
-            pose_estimations_paths.extend(pose_estimation_files)
-        else:
-            pose_estimations_paths.append(pose_estimation_path)
-
-    # if not all([p.endswith(".csv") for p in pose_estimations_paths]) and not all(
-    #     [p.endswith(".nwb") for p in pose_estimations_paths]
-    # ):
-    #     logger.error(
-    #         "All pose estimation files must be in the same format. Either .csv or .nwb"
-    #     )
-    #     shutil.rmtree(str(project_path))
-    #     raise ValueError(
-    #         "All pose estimation files must be in the same format. Either .csv or .nwb"
-    #     )
-
-    pose_estimation_filetype = pose_estimations_paths[0].split(".")[-1]
-    if (
-        pose_estimation_filetype == PoseEstimationFiletype.nwb.value
-        and paths_to_pose_nwb_series_data
-        and len(paths_to_pose_nwb_series_data) != len(pose_estimations_paths)
-    ):
-        logger.error(
-            "If the pose estimation file is in nwb format, you must provide the path to the pose series data in nwb files."
-        )
-        shutil.rmtree(str(project_path))
-        raise ValueError(
-            "If the pose estimation file is in nwb format, you must provide the path to the pose series data for each nwb file."
-        )
+    pose_estimation_filetype = poses_estimations[0].split(".")[-1]
 
     # Session names
-    videos_paths = [Path(vp).resolve() for vp in videos]
+    pes_paths = [Path(vp).resolve() for vp in poses_estimations]
     session_names = []
-    for s in videos_paths:
+    for s in pes_paths:
         session_names.append(s.stem)
 
-    # # Creates directories under project/data/processed/
-    # dirs_processed_data = [data_processed_path / Path(i.stem) for i in videos_paths]
-    # for p in dirs_processed_data:
-    #     p.mkdir(parents=True, exist_ok=True)
-
     # Creates directories under project/results/
-    dirs_results = [results_path / Path(i.stem) for i in videos_paths]
+    dirs_results = [results_path / Path(i.stem) for i in pes_paths]
     for p in dirs_results:
         p.mkdir(parents=True, exist_ok=True)
 
-    logger.info("Copying / linking the video files... \n")
-    destinations = [data_raw_path / vp.name for vp in videos_paths]
-    for src, dst in zip(videos_paths, destinations):
-        if copy_videos:
-            logger.info(f"Copying {src} to {dst}")
-            shutil.copy(os.fspath(src), os.fspath(dst))
-        else:
-            logger.info(f"Creating symbolic link from {src} to {dst}")
-            os.symlink(os.fspath(src), os.fspath(dst))
+    # Copy or link videos if they are provided
+    if videos:
+        videos_paths = []
+        for i in videos:
+            # Check if it is a folder
+            if os.path.isdir(i):
+                vids_in_dir = [os.path.join(i, vp) for vp in os.listdir(i) if video_type in vp]
+                if len(vids_in_dir) == 0:
+                    logger.info(f"No videos found in {i}")
+                    logger.info(f"Perhaps change the video_type, which is currently set to: {video_type}")
+                else:
+                    videos_paths.extend(vids_in_dir)
+                    logger.info(f"{len(vids_in_dir)} videos from the directory {i} were added to the project.")
+            else:
+                if os.path.isfile(i):
+                    videos_paths.append(i)
 
-    if fps is None:
-        fps = get_video_frame_rate(str(videos_paths[0]))
+        logger.info("Copying / linking the video files... \n")
+        destinations = [data_raw_path / vp.name for vp in videos_paths]
+        for src, dst in zip(videos_paths, destinations):
+            if copy_videos:
+                logger.info(f"Copying {src} to {dst}")
+                shutil.copy(os.fspath(src), os.fspath(dst))
+            else:
+                logger.info(f"Creating symbolic link from {src} to {dst}")
+                os.symlink(os.fspath(src), os.fspath(dst))
 
+        if fps is None:
+            fps = get_video_frame_rate(str(videos_paths[0]))
+            logger.info(f"Estimated FPS: {fps}")
+    else:
+        videos_paths = [None] * len(pes_paths)
+        logger.info("No videos provided.")
+
+    # Copy pose estimation data
     logger.info("Copying pose estimation raw data...\n")
     num_features_list = []
-    for pes_path, video_path in zip(pose_estimations_paths, videos_paths):
+    for pes_path, video_path in zip(poses_estimations, videos_paths):
         ds = load_pose_estimation(
             pose_estimation_file=pes_path,
             video_file=video_path,
             fps=fps,
             source_software=source_software,
         )
-        output_name = data_raw_path / Path(video_path).stem
+        output_name = data_raw_path / Path(pes_path).stem
         ds.to_netcdf(
             path=f"{output_name}.nc",
             engine="scipy",
         )
         num_features_list.append(ds.space.shape[0] * ds.keypoints.shape[0])
 
-        output_processed_name = data_processed_path / Path(video_path).stem
+        output_processed_name = data_processed_path / Path(pes_path).stem
         ds.to_netcdf(
             path=f"{output_processed_name}_processed.nc",
             engine="scipy",
         )
 
+    # Set configuration parameters
+    if config_kwargs is None:
+        config_kwargs = {}
+
     unique_num_features = list(set(num_features_list))
     if len(unique_num_features) > 1:
         raise ValueError("All pose estimation files must have the same number of features.")
-
-    if config_kwargs is None:
-        config_kwargs = {}
     config_kwargs["num_features"] = unique_num_features[0]
 
+    # Create config.yaml file
     new_project = ProjectSchema(
         project_name=project_name,
         creation_datetime=creation_datetime,
@@ -230,11 +197,11 @@ def init_new_project(
         paths_to_pose_nwb_series_data=paths_to_pose_nwb_series_data,
         **config_kwargs,
     )
-    # Write dictionary to yaml  config file
     cfg_data = new_project.model_dump()
     projconfigfile = os.path.join(str(project_path), "config.yaml")
     write_config(projconfigfile, cfg_data)
 
+    # Create states.json file
     vame_pipeline_default_schema = VAMEPipelineStatesSchema()
     vame_pipeline_default_schema_path = Path(project_path) / "states" / "states.json"
     if not vame_pipeline_default_schema_path.parent.exists():
