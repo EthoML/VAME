@@ -259,8 +259,8 @@ def setup_pipeline():
     Setup a Pipeline for testing.
     """
     project_name = "test_pipeline"
-    videos = [str(Path("./tests/tests_project_sample_data").resolve())]
-    poses_estimations = [str(Path("./tests/tests_project_sample_data").resolve())]
+    videos = ["./tests/tests_project_sample_data/cropped_video.mp4"]
+    poses_estimations = ["./tests/tests_project_sample_data/cropped_video.csv"]
     working_directory = str(Path("./tests").resolve())
     source_software = "DeepLabCut"
 
