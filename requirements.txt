@@ -4,7 +4,8 @@ numpy==1.26.4
 pandas>=2.2.0
 scipy>=1.13.0
 matplotlib>=3.9.0
-torch==2.2.2
+# torch==2.2.2  -- leave it here until we make sure this works in all OS
+torch==2.5
 tqdm>=4.66.0
 hmmlearn>=0.3.0
 opencv-python-headless>=4.9.0.0
