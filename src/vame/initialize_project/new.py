@@ -12,9 +12,10 @@ from vame.util.auxiliary import write_config, read_config
 from vame.video.video import get_video_frame_rate, extract_session_number, find_matching_session_files
 from vame.io.load_poses import load_pose_estimation
 
-
 logger_config = VameLogger(__name__)
 logger = logger_config.logger
+
+
 def init_new_project(
     project_name: str,
     videos: List[str],
@@ -166,6 +167,10 @@ def init_new_project(
             "If the pose estimation file is in nwb format, you must provide the path to the pose series data for each nwb file."
         )
 
+
+    # Session names
+    session_names = [s.stem for s in videos_paths]
+
     # # Creates directories under project/data/processed/
     # dirs_processed_data = [data_processed_path / Path(i.stem) for i in video_paths]
     # for p in dirs_processed_data:
@@ -190,7 +195,7 @@ def init_new_project(
         fps = get_video_frame_rate(str(video_paths[0]))
 
     logger.info("Copying pose estimation raw data...\n")
-    
+
     num_features_list = []
     session_names = []
     for pes_path in pose_estimations_paths:
@@ -202,6 +207,7 @@ def init_new_project(
         try:
             video_path = find_matching_session_files(video_paths, session_num)[0]
             logger.info(f"{video_path}")
+
             ds = load_pose_estimation(
                 pose_estimation_file=pes_path,
                 video_file=video_path,
@@ -209,6 +215,7 @@ def init_new_project(
                 source_software=source_software,
             )
             session_name = f"Session{session_num.zfill(4)}"
+
             output_name = data_raw_path / session_name
             ds.to_netcdf(
                 path=f"{output_name}.nc",

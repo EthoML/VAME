@@ -12,6 +12,7 @@ def get_video_frame_rate(video_path):
     return frame_rate
 
 def extract_session_number(filename:str, pattern = r'(?:Session)0*(\d+)\D?'):
+
     """
     Takes a filename and finds a match based on a regex pattern string
 
@@ -28,12 +29,13 @@ def extract_session_number(filename:str, pattern = r'(?:Session)0*(\d+)\D?'):
         returns the capture group from the regex expression as the literal eval type.
     """
     try:
-        match = re.findall(pattern, filename, flags=re.I) # find the pattern anywhere in the string
+        match = re.findall(pattern, filename, flags=re.I)  # find the pattern anywhere in the string
         return match[0]
     except Exception as e:
         return None
 
-def find_matching_session_files(files:list, session_num)-> list:
+
+def find_matching_session_files(files: list, session_num) -> list:
     """
     Using a regex pattern, finds all files that match the session number.
 
@@ -41,7 +43,7 @@ def find_matching_session_files(files:list, session_num)-> list:
     ----------
     files : list
         list of file paths to search through
-    session_num : 
+    session_num :
         number to search for
 
     Returns
@@ -51,6 +53,7 @@ def find_matching_session_files(files:list, session_num)-> list:
     """
     pattern = rf'(Session)0*({session_num})\D?'
     matches = [f for f in files if re.findall(pattern, str(f), flags=re.I)]
+
     return matches
 
 # def play_aligned_video(
