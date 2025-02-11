@@ -3,7 +3,31 @@ import json
 import yaml
 import ruamel.yaml
 from pathlib import Path
-from typing import Tuple
+from typing import Tuple, Any
+from enum import Enum
+
+
+def _convert_enums_to_values(obj: Any) -> Any:
+    """
+    Recursively converts enum values to their string representations.
+
+    Parameters
+    ----------
+    obj : Any
+        The object to convert.
+
+    Returns
+    -------
+    Any
+        The converted object with enum values replaced by their string representations.
+    """
+    if isinstance(obj, Enum):
+        return obj.value
+    elif isinstance(obj, dict):
+        return {key: _convert_enums_to_values(value) for key, value in obj.items()}
+    elif isinstance(obj, (list, tuple)):
+        return [_convert_enums_to_values(item) for item in obj]
+    return obj
 
 
 def create_config_template() -> Tuple[dict, ruamel.yaml.YAML]:
@@ -171,8 +195,11 @@ def write_config(
         Dictionary containing the config data.
     """
     with open(config_path, "w") as cf:
-        ruamelFile = ruamel.yaml.YAML()
         cfg_file, ruamelFile = create_config_template()
+
+        # Convert any enum values to strings before writing
+        config = _convert_enums_to_values(config)
+
         for key in config.keys():
             cfg_file[key] = config[key]
         ruamelFile.dump(cfg_file, cf)
