@@ -1,11 +1,11 @@
-from typing import List, Optional, Literal, Tuple
+from typing import List, Optional, Literal, Tuple, cast
 from datetime import datetime, timezone
 from pathlib import Path
 import shutil
 import json
 import os
 
-from vame.schemas.project import ProjectSchema, PoseEstimationFiletype
+from vame.schemas.project import ProjectSchema
 from vame.schemas.states import VAMEPipelineStatesSchema
 from vame.logging.logger import VameLogger
 from vame.util.auxiliary import write_config, read_config
@@ -108,7 +108,10 @@ def init_new_project(
         p.mkdir(parents=True)
         logger.info('Created "{}"'.format(p))
 
-    pose_estimation_filetype = poses_estimations[0].split(".")[-1]
+    filetype = poses_estimations[0].split(".")[-1]
+    if filetype not in ("csv", "nwb", "slp", "h5"):
+        raise ValueError(f"Unsupported pose estimation file type: {filetype}. Must be one of: csv, nwb, slp, h5")
+    pose_estimation_filetype = cast(Literal["csv", "nwb", "slp", "h5"], filetype)
 
     # Session names
     pes_paths = [Path(vp).resolve() for vp in poses_estimations]
@@ -195,7 +198,7 @@ def init_new_project(
         creation_datetime=creation_datetime,
         project_path=str(project_path),
         session_names=session_names,
-        pose_estimation_filetype=PoseEstimationFiletype(pose_estimation_filetype),
+        pose_estimation_filetype=pose_estimation_filetype,
         paths_to_pose_nwb_series_data=[paths_to_pose_nwb_series_data] if paths_to_pose_nwb_series_data else None,
         **config_kwargs,
     )
