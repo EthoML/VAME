@@ -98,7 +98,6 @@ def embedd_latent_vectors(
 def get_latent_vectors(
         project_path: str,
         sessions: list,
-        model_name: str,
         seg, 
         n_clusters: int,
 ) -> List:
@@ -111,8 +110,6 @@ def get_latent_vectors(
         Path to vame project folder
     session: list
         List of sessions
-    model_name: str
-        Name of model
     seg: str
         Type of segmentation algorithm
     n_clusters : int
@@ -130,7 +127,6 @@ def get_latent_vectors(
             str(project_path),
             "results",
             session,
-            model_name,
             seg + "-" + str(n_clusters),
             "latent_vector_" + session + ".npy",
         )
@@ -171,7 +167,6 @@ def get_motif_usage(
 def save_session_data(
     project_path: str,
     session: int,
-    model_name: str,
     label: np.ndarray,
     cluster_center: np.ndarray,
     latent_vector: np.ndarray,
@@ -188,8 +183,6 @@ def save_session_data(
         Path to the vame project folder.
     session: int
         Session of interest to segment.
-    model_name: str
-        Name of model
     label: np.ndarray
         Array of the session's motif labels.
     cluster_center: np.ndarray
@@ -211,7 +204,6 @@ def save_session_data(
                                 str(project_path),
                                 "results",
                                 session,
-                                model_name,
                                 segmentation_algorithm + "-" + str(n_clusters),
                             )
     if not os.path.exists(session_results_path): 
@@ -313,7 +305,7 @@ def same_segmentation(
         idx += file_len  # updating the session start index
 
         save_session_data(cfg["project_path"], 
-            session, cfg["model_name"], 
+            session, 
             session_labels, 
             cluster_center,
             latent_vectors[i],
@@ -373,7 +365,7 @@ def individual_segmentation(
         cluster_centers.append(clust_center)
 
         save_session_data(cfg["project_path"], 
-                          session, cfg["model_name"], 
+                          session,
                           labels[i], 
                           cluster_centers[i],
                           latent_vectors[i],
@@ -397,16 +389,15 @@ def segment_session(
         - results/
             - hmm_trained.pkl
             - session/
-                - model_name/
-                    - hmm-n_clusters/
-                        - latent_vector_session.npy
-                        - motif_usage_session.npy
-                        - n_cluster_label_session.npy
-                    - kmeans-n_clusters/
-                        - latent_vector_session.npy
-                        - motif_usage_session.npy
-                        - n_cluster_label_session.npy
-                        - cluster_center_session.npy
+                - hmm-n_clusters/
+                    - latent_vector_session.npy
+                    - motif_usage_session.npy
+                    - n_cluster_label_session.npy
+                - kmeans-n_clusters/
+                    - latent_vector_session.npy
+                    - motif_usage_session.npy
+                    - n_cluster_label_session.npy
+                    - cluster_center_session.npy
 
     latent_vector_session.npy contains the projection of the data into the latent space,
     for each frame of the video. Dimmentions: (n_frames, n_latent_features)
@@ -471,7 +462,6 @@ def segment_session(
                                             str(project_path),
                                             "results",
                                             session,
-                                            model_name,
                                         ) 
                 if not os.path.exists(session_results_path):
                     os.mkdir(session_results_path)
@@ -483,7 +473,6 @@ def segment_session(
                         str(project_path),
                         "results",
                         sessions[0], 
-                        model_name,
                         seg + "-" + str(n_clusters),
                     )
             ): #Checks if segment session was already processed before
@@ -510,7 +499,6 @@ def segment_session(
                     latent_vectors = get_latent_vectors(
                         project_path, 
                         sessions, 
-                        model_name, 
                         seg, 
                         n_clusters
                     )
