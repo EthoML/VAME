@@ -9,6 +9,14 @@ on:
       - '.github/workflows/testing.yaml'
       - 'src/**'
       - 'tests/**'
+  pull_request:
+    branches:
+      - main
+      - dev
+    paths:
+      - '.github/workflows/testing.yaml'
+      - 'src/**'
+      - 'tests/**'
 
 jobs:
   run:

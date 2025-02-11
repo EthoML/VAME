@@ -29,7 +29,16 @@ def download_sample_data(source_software: str) -> dict:
         filename=dataset_options[source_software],
         with_video=True,
     )
-    paths_dict["video"] = str(paths_dict["video"])
+
+    video_path = paths_dict.get("video")
+    if video_path and video_path.stem != paths_dict["poses"].stem:
+        # rename video file to match pose file
+        video_path = video_path.rename(
+            video_path.parent / (str(paths_dict["poses"].stem) + video_path.suffix)
+        )
+
+    paths_dict["video"] = str(video_path)
     paths_dict["poses"] = str(paths_dict["poses"])
     paths_dict["frame"] = str(paths_dict["frame"])
+
     return paths_dict

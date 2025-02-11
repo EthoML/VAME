@@ -5,14 +5,12 @@ import xarray as xr
 import numpy as np
 import pandas as pd
 
-from vame.schemas.project import PoseEstimationFiletype
-
 
 def load_pose_estimation(
     pose_estimation_file: Path | str,
-    video_file: Path | str,
-    fps: int,
     source_software: Literal["DeepLabCut", "SLEAP", "LightningPose"],
+    video_file: Optional[Path | str] = None,
+    fps: Optional[int] = None,
 ) -> xr.Dataset:
     """
     Load pose estimation data.
@@ -38,7 +36,8 @@ def load_pose_estimation(
         source_software=source_software,
         fps=fps,
     )
-    ds.attrs["video_path"] = str(video_file)
+    if video_file:
+        ds.attrs["video_path"] = str(video_file)
     return ds
 
 
@@ -96,7 +95,7 @@ def nc_to_dataframe(nc_data):
 
 def read_pose_estimation_file(
     file_path: str,
-    file_type: Optional[PoseEstimationFiletype] = None,
+    file_type: Optional[Literal["csv", "nwb", "slp", "h5"]] = None,
     path_to_pose_nwb_series_data: Optional[str] = None,
 ) -> Tuple[pd.DataFrame, np.ndarray, xr.Dataset]:
     """

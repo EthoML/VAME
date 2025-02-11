@@ -4,8 +4,9 @@ import matplotlib.pyplot as plt
 import xarray as xr
 
 import vame
-from vame.util.auxiliary import read_config, read_states
+from vame.util.auxiliary import read_states
 from vame.io.load_poses import load_vame_dataset
+from vame.visualization.motif import visualize_motif_tree
 from vame.visualization.umap import visualize_umap
 from vame.visualization.preprocessing import (
     visualize_preprocessing_scatter,
@@ -67,10 +68,10 @@ class VAMEPipeline:
         """
         self.config_path, self.config = vame.init_new_project(
             project_name=project_name,
-            videos=videos,
             poses_estimations=poses_estimations,
             source_software=source_software,
             working_directory=working_directory,
+            videos=videos,
             video_type=video_type,
             fps=fps,
             copy_videos=copy_videos,
@@ -375,16 +376,10 @@ class VAMEPipeline:
         -------
         None
         """
-        n_clusters = self.config["n_clusters"]
-        fig_path = Path(self.config["project_path"]) / "results" / "community_cohort" / f"{segmentation_algorithm}-{n_clusters}" / "tree.png"
-        if not fig_path.exists():
-            logger.error(f"Tree figure not found at {fig_path}.")
-            return
-        img = plt.imread(fig_path)
-        plt.figure(figsize=(n_clusters, n_clusters))
-        plt.imshow(img)
-        plt.axis('off')  # Hide axes
-        plt.show()
+        visualize_motif_tree(
+            config=self.config,
+            segmentation_algorithm=segmentation_algorithm,
+        )
 
     def visualize_umap(
         self,
