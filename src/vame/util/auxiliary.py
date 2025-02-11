@@ -134,13 +134,19 @@ def read_config(config_file: str) -> dict:
                 curr_dir = os.path.dirname(config_file)
                 if cfg["project_path"] != curr_dir:
                     cfg["project_path"] = curr_dir
-                    write_config(config_file, cfg)
+                    write_config(
+                        config_path=config_file,
+                        config=cfg,
+                    )
         except Exception as err:
             if len(err.args) > 2:
                 if err.args[2] == "could not determine a constructor for the tag '!!python/tuple'":
                     with open(path, "r") as ymlfile:
                         cfg = yaml.load(ymlfile, Loader=yaml.SafeLoader)
-                        write_config(config_file, cfg)
+                        write_config(
+                            config_path=config_file,
+                            config=cfg,
+                        )
                 else:
                     raise
     else:
@@ -151,24 +157,24 @@ def read_config(config_file: str) -> dict:
 
 
 def write_config(
-    configname: str,
-    cfg: dict,
+    config_path: str,
+    config: dict,
 ) -> None:
     """
     Write structured config file.
 
     Parameters
     ----------
-    configname : str
+    config_path : str
         Path to the config file.
-    cfg : dict
+    config : dict
         Dictionary containing the config data.
     """
-    with open(configname, "w") as cf:
+    with open(config_path, "w") as cf:
         ruamelFile = ruamel.yaml.YAML()
         cfg_file, ruamelFile = create_config_template()
-        for key in cfg.keys():
-            cfg_file[key] = cfg[key]
+        for key in config.keys():
+            cfg_file[key] = config[key]
         ruamelFile.dump(cfg_file, cf)
 
 

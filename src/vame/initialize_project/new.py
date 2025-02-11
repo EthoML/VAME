@@ -201,7 +201,10 @@ def init_new_project(
     )
     cfg_data = new_project.model_dump()
     projconfigfile = os.path.join(str(project_path), "config.yaml")
-    write_config(projconfigfile, cfg_data)
+    write_config(
+        config_path=projconfigfile,
+        config=cfg_data,
+    )
 
     # Create states.json file
     vame_pipeline_default_schema = VAMEPipelineStatesSchema()

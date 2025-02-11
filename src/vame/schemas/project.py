@@ -175,7 +175,7 @@ class ProjectSchema(BaseModel):
         default=0.2,
         title="Scheduler gamma",
     )
-    scheduler_threshold: float = Field(
+    scheduler_threshold: Optional[float] = Field(
         default=None,
         title="Scheduler threshold",
     )
@@ -188,8 +188,8 @@ class ProjectSchema(BaseModel):
     segmentation_algorithms: List[SegmentationAlgorithms] = Field(
         title="Segmentation algorithms",
         default_factory=lambda: [
-            SegmentationAlgorithms.hmm.value,
-            SegmentationAlgorithms.kmeans.value,
+            SegmentationAlgorithms.hmm,
+            SegmentationAlgorithms.kmeans,
         ],
     )
     hmm_trained: bool = Field(

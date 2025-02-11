@@ -1,5 +1,5 @@
 import vame
-from vame.util.auxiliary import read_config, write_config
+from vame.util.auxiliary import write_config
 import os
 import ast
 
@@ -10,19 +10,20 @@ def run_pipeline(
     videos: list,
     poses_estimations: list,
 ):
-    config = vame.init_new_project(
+    config_path, config_values = vame.init_new_project(
         project_name=project_name,
         videos=videos,
         poses_estimations=poses_estimations,
         working_directory=working_directory,
         video_type=".mp4",
     )
-
-    config_values = read_config(config)
     config_values["egocentric_data"] = os.environ.get("EGOCENTRIC_DATA", False)
     config_values["max_epochs"] = os.environ.get("MAX_EPOCHS", 10)
     config_values["batch_size"] = os.environ.get("BATCH_SIZE", 10)
-    write_config(config, config_values)
+    write_config(
+        config_path=config_path,
+        config=config_values,
+    )
 
     vame.egocentric_alignment(config, pose_ref_index=[0, 5])
     vame.create_trainset(config, check_parameter=False, pose_ref_index=[0, 5])
