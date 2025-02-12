@@ -1,15 +1,143 @@
 ---
 id: pipeline
-title: Run Pipeline
+title: VAME Pipeline
 sidebar_position: 3
 slug: /getting_started/pipeline
 ---
 
-import React from 'react';
-import useBaseUrl from '@docusaurus/useBaseUrl';
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/EthoML/VAME/blob/main/examples/pipeline.ipynb)
 
-import IframeResizer from '@site/src/components/IframeResizer';
+If you haven't yet, please install VAME:
 
-The notebook below is available [here](https://github.com/EthoML/VAME/blob/main/examples/pipeline.ipynb).
+```bash
+pip install vame-py
+```
 
-<IframeResizer src={useBaseUrl('/notebooks_html/pipeline.html')} />
+Ther most convenient way to use VAME is through the VAME pipeline. The pipeline class automates the processes of:
+- loading the data
+- preprocessing the data
+- creating and training the VAME model
+- validating the VAME model
+- segmenting the behavior into motifs
+- clustering the motifs into communities
+- visualizing the results
+
+Let's start by importing the necessary libraries:
+
+```python
+import pprint
+from vame.pipeline import VAMEPipeline
+from vame.util.sample_data import download_sample_data
+```
+
+## Input data
+
+To quickly try VAME, you can download sample data and use it as input. If you want to work with your own data, all you need to do is to provide the paths to the pose estimation files as lists of strings. You can also optionally provide the paths to the corresponding video files.
+
+```python
+# You can run VAME with data from different sources:
+# "DeepLabCut", "SLEAP" or "LightningPose"
+source_software = "DeepLabCut"
+
+# Download sample data
+ps = download_sample_data(source_software)
+videos = [ps["video"]]
+poses_estimations = [ps["poses"]]
+
+pprint.pp(videos)
+pprint.pp(poses_estimations)
+```
+
+## Instantiate the VAME pipeline
+
+Now it's time to instantiate the VAME pipeline. Select your working directory, name of your project and extra configuration arguments. The extra configuration arguments are optional and can be used to customize the VAME pipeline.
+
+```python
+# Set up your working directory and project name
+working_directory = '.'
+project_name = 'pipeline_example'
+
+# Customize the configuration for the project
+config_kwargs = {
+    "n_clusters": 15,
+    "pose_confidence": 0.9,
+    "max_epochs": 100,
+}
+
+# Instantiate the pipeline
+# this will create a VAME project and prepare the data
+pipeline = VAMEPipeline(
+    working_directory=working_directory,
+    project_name=project_name,
+    videos=videos,
+    poses_estimations=poses_estimations,
+    source_software=source_software,
+    config_kwargs=config_kwargs,
+)
+```
+
+Before running the pipeline, you can check the input datasets:
+
+```python
+ds = pipeline.get_raw_datasets()
+ds
+```
+
+## Run the pipeline
+
+Now you can run the pipeline. At this point, you should pass the names of the pose estimation keypoints to be used for egocentric alignment.
+
+Note: The pipeline will take some time to run, depending on the size of the dataset, number of epochs, and if you are using a GPU or not.
+
+```python
+preprocessing_kwargs = {
+    "centered_reference_keypoint": "snout",
+    "orientation_reference_keypoint": "tailbase",
+}
+pipeline.run_pipeline(preprocessing_kwargs=preprocessing_kwargs)
+```
+
+## Visualize the results
+
+After running the pipeline, you can visualize the results:
+
+```python
+pipeline.visualize_preprocessing(
+    show_figure=True,
+    save_to_file=False,
+)
+```
+
+```python
+pipeline.visualize_model_losses(
+    show_figure=True,
+    save_to_file=False,
+)
+```
+
+```python
+pipeline.visualize_motif_tree(segmentation_algorithm="hmm")
+```
+
+```python
+pipeline.visualize_umap(
+    label="community",
+    segmentation_algorithm="hmm",
+    show_figure=True,
+)
+```
+
+## Produce the pipeline report
+
+```python
+pipeline.report()
+```
+
+## Resuming the pipeline
+
+If for some reason you need to stop the pipeline, you can resume it later from any step
+Example: resuming from community clustering step
+
+```python
+pipeline.run_pipeline(from_step=5)
+```
