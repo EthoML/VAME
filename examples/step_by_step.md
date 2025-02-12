@@ -1,18 +1,3 @@
----
-title: VAME step-by-step
-sidebar_position: 2
----
-
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/EthoML/VAME/blob/main/examples/demo.ipynb)
-
-:::tip
-Check out also the published VAME Workflow Guide, including more hands-on recommendations [HERE](https://www.nature.com/articles/s42003-022-04080-7#Sec8).
-:::
-
-:::tip
-You can run an entire VAME workflow with just a few lines, using the [Pipeline method](/docs/getting_started/pipeline).
-:::
-
 If you haven't yet, please install VAME:
 
 ```python
@@ -145,7 +130,7 @@ vame.evaluate_model(config=config_data)
 
 ## Step 4: Segment behavior
 
-Behavioral segmentation in VAME is done in two steps:
+Behavioral segmentation in VAME is done in two steps: 
 1. Segmentation of pose estimation data into motifs
 2. Clustering motifs in communities
 

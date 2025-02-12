@@ -1,11 +1,33 @@
 [project]
 name = "vame-py"
-version = '0.7.0'
-dynamic = ["dependencies", "readme"]
+version = '0.8.0'
 description = "Variational Animal Motion Embedding."
 authors = [{ name = "K. Luxem & " }, { name = "P. Bauer" }]
 requires-python = ">=3.11"
 keywords = ["vame", "auto-encoder"]
+dependencies = [
+    "PyYAML>=6.0.0",
+    "ruamel.yaml>=0.18.0",
+    "numpy==1.26.4",
+    "pandas>=2.2.0",
+    "scipy>=1.13.0",
+    "matplotlib>=3.9.0",
+    "torch==2.2.2; platform_system == 'Darwin' and platform_machine == 'x86_64'", # Intel Macs
+    "torch==2.5; platform_system == 'Darwin' and platform_machine == 'arm64'",    # M1/M2 Macs
+    "torch==2.5; platform_system != 'Darwin'",                                    # All other systems
+    "tqdm>=4.66.0",
+    "hmmlearn>=0.3.0",
+    "opencv-python-headless>=4.9.0.0",
+    "umap-learn>=0.5.0",
+    "h5py>=3.11.0",
+    "pydantic==2.7.4",
+    "imageio==2.34.1",
+    "imageio-ffmpeg==0.5.1",
+    "pynwb==2.8.1",
+    "tables>=3.10.0",
+    "movement==0.0.20",
+]
+readme = { file = 'README.md', content-type = 'text/markdown' }
 
 [project.urls]
 homepage = "https://github.com/EthoML/VAME/"
@@ -14,10 +36,6 @@ repository = "https://github.com/EthoML/VAME/"
 [build-system]
 requires = ["setuptools", "wheel"]
 build-backend = "setuptools.build_meta"
-
-[tool.setuptools.dynamic]
-dependencies = { file = ["requirements.txt"] }
-readme = { file = 'README.md', content-type = 'text/markdown' }
 
 [tool.setuptools]
 package-dir = { "" = "src" }

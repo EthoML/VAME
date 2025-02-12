@@ -19,6 +19,28 @@ pydoc-markdown
 ```
 This command will generate the API Reference documentation from the project and save it in the `docs/vame-docs-app/docs/reference/` folder.
 
+3. Export the example notebooks to Markdown:
+```bash
+jupyter nbconvert --to markdown --no-prompt examples/step_by_step.ipynb
+jupyter nbconvert --to markdown --no-prompt examples/pipeline.ipynb
+```
+
+4. Export the example notebooks to HTML:
+```bash
+jupyter nbconvert --to html --no-prompt examples/step_by_step.ipynb --output-dir docs/vame-docs-app/static/notebooks_html/
+jupyter nbconvert --to html --no-prompt examples/pipeline.ipynb --output-dir docs/vame-docs-app/static/notebooks_html/
+```
+
+Then use the html files in the documentation like this:
+```md
+import React from 'react';
+import useBaseUrl from '@docusaurus/useBaseUrl';
+import IframeResizer from '@site/src/components/IframeResizer';
+
+<IframeResizer src={useBaseUrl('/notebooks_html/step_by_step.html')} />
+```
+
+
 
 ### Running the documentation app locally
 To run the documentation app locally, follow these steps:
