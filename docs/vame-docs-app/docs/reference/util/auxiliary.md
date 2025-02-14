@@ -3,6 +3,18 @@ sidebar_label: auxiliary
 title: util.auxiliary
 ---
 
+#### get\_version
+
+```python
+def get_version() -> str
+```
+
+Gets the VAME package version from pyproject.toml.
+
+**Returns**
+
+* `str`: The version string.
+
 #### \_convert\_enums\_to\_values
 
 ```python
