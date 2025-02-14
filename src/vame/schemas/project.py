@@ -14,6 +14,10 @@ class SegmentationAlgorithms(str, Enum):
 
 class ProjectSchema(BaseModel):
     # Project parameters
+    version: str = Field(
+        ...,
+        title="VAME version",
+    )
     project_name: str = Field(
         ...,
         title="Project name",

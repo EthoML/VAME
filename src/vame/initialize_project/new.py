@@ -8,7 +8,7 @@ import os
 from vame.schemas.project import ProjectSchema
 from vame.schemas.states import VAMEPipelineStatesSchema
 from vame.logging.logger import VameLogger
-from vame.util.auxiliary import write_config, read_config
+from vame.util.auxiliary import write_config, read_config, get_version
 from vame.video.video import get_video_frame_rate
 from vame.io.load_poses import load_pose_estimation
 
@@ -194,6 +194,7 @@ def init_new_project(
 
     # Create config.yaml file
     new_project = ProjectSchema(
+        version=get_version(),
         project_name=project_name,
         creation_datetime=creation_datetime,
         project_path=str(project_path),

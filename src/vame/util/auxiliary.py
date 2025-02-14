@@ -2,9 +2,25 @@ import os
 import json
 import yaml
 import ruamel.yaml
+import tomllib
 from pathlib import Path
 from typing import Tuple, Any
 from enum import Enum
+
+
+def get_version() -> str:
+    """
+    Gets the VAME package version from pyproject.toml.
+
+    Returns
+    -------
+    str
+        The version string.
+    """
+    pyproject_path = Path(__file__).parent.parent.parent.parent / "pyproject.toml"
+    with open(pyproject_path, "rb") as f:
+        pyproject = tomllib.load(f)
+    return pyproject["project"]["version"]
 
 
 def _convert_enums_to_values(obj: Any) -> Any:
@@ -41,6 +57,7 @@ def create_config_template() -> Tuple[dict, ruamel.yaml.YAML]:
     """
     yaml_str = """\
 # Project configurations
+    version:
     project_name:
     model_name:
     n_clusters:
