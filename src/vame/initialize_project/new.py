@@ -24,7 +24,7 @@ def init_new_project(
     working_directory: str = ".",
     videos: Optional[List[str]] = None,
     video_type: str = ".mp4",
-    fps: int | None = None,
+    fps: Optional[float] = None,
     copy_videos: bool = False,
     paths_to_pose_nwb_series_data: Optional[str] = None,
     config_kwargs: Optional[dict] = None,
@@ -157,7 +157,9 @@ def init_new_project(
             fps = get_video_frame_rate(str(videos_paths[0]))
             logger.info(f"Estimated FPS: {fps}")
     else:
-        videos_paths = [None] * len(pes_paths)
+        if fps is None:
+            raise ValueError("FPS must be provided if no videos are provided.")
+        videos_paths = [""] * len(pes_paths)
         logger.info("No videos provided.")
 
     # Copy pose estimation data
