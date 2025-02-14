@@ -57,7 +57,7 @@ def create_config_template() -> Tuple[dict, ruamel.yaml.YAML]:
     """
     yaml_str = """\
 # Project configurations
-    version:
+    vame_version:
     project_name:
     model_name:
     n_clusters:

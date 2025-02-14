@@ -196,7 +196,7 @@ def init_new_project(
 
     # Create config.yaml file
     new_project = ProjectSchema(
-        version=get_version(),
+        vame_version=get_version(),
         project_name=project_name,
         creation_datetime=creation_datetime,
         project_path=str(project_path),
