@@ -44,18 +44,19 @@ def lowconf_cleaning(
         file_path = str(Path(project_path) / "data" / "processed" / f"{session}_processed.nc")
         _, _, ds = read_pose_estimation_file(file_path=file_path)
 
-        position = ds[read_from_variable].values
+        position = ds[read_from_variable].values  # shape: (time, space, keypoints, individuals)
         cleaned_position = np.empty_like(position)
-        confidence = ds["confidence"].values
+        confidence = ds["confidence"].values  # shape: (time, keypoints, individuals)
 
-        perc_interp_points = np.zeros((position.shape[1], position.shape[2], position.shape[3]))
-        for individual in range(position.shape[1]):
+        perc_interp_points = np.zeros((position.shape[3], position.shape[2], position.shape[1]))
+        for individual in range(position.shape[3]):
             for keypoint in range(position.shape[2]):
-                conf_series = confidence[:, individual, keypoint]
-                for space in range(position.shape[3]):
+                # Get confidence for this keypoint and individual
+                conf_series = confidence[:, keypoint, individual].copy()
+                for space in range(position.shape[1]):
                     # Set low-confidence positions to NaN
                     nan_mask = conf_series < pose_confidence
-                    series = np.copy(position[:, individual, keypoint, space])
+                    series = np.copy(position[:, space, keypoint, individual])
                     series[nan_mask] = np.nan
 
                     # Update nan_mask because the series might come with NaN values previously
@@ -72,7 +73,7 @@ def lowconf_cleaning(
                         )
 
                     # Update the position array
-                    cleaned_position[:, individual, keypoint, space] = series
+                    cleaned_position[:, space, keypoint, individual] = series
 
         # Update the dataset with the cleaned position values
         ds[save_to_variable] = (ds[read_from_variable].dims, cleaned_position)
@@ -121,15 +122,15 @@ def outlier_cleaning(
         file_path = str(Path(project_path) / "data" / "processed" / f"{session}_processed.nc")
         _, _, ds = read_pose_estimation_file(file_path=file_path)
 
-        position = np.copy(ds[read_from_variable].values)
+        position = np.copy(ds[read_from_variable].values)  # shape: (time, space, keypoints, individuals)
         cleaned_position = np.copy(position)
 
-        perc_interp_points = np.zeros((position.shape[1], position.shape[2], position.shape[3]))
+        perc_interp_points = np.zeros((position.shape[3], position.shape[2], position.shape[1]))
 
-        for individual in range(position.shape[1]):
+        for individual in range(position.shape[3]):
             for keypoint in range(position.shape[2]):
-                for space in range(position.shape[3]):
-                    series = np.copy(position[:, individual, keypoint, space])
+                for space in range(position.shape[1]):
+                    series = np.copy(position[:, space, keypoint, individual])
 
                     # Check if all values are zero, then skip
                     if np.all(series == 0):
@@ -160,7 +161,7 @@ def outlier_cleaning(
                         z_series = (z_series - np.nanmean(z_series)) / np.nanstd(z_series)
 
                     # Update the processed position array
-                    cleaned_position[:, individual, keypoint, space] = z_series
+                    cleaned_position[:, space, keypoint, individual] = z_series
 
         # Update the dataset with the cleaned position values
         ds[save_to_variable] = (ds[read_from_variable].dims, cleaned_position)

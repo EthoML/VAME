@@ -114,11 +114,15 @@ def traindata_aligned(
         data_test = np.concatenate(test_chunks, axis=1)
         data_train = np.concatenate(train_chunks, axis=1)
 
+    # Create train directory if it doesn't exist
+    train_dir = Path(project_path) / "data" / "train"
+    train_dir.mkdir(parents=True, exist_ok=True)
+
     # Save numpy arrays with the test/train info:
-    train_data_path = Path(project_path) / "data" / "train" / "train_seq.npy"
+    train_data_path = train_dir / "train_seq.npy"
     np.save(str(train_data_path), data_train)
 
-    test_data_path = Path(project_path) / "data" / "train" / "test_seq.npy"
+    test_data_path = train_dir / "test_seq.npy"
     np.save(str(test_data_path), data_test)
 
     logger.info(f"Length of train data: {data_train.shape[1]}")
