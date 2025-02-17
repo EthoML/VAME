@@ -282,7 +282,7 @@ def traindata_aligned(
 #         logger.info("Lenght of test data: %d" % len(z_test.T))
 
 
-@save_state(model=CreateTrainsetFunctionSchema(config={}))
+@save_state(model=CreateTrainsetFunctionSchema)
 def create_trainset(
     config: dict,
     save_logs: bool = False,
