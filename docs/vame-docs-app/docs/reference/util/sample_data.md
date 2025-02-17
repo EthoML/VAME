@@ -3,10 +3,6 @@ sidebar_label: sample_data
 title: util.sample_data
 ---
 
-#### DOWNLOAD\_PATH
-
-#### dataset\_options
-
 #### download\_sample\_data
 
 ```python
