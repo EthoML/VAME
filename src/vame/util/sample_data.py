@@ -1,14 +1,4 @@
-from movement.sample_data import fetch_dataset_paths
 from pathlib import Path
-
-
-DOWNLOAD_PATH = Path("~", ".movement", "data").expanduser().resolve()
-DOWNLOAD_PATH.mkdir(parents=True, exist_ok=True)
-
-dataset_options = {
-    "DeepLabCut": "DLC_single-mouse_EPM.predictions.csv",
-    "SLEAP": "SLEAP_single-mouse_EPM.predictions.slp",
-}
 
 
 def download_sample_data(source_software: str, with_video: bool = True) -> dict:
@@ -27,6 +17,17 @@ def download_sample_data(source_software: str, with_video: bool = True) -> dict:
     dict
         Dictionary with the paths to the downloaded sample data.
     """
+    from movement.sample_data import fetch_dataset_paths
+
+    download_path = Path("~", ".movement", "data").expanduser().resolve()
+    if not download_path.exists():
+        download_path.mkdir(parents=True, exist_ok=True)
+
+    dataset_options = {
+        "DeepLabCut": "DLC_single-mouse_EPM.predictions.csv",
+        "SLEAP": "SLEAP_single-mouse_EPM.predictions.slp",
+    }
+
     paths_dict = fetch_dataset_paths(
         filename=dataset_options[source_software],
         with_video=with_video,
