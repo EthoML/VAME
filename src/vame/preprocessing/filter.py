@@ -43,20 +43,20 @@ def savgol_filtering(
         file_path = str(Path(project_path) / "data" / "processed" / f"{session}_processed.nc")
         _, _, ds = read_pose_estimation_file(file_path=file_path)
 
-        # Extract processed positions values, with shape: (time, individuals, keypoints, space)
+        # Extract processed positions values, with shape: (time, space, keypoints, individuals)
         position = np.copy(ds[read_from_variable].values)
         filtered_position = np.copy(position)
-        for individual in range(position.shape[1]):
+        for individual in range(position.shape[3]):
             for keypoint in range(position.shape[2]):
-                for space in range(position.shape[3]):
-                    series = np.copy(position[:, individual, keypoint, space])
+                for space in range(position.shape[1]):
+                    series = np.copy(position[:, space, keypoint, individual])
 
                     # Check if all values are zero, then skip
                     if np.all(series == 0):
                         continue
 
                     # Apply Savitzky-Golay filter
-                    filtered_position[:, individual, keypoint, space] = savgol_filter(
+                    filtered_position[:, space, keypoint, individual] = savgol_filter(
                         x=series,
                         window_length=savgol_length,
                         polyorder=savgol_order,

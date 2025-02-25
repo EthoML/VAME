@@ -16,7 +16,7 @@ logger = logger_config.logger
 def traindata_aligned(
     config: dict,
     sessions: List[str] | None = None,
-    test_fraction: float | None = None,
+    test_fraction: float = 0.1,
     read_from_variable: str = "position_processed",
     split_mode: Literal["mode_1", "mode_2"] = "mode_1",
 ) -> None:
@@ -56,8 +56,8 @@ def traindata_aligned(
         raise ValueError("No sessions provided for training data creation")
 
     # Ensure test_fraction has a valid value
-    if test_fraction is None or test_fraction <= 0 or test_fraction >= 1:
-        test_fraction = 0.1  # Default to 10% if not specified or invalid
+    if test_fraction <= 0 or test_fraction >= 1:
+        raise ValueError("test_fraction must be a float between 0 and 1")
 
     all_data_list = []
     for session in sessions:
@@ -286,6 +286,9 @@ def traindata_aligned(
 def create_trainset(
     config: dict,
     save_logs: bool = False,
+    test_fraction: float = 0.1,
+    read_from_variable: str = "position_processed",
+    split_mode: Literal["mode_1", "mode_2"] = "mode_1",
 ) -> None:
     """
     Creates a training and test datasets for the VAME model.
@@ -314,6 +317,17 @@ def create_trainset(
         Configuration parameters dictionary.
     save_logs : bool, optional
         If True, the function will save logs to the project folder. Defaults to False.
+    test_fraction : float, optional
+        Fraction of data to use as test data. Defaults to 0.1.
+    read_from_variable : str, optional
+        Variable name to read from the processed data. Defaults to "position_processed".
+    split_mode : Literal["mode_1", "mode_2"], optional
+        Mode for splitting data into train/test sets:
+        - mode_1: Original mode that takes the initial test_fraction portion of the combined data
+                 for testing and the rest for training.
+        - mode_2: Takes random continuous chunks from each session proportional to test_fraction
+                 for testing and uses the remaining parts for training.
+        Defaults to "mode_1".
 
     Returns
     -------
@@ -347,6 +361,9 @@ def create_trainset(
             traindata_aligned(
                 config=config,
                 sessions=sessions,
+                test_fraction=test_fraction,
+                read_from_variable=read_from_variable,
+                split_mode=split_mode,
             )
         else:
             raise NotImplementedError("Fixed data training is not implemented yet")
