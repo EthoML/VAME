@@ -33,6 +33,27 @@ Embed latent vectors for the given files using the VAME model.
 
 * `List[np.ndarray]`: List of latent vectors for each file.
 
+#### get\_latent\_vectors
+
+```python
+def get_latent_vectors(project_path: str, sessions: list, model_name: str, seg,
+                       n_clusters: int) -> List
+```
+
+Gets all the latent vectors from each session into one list
+
+**Parameters**
+
+* **project_path: str**: Path to vame project folder
+* **session: list**: List of sessions
+* **model_name: str**: Name of model
+* **seg: str**: Type of segmentation algorithm
+* **n_clusters** (`int`): Number of clusters.
+
+**Returns**
+
+* `List`: List of session latent vectors
+
 #### get\_motif\_usage
 
 ```python
@@ -49,6 +70,33 @@ Count motif usage from session label array.
 **Returns**
 
 * `np.ndarray`: Array of motif usage counts.
+
+#### save\_session\_data
+
+```python
+def save_session_data(project_path: str, session: int, model_name: str,
+                      label: np.ndarray, cluster_center: np.ndarray,
+                      latent_vector: np.ndarray, motif_usage: np.ndarray,
+                      n_clusters: int, segmentation_algorithm: str)
+```
+
+Saves pose segmentation data for given session.
+
+**Parameters**
+
+* **project_path: str**: Path to the vame project folder.
+* **session: int**: Session of interest to segment.
+* **model_name: str**: Name of model
+* **label: np.ndarray**: Array of the session&#x27;s motif labels.
+* **cluster_center: np.ndarray**: Array of the session&#x27;s kmeans cluster centers location in the latent space.
+* **latent_vector: np.ndarray,**: Array of the session&#x27;s latent vectors.
+* **motif_usage: np.ndarray**: Array of the session&#x27;s motif usage counts.
+* **n_clusters** (`int`): Number of clusters.
+* **segmentation_algorithm: str**: Type of segmentation method, either &#x27;kmeans or &#x27;hmm&#x27;.
+
+**Returns**
+
+* `None`
 
 #### same\_segmentation
 
@@ -81,7 +129,7 @@ def individual_segmentation(cfg: dict, sessions: List[str],
                             n_clusters: int) -> Tuple
 ```
 
-Apply individual segmentation to each session.
+Apply individual segmentation to each session. 
 
 **Parameters**
 
