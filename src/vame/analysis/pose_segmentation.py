@@ -3,10 +3,15 @@ import tqdm
 import torch
 import pickle
 import numpy as np
+import umap
+import matplotlib.pyplot as plt
 from pathlib import Path
 from typing import List, Tuple, Union
 from hmmlearn import hmm
 from sklearn.cluster import KMeans
+from sklearn.decomposition import PCA
+from scipy.spatial.distance import cdist
+from scipy.optimize import minimize
 
 from vame.schemas.states import save_state, SegmentSessionFunctionSchema
 from vame.logging.logger import VameLogger, TqdmToLogger
@@ -168,12 +173,212 @@ def get_motif_usage(
         logger.info(f"Warning: The following motifs are unused: {unused_motifs}")
     return motif_usage
 
+def get_geometric_median(
+    latent_vectors: np.ndarray,
+) -> np.ndarray:
+    centroid = np.mean(latent_vectors, axis=0)
+    result = minimize(lambda c: np.sum(cdist([c], latent_vectors)), centroid)
+
+    return result.x
+
+def get_session_cluster_center(
+    project_path: str,
+    session: int,
+    model_name: str,
+    segmentation_algorithm: str,
+    latent_vector: np.ndarray,
+    session_labels: np.ndarray,
+    n_clusters: int,
+    # center_type: str, #'centroid', 'geometric_mean'
+    # vis_type: str, #'pca', 't-sne', 'umap'
+) -> Tuple:
+    
+    session_cluster_centers_centroid = []
+    session_cluster_centers_geo_median = []
+    for i in range(0,n_clusters):
+        # motif_center = np.empty([])
+        motif_indices = list(np.where(session_labels == i)[0])
+        motif_latent_vector = latent_vector[motif_indices]
+        print(f'motif {i} latent_vector shape',motif_latent_vector.shape)
+
+        motif_center_centroid = np.mean(motif_latent_vector, axis =0)
+        motif_center_geo_median = get_geometric_median(motif_latent_vector)
+        session_cluster_centers_centroid.append(motif_center_centroid)
+        session_cluster_centers_geo_median.append(motif_center_geo_median)
+        print('motif_center shape', motif_center_centroid.shape)
+        print('motif_center shape', motif_center_geo_median.shape)
+
+        #add session center distances to the model center
+
+        # if center_type == 'centroid':
+        #     motif_center = np.mean(motif_latent_vector, axis =0)
+        # elif center_type == 'geometric_mean':
+        #     motif_center= get_geometric_median(motif_latent_vector)
+        # session_cluster_centers.append(motif_center)
+        # print('motif_center shape', motif_center.shape)
+
+        # if vis_type == 'pca':
+        #     pca = PCA(n_components=2)
+        #     transform_latent_vectors= pca.fit_transform(motif_latent_vector)
+        #     transform_center = pca.transform(motif_center.reshape(1, -1))
+
+        #     plt.clf()
+        #     plt.scatter(transform_latent_vectors[:, 0], transform_latent_vectors[:, 1], alpha=0.1, label="Latent Points")
+        #     plt.scatter(transform_center[:, 0], transform_center[:, 1], color='red', marker='x', label=center_type)
+        #     plt.xlabel("PC1")
+        #     plt.ylabel("PC2")
+        #     # plt.title(f"{vis_type} Projection of Latent Vectors for Motif{i}, {center_type} center")
+        #     # plt.legend()
+        # if vis_type == 'umap':
+        #     umap_reducer = umap.UMAP(n_components=2, random_state=42)
+        #     reduced_points = umap_reducer.fit_transform(motif_latent_vector)
+        #     reduced_center = umap_reducer.transform(motif_center.reshape(1, -1))
+
+        #     plt.scatter(reduced_points[:, 0], reduced_points[:, 1], alpha=0.5, label="Cluster Points")
+        #     plt.scatter(reduced_center[:, 0], reduced_center[:, 1], color='red', marker='x', label=center_type)
+        
+        # plt.title(f"{vis_type} Projection of Latent Vectors for Motif{i}, {center_type} center")
+        # plt.legend()
+        # figure_path = os.path.join(
+        #                         project_path,
+        #                         "results",
+        #                         session,
+        #                         model_name,
+        #                         segmentation_algorithm + "-" + str(n_clusters),
+        #                     )
+        # plt.savefig(os.path.join(
+        #             figure_path,
+        #             'motif' + str(i) + center_type + '_cluster_center_' + vis_type + '_figure.png'
+        # ))
+    session_cluster_centers_centroid = np.array(session_cluster_centers_centroid)
+    session_cluster_centers_geo_median = np.array(session_cluster_centers_geo_median)
+    print('sesion_cluster_center shape', session_cluster_centers_centroid.shape)
+    print('sesion_cluster_center shape', session_cluster_centers_geo_median.shape)
+
+    return session_cluster_centers_centroid, session_cluster_centers_geo_median
+
+
+from vame.analysis.pose_segmentation import get_latent_vectors
+from sklearn.decomposition import PCA
+import numpy as np
+import matplotlib.cm as cm
+import random
+
+def get_session_data(
+    project_path: str,
+    session: str,
+    model_name: str,
+    seg: str,
+    n_clusters: int
+) -> tuple:
+    
+    results_path = os.path.join(project_path, 'results', session, model_name, seg + '-' + str(n_clusters))
+    motif_labels_path = os.path.join(results_path,
+                              str(n_clusters) + '_' + seg + '_label_' + session + '.npy')
+    model_cluster_center_path = os.path.join(results_path,
+                                             'cluster_center_model.npy')
+    centroid_cluster_center_path = os.path.join(results_path, 
+                                                'centroid_cluster_center_' + session + '.npy' )   
+    geo_med_clsuter_center_path =  os.path.join(results_path, 
+                                                'geo_median_cluster_center_' + session + '.npy' )
+
+    session_motif_labels = np.load(motif_labels_path)
+    model_cluster_center = np.load(model_cluster_center_path)
+    centroid_cluster_center = np.load(centroid_cluster_center_path)
+    geo_med_cluster_center = np.load(geo_med_clsuter_center_path)
+
+
+    return session_motif_labels, model_cluster_center, centroid_cluster_center, geo_med_cluster_center
+
+
+def plot_cluster_centers(config: dict) -> None:
+    project_path = config["project_path"]
+    sessions = config["session_names"]
+    # sessions = ['Session01']
+    model_name = config["model_name"]
+    seg = 'kmeans'
+    n_clusters = config["n_clusters"]
+
+    # Get latent vectors for each session
+    session_latent_vector = get_latent_vectors(project_path, sessions, model_name, seg, n_clusters)
+    cohort_latent_vector = np.concatenate(session_latent_vector)  # Shape: (all frames, n_clusters)
+
+
+    # PCA over the entire cohort
+    pca = PCA(n_components=2)
+    pca_latent_vectors = pca.fit_transform(cohort_latent_vector)
+
+    # Color for each session
+    # cmap = cm.get_cmap('tab10', len(sessions))  # 
+    cmap = ['red', 'darkorange', 'darkgreen', 'mediumblue', 'purple']
+
+    cohort_pca_latent_vectors = []
+    start_idx = 0
+
+    for m in range(0,n_clusters):
+        plt.clf()
+        for i, session in enumerate(sessions):
+            # print(session)
+            frames = session_latent_vector[i].shape[0]
+            # print('frames',frames)
+
+            # Extract PCA-transformed session data
+            session_pca = pca_latent_vectors[start_idx: start_idx + frames]
+            cohort_pca_latent_vectors.append(session_pca)  # Append whole session PCA data
+            start_idx += frames  # Update index for the next session
+            # print('session pca', session_pca.shape)
+            # print('start idx',start_idx)
+
+            # Get session data
+            s_motif_labels, model_cluster_center, centroid_cluster_center, geo_med_cluster_center = get_session_data(
+                project_path, session, model_name, seg, n_clusters
+            )
+            motif_indices = np.where(s_motif_labels == m)[0]  # Get motif indices for this cluster
+            # print(motif_indices.shape)
+            motif_pca = session_pca[motif_indices]
+
+            # Transform centers using PCA
+            model_center_pca = pca.transform(model_cluster_center[m,:].reshape(1,-1))
+            centroid_center_pca = pca.transform(centroid_cluster_center[m,:].reshape(1,-1)) #double check dimensions [m,:] or [:,m]
+            geo_med_center_pca = pca.transform(geo_med_cluster_center[m,:].reshape(1,-1))
+
+            # Scatter plot with a unique session color
+            points = 500
+            # random_list = random.sample(range(len(motif_pca)), points )
+            # plt.scatter(
+                # motif_pca[random_list, 0], motif_pca[random_list, 1], 
+                # motif_pca[0:points, 0], motif_pca[0:points, 1], 
+                # motif_pca[:, 0], motif_pca[:, 1], 
+                # alpha=0.1, color=cmap[i], s=5, label=f"{session} - Motif {m}")
+            plt.scatter(centroid_center_pca[:, 0], centroid_center_pca[:, 1], 
+                    color=cmap[i], s=100, marker='x', label=f"{session} Centroid Center")
+            plt.scatter(geo_med_center_pca[:, 0], geo_med_center_pca[:, 1], 
+                    color=cmap[i], s=100, marker='+', label=f"{session} Geo-Median Center")
+            
+        start_idx = 0
+
+        # # Plot model center
+        plt.scatter(model_center_pca[:, 0], model_center_pca[:, 1], 
+                    color='black', marker='X', label="Model Center")
+        
+
+        plt.xlabel("PC1")
+        plt.ylabel("PC2")
+        plt.title(f"PCA Projection of Latent Vectors for Motif {m}")
+        plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
+        plt.tight_layout()
+        plt.show()
+
+plot_cluster_centers(config_dict)
+
 def save_session_data(
     project_path: str,
     session: int,
     model_name: str,
     label: np.ndarray,
     cluster_center: np.ndarray,
+    session_cluster_center_centroid: np.ndarray,
+    session_cluster_center_geo_median: np.ndarray,
     latent_vector: np.ndarray,
     motif_usage: np.ndarray,
     n_clusters: int,
@@ -226,8 +431,16 @@ def save_session_data(
     )
     if segmentation_algorithm == "kmeans":
         np.save(
-            os.path.join(session_results_path, "cluster_center_" + session),
+            os.path.join(session_results_path, "cluster_center_model"),
             cluster_center,
+        )
+        np.save(
+            os.path.join(session_results_path, "centroid_cluster_center_" + session),
+            session_cluster_center_centroid,
+        )
+        np.save(
+            os.path.join(session_results_path, "geo_median_cluster_center_" + session),
+            session_cluster_center_geo_median,
         )
     np.save(
         os.path.join(session_results_path, "latent_vector_" + session),
@@ -320,11 +533,26 @@ def same_segmentation(
         motif_usage = get_motif_usage(session_labels, n_clusters)
         motif_usages.append(motif_usage)
         idx += file_len  # updating the session start index
+        center_type = 'geometric_mean'
+        vis_type = 'pca'
+        session_cluster_center_centroid, session_cluster_center_geo_median = get_session_cluster_center(cfg["project_path"],
+                                                                                                        session,
+                                                                                                        cfg["model_name"],
+                                                                                                        segmentation_algorithm,
+                                                                                                        latent_vectors[i],
+                                                                                                        session_labels,
+                                                                                                        n_clusters,
+                                                                                                        )
 
+        #pass session_cluster_center to this function to save
+        #make sure the dimensions are correct.
         save_session_data(cfg["project_path"], 
-                          session, cfg["model_name"], 
+                          session, 
+                          cfg["model_name"], 
                           session_labels, 
                           cluster_center,
+                          session_cluster_center_centroid,
+                          session_cluster_center_geo_median,
                           latent_vectors[i],
                           motif_usage,
                           n_clusters,
@@ -333,6 +561,7 @@ def same_segmentation(
 
 
 def individual_segmentation(
+        
     cfg: dict,
     sessions: List[str],
     latent_vectors: List[np.ndarray],
