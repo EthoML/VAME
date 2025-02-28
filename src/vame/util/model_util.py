@@ -8,11 +8,11 @@ logger_config = VameLogger(__name__)
 logger = logger_config.logger
 
 
-def load_model(cfg: dict, model_name: str, fixed: bool = True) -> RNN_VAE:
+def load_model(config: dict, model_name: str, fixed: bool = True, testing_name = '') -> RNN_VAE:
     """Load the VAME model.
 
     Args:
-        cfg (dict): Configuration dictionary.
+        config (dict): Configuration dictionary.
         model_name (str): Name of the model.
         fixed (bool): Fixed or variable length sequences.
 
@@ -20,22 +20,22 @@ def load_model(cfg: dict, model_name: str, fixed: bool = True) -> RNN_VAE:
         RNN_VAE: Loaded VAME model.
     """
     # load Model
-    ZDIMS = cfg["zdims"]
-    FUTURE_DECODER = cfg["prediction_decoder"]
-    TEMPORAL_WINDOW = cfg["time_window"] * 2
-    FUTURE_STEPS = cfg["prediction_steps"]
-    NUM_FEATURES = cfg["num_features"]
+    ZDIMS = config["zdims"]
+    FUTURE_DECODER = config["prediction_decoder"]
+    TEMPORAL_WINDOW = config["time_window"] * 2
+    FUTURE_STEPS = config["prediction_steps"]
+    NUM_FEATURES = config["num_features"]
 
     if not fixed:
         NUM_FEATURES = NUM_FEATURES - 3
-    hidden_size_layer_1 = cfg["hidden_size_layer_1"]
-    hidden_size_layer_2 = cfg["hidden_size_layer_2"]
-    hidden_size_rec = cfg["hidden_size_rec"]
-    hidden_size_pred = cfg["hidden_size_pred"]
-    dropout_encoder = cfg["dropout_encoder"]
-    dropout_rec = cfg["dropout_rec"]
-    dropout_pred = cfg["dropout_pred"]
-    softplus = cfg["softplus"]
+    hidden_size_layer_1 = config["hidden_size_layer_1"]
+    hidden_size_layer_2 = config["hidden_size_layer_2"]
+    hidden_size_rec = config["hidden_size_rec"]
+    hidden_size_pred = config["hidden_size_pred"]
+    dropout_encoder = config["dropout_encoder"]
+    dropout_rec = config["dropout_rec"]
+    dropout_pred = config["dropout_pred"]
+    softplus = config["softplus"]
 
     logger.info("Loading model... ")
 
@@ -54,18 +54,18 @@ def load_model(cfg: dict, model_name: str, fixed: bool = True) -> RNN_VAE:
         dropout_pred,
         softplus,
     )
-    if torch.cuda.is_available():
-        model = model.cuda()
-    else:
-        model = model.cpu()
+    
+    DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    model = model.to(DEVICE)
 
     model.load_state_dict(
         torch.load(
             os.path.join(
-                cfg["project_path"],
+                config["project_path"],
                 "model",
+                testing_name,
                 "best_model",
-                model_name + "_" + cfg["project_name"] + ".pkl",
+                model_name + "_" + config["project_name"] + ".pkl",
             )
         )
     )

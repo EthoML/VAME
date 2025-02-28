@@ -21,6 +21,7 @@ def create_config_template() -> Tuple[dict, ruamel.yaml.YAML]:
     model_name:
     n_clusters:
     pose_confidence:
+    testing_name: 
     \n
 # Project path and videos
     project_path:
@@ -48,6 +49,7 @@ def create_config_template() -> Tuple[dict, ruamel.yaml.YAML]:
     model_snapshot:
     model_convergence:
     transition_function:
+    gamma:
     beta:
     beta_norm:
     zdims:
@@ -107,8 +109,8 @@ def create_config_template() -> Tuple[dict, ruamel.yaml.YAML]:
     annealtime:
 """
     ruamelFile = ruamel.yaml.YAML()
-    cfg_file = ruamelFile.load(yaml_str)
-    return (cfg_file, ruamelFile)
+    config_file = ruamelFile.load(yaml_str)
+    return (config_file, ruamelFile)
 
 
 def read_config(config_file: str) -> dict:
@@ -130,29 +132,29 @@ def read_config(config_file: str) -> dict:
     if os.path.exists(path):
         try:
             with open(path, "r") as f:
-                cfg = ruamelFile.load(f)
+                config = ruamelFile.load(f)
                 curr_dir = os.path.dirname(config_file)
-                if cfg["project_path"] != curr_dir:
-                    cfg["project_path"] = curr_dir
-                    write_config(config_file, cfg)
+                if config["project_path"] != curr_dir:
+                    config["project_path"] = curr_dir
+                    write_config(config_file, config)
         except Exception as err:
             if len(err.args) > 2:
                 if err.args[2] == "could not determine a constructor for the tag '!!python/tuple'":
                     with open(path, "r") as ymlfile:
-                        cfg = yaml.load(ymlfile, Loader=yaml.SafeLoader)
-                        write_config(config_file, cfg)
+                        config = yaml.load(ymlfile, Loader=yaml.SafeLoader)
+                        write_config(config_file, config)
                 else:
                     raise
     else:
         raise FileNotFoundError(
             "Config file is not found. Please make sure that the file exists and/or that you passed the path of the config file correctly!"
         )
-    return cfg
+    return config
 
 
 def write_config(
     configname: str,
-    cfg: dict,
+    config: dict,
 ) -> None:
     """
     Write structured config file.
@@ -161,15 +163,15 @@ def write_config(
     ----------
     configname : str
         Path to the config file.
-    cfg : dict
+    config : dict
         Dictionary containing the config data.
     """
     with open(configname, "w") as cf:
         ruamelFile = ruamel.yaml.YAML()
-        cfg_file, ruamelFile = create_config_template()
-        for key in cfg.keys():
-            cfg_file[key] = cfg[key]
-        ruamelFile.dump(cfg_file, cf)
+        config_file, ruamelFile = create_config_template()
+        for key in config.keys():
+            config_file[key] = config[key]
+        ruamelFile.dump(config_file, cf)
 
 
 def read_states(config: dict) -> dict:
