@@ -21,6 +21,7 @@ tqdm_to_logger = TqdmToLogger(logger)
 
 # make sure torch uses cuda for GPU computing
 use_gpu = torch.cuda.is_available()
+
 if use_gpu:
     logger.info("Using CUDA")
     logger.info(f"GPU active: {torch.cuda.is_available()}")
@@ -52,7 +53,7 @@ def reconstruction_loss(
     torch.Tensor
         Reconstruction loss.
     """
-    mse_loss = nn.MSELoss(reduction=reduction)
+    mse_loss = nn.MSELoss(reduction=reduction) # Maybe concider sum over mean? but seems to be dependent on KL loss using mean
     rec_loss = mse_loss(x_tilde, x)
     return rec_loss
 
@@ -79,7 +80,7 @@ def future_reconstruction_loss(
     torch.Tensor
         Future reconstruction loss.
     """
-    mse_loss = nn.MSELoss(reduction=reduction)
+    mse_loss = nn.MSELoss(reduction=reduction) # Same as above if changed
     rec_loss = mse_loss(x_tilde, x)
     return rec_loss
 
@@ -145,8 +146,8 @@ def kullback_leibler_loss(
 
 def kl_annealing(
     epoch: int,
-    kl_start: int,
-    annealtime: int,
+    KL_START: int,
+    ANNEALTIME: int,
     function: str,
 ) -> float:
     """
@@ -157,9 +158,9 @@ def kl_annealing(
     ----------
     epoch : int
         Current epoch number.
-    kl_start : int
+    KL_START : int
         Epoch number to start annealing the loss.
-    annealtime : int
+    ANNEALTIME : int
         Annealing time.
     function : str
         Annealing function type.
@@ -169,12 +170,12 @@ def kl_annealing(
     float
         Annealed weight value for the loss.
     """
-    if epoch > kl_start:
+    if epoch > KL_START:
         if function == "linear":
-            new_weight = min(1, (epoch - kl_start) / (annealtime))
+            new_weight = min(1, (epoch - KL_START) / (ANNEALTIME))
 
         elif function == "sigmoid":
-            new_weight = float(1 / (1 + np.exp(-0.9 * (epoch - annealtime))))
+            new_weight = float(1 / (1 + np.exp(-0.9 * (epoch - ANNEALTIME))))
         else:
             raise NotImplementedError('currently only "linear" and "sigmoid" are implemented')
 
@@ -187,7 +188,7 @@ def kl_annealing(
 def gaussian(
     ins: torch.Tensor,
     is_training: bool,
-    seq_len: int,
+    seq_len_half: int,
     std_n: float = 0.8,
 ) -> torch.Tensor:
     """
@@ -199,8 +200,8 @@ def gaussian(
         Input data tensor.
     is_training : bool
         Whether it is training mode.
-    seq_len : int
-        Length of the sequence.
+    seq_len_half : int
+        Length of the sequence. (Half of the timewindow)
     std_n : float
         Standard deviation for the Gaussian noise.
 
@@ -211,7 +212,7 @@ def gaussian(
     """
     if is_training:
         emp_std = ins.std(1) * std_n
-        emp_std = emp_std.unsqueeze(2).repeat(1, 1, seq_len)
+        emp_std = emp_std.unsqueeze(2).repeat(1, 1, seq_len_half)
         emp_std = emp_std.permute(0, 2, 1)
         noise = Variable(ins.data.new(ins.size()).normal_(0, 1))
         return ins + (noise * emp_std)
@@ -223,21 +224,21 @@ def train(
     epoch: int,
     model: nn.Module,
     optimizer: torch.optim.Optimizer,
-    anneal_function: str,
+    ANNEAL_FUNCTION: str,
     GAMMA: float,
     BETA: float,
-    kl_start: int,
-    annealtime: int,
-    seq_len: int,
-    future_decoder: bool,
-    future_steps: int,
+    KL_START: int,
+    ANNEALTIME: int,
+    TEMPORAL_WINDOW: int,
+    FUTURE_DECODER: bool,
+    FUTURE_STEPS: int,
     scheduler: torch.optim.lr_scheduler._LRScheduler,
-    mse_red: str,
-    mse_pred: str,
+    MSE_REC_REDUCTION: str,
+    MSE_PRED_REDUCTION: str,
     kloss: int,
     klmbda: float,
     bsize: int,
-    noise: bool,
+    NOISE: bool,
 ) -> Tuple[float, float, float, float, float, float]:
     """
     Train the model.
@@ -252,25 +253,25 @@ def train(
         Model to be trained.
     optimizer : Optimizer
         Optimizer for training.
-    anneal_function : str
+    ANNEAL_FUNCTION : str
         Annealing function type.
     BETA : float
         Beta value for the loss.
-    kl_start : int
+    KL_START : int
         Epoch number to start annealing the loss.
-    annealtime : int
+    ANNEALTIME : int
         Annealing time.
-    seq_len : int
+    TEMPORAL_WINDOW : int
         Length of the sequence.
-    future_decoder : bool
+    FUTURE_DECODER : bool
         Whether a future decoder is used.
-    future_steps : int
+    FUTURE_STEPS : int
         Number of future steps to predict.
     scheduler : lr_scheduler._LRScheduler
         Learning rate scheduler.
-    mse_red : str
+    MSE_REC_REDUCTION : str
         Reduction type for MSE reconstruction loss.
-    mse_pred : str
+    MSE_PRED_REDUCTION : str
         Reduction type for MSE prediction loss.
     kloss : int
         Number of clusters for cluster loss.
@@ -278,7 +279,7 @@ def train(
         Lambda value for cluster loss.
     bsize : int
         Size of the batch.
-    noise : bool
+    NOISE : bool
         Whether to add Gaussian noise to the input.
 
     Returns
@@ -295,7 +296,7 @@ def train(
     kmeans_losses = 0.0
     fut_loss = 0.0
     # loss = 0.0
-    seq_len_half = int(seq_len / 2)
+    seq_len_half = int(TEMPORAL_WINDOW / 2)
     num_batches = len(train_loader)
 
     for data_item in train_loader:
@@ -303,31 +304,31 @@ def train(
         data_item = data_item.permute(0, 2, 1)
 
         data = data_item[:, :seq_len_half, :].type("torch.FloatTensor").to(DEVICE)
-        fut = data_item[:, seq_len_half : seq_len_half + future_steps, :].type("torch.FloatTensor").to(DEVICE)
+        fut = data_item[:, seq_len_half : seq_len_half + FUTURE_STEPS, :].type("torch.FloatTensor").to(DEVICE)
         
-        if noise is True:
+        if NOISE:
             data_gaussian = gaussian(data, True, seq_len_half)
         else:
             data_gaussian = data
         
-        if future_decoder:
+        if FUTURE_DECODER:
             data_tilde, future, latent, mu, logvar = model(data_gaussian)
-            fut_rec_loss = future_reconstruction_loss(fut, future, mse_pred)
+            fut_rec_loss = future_reconstruction_loss(fut, future, MSE_PRED_REDUCTION)
             fut_loss += fut_rec_loss.item()
         else:
             data_tilde, latent, mu, logvar = model(data_gaussian)
 
-        rec_loss = reconstruction_loss(data, data_tilde, mse_red)
+        rec_loss = reconstruction_loss(data, data_tilde, MSE_REC_REDUCTION)
         kl_loss = kullback_leibler_loss(mu, logvar)
         kmeans_loss = cluster_loss(latent.T, kloss, klmbda, bsize)
-        kl_weight = kl_annealing(epoch, kl_start, annealtime, anneal_function)
-        loss = rec_loss + (GAMMA * fut_rec_loss) + (BETA * kl_loss) #* kl_weight + kl_weight * kmeans_loss
+        kl_weight = kl_annealing(epoch, KL_START, ANNEALTIME, ANNEAL_FUNCTION)
+        loss = rec_loss + (GAMMA * fut_rec_loss) + (BETA * kl_loss) + kl_weight * kmeans_loss
 
+        torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm = 5)
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
 
-        # torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm = 5)
 
         train_loss += loss.item()
         mse_loss += rec_loss.item()
@@ -344,7 +345,7 @@ def train(
     avg_kmeans_losses = kmeans_losses / num_batches
     avg_fut_loss = 0.0
 
-    if future_decoder:
+    if FUTURE_DECODER:
         avg_fut_loss = fut_loss / num_batches
 
     logger.info(
@@ -374,13 +375,13 @@ def test(
     GAMMA: float,
     BETA: float,
     kl_weight: float,
-    seq_len: int,
-    mse_red: str,
-    mse_pred: str,
+    TEMPORAL_WINDOW: int,
+    MSE_REC_REDUCTION: str,
+    MSE_PRED_REDUCTION: str,
     kloss: str,
     klmbda: float,
-    future_decoder: bool,
-    future_steps: int,
+    FUTURE_DECODER: bool,
+    FUTURE_STEPS: int,
     bsize: int,
 ) -> Tuple[float, float, float]:
     """
@@ -396,19 +397,19 @@ def test(
         Beta value for the VAE loss.
     kl_weight : float
         Weighting factor for the KL divergence loss.
-    seq_len : int
+    TEMPORAL_WINDOW : int
         Length of the sequence.
-    mse_red : str
+    MSE_REC_REDUCTION : str
         Reduction method for the MSE loss.
-    mse_pred : str
+    MSE_PRED_REDUCTION : str
         Reduction type for MSE prediction loss.
     kloss : str
         Loss function for K-means clustering.
     klmbda : float
         Lambda value for K-means loss.
-    future_decoder : bool
+    FUTURE_DECODER : bool
         Flag indicating whether to use a future decoder.
-    future_steps : int
+    FUTURE_STEPS : int
         Number of future steps to predict.
     bsize :int
         Batch size.
@@ -426,7 +427,7 @@ def test(
     kullback_loss = 0.0
     kmeans_losses = 0.0
     fut_loss = 0.0
-    seq_len_half = int(seq_len / 2)
+    seq_len_half = int(TEMPORAL_WINDOW / 2)
     num_batches = len(test_loader)
 
     with torch.no_grad():
@@ -435,21 +436,21 @@ def test(
             data_item = Variable(data_item)
             data_item = data_item.permute(0, 2, 1)
             data = data_item[:, :seq_len_half, :].type("torch.FloatTensor").to(DEVICE)
-            fut = data_item[:, seq_len_half : seq_len_half + future_steps, :].type("torch.FloatTensor").to(DEVICE)
+            fut = data_item[:, seq_len_half : seq_len_half + FUTURE_STEPS, :].type("torch.FloatTensor").to(DEVICE)
 
-            if future_decoder:
+            if FUTURE_DECODER:
                 recon_images, future, latent, mu, logvar = model(data)
-                fut_rec_loss = future_reconstruction_loss(fut, future, mse_pred)
+                fut_rec_loss = future_reconstruction_loss(fut, future, MSE_PRED_REDUCTION)
                 fut_loss += fut_rec_loss.item()
             else:
                 recon_images, latent, mu, logvar = model(data)
 
-            rec_loss = reconstruction_loss(data, recon_images, mse_red)
+            rec_loss = reconstruction_loss(data, recon_images, MSE_REC_REDUCTION)
             kl_loss = kullback_leibler_loss(mu, logvar)
             kmeans_loss = cluster_loss(latent.T, kloss, klmbda, bsize)
-            loss = rec_loss + (GAMMA * fut_rec_loss) + (BETA * kl_loss) # *kl_weight + (kl_weight * kmeans_loss) explicit clustering focus
-            # torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm = 5)
-
+            loss = rec_loss + (GAMMA * fut_rec_loss) + (BETA * kl_loss) + (kl_weight * kmeans_loss) # explicit clustering focus
+            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm = 5)
+            
             test_loss += loss.item()
             mse_loss += rec_loss.item()
             kullback_loss += kl_loss.item()
@@ -461,7 +462,7 @@ def test(
     avg_kmeans_losses = kmeans_losses / num_batches
     avg_fut_loss = 0.0
 
-    if future_decoder:
+    if FUTURE_DECODER:
         avg_fut_loss = fut_loss / num_batches
     logger.info(
         "Test loss: {:.3f}, MSE-Loss: {:.3f}, MSE-Future-Loss: {:.3f} KL-Loss: {:.3f}, Kmeans-Loss: {:.3f}".format(
@@ -519,24 +520,26 @@ def train_model(
     -------
     None
     """
-    cfg = config
+    config = config
     try:
         tqdm_logger_stream = None
         if save_logs:
             tqdm_logger_stream = TqdmToLogger(logger)
-            log_path = Path(cfg["project_path"]) / "logs" / "train_model.log"
+            log_path = Path(config["project_path"]) / "logs" / "train_model.log"
             logger_config.add_file_handler(str(log_path))
 
-        model_name = cfg["model_name"]
-        pretrained_weights = cfg["pretrained_weights"]
-        pretrained_model = cfg["pretrained_model"]
-        fixed = cfg["egocentric_data"]
+        model_name = config["model_name"]
+        pretrained_weights = config["pretrained_weights"]
+        pretrained_model = config["pretrained_model"]
+        fixed = config["egocentric_data"]
 
-        logger.info("Train Variational Autoencoder - model name: %s \n" % model_name)
-        if not os.path.exists(os.path.join(cfg["project_path"], "model", "best_model", "")):
-            os.mkdir(os.path.join(cfg["project_path"], "model", "best_model", ""))
-            os.mkdir(os.path.join(cfg["project_path"], "model", "best_model", "snapshots", ""))
-            os.mkdir(os.path.join(cfg["project_path"], "model", "model_losses", ""))
+        logger.info("Train Variational Autoencoder - model name: %s \n" % model_name )
+        if not os.path.exists(os.path.join(config["project_path"], "model", config['testing_name'], "best_model")):
+            os.makedirs(os.path.join(config["project_path"], "model", config['testing_name'], "best_model"))
+            os.makedirs(os.path.join(config["project_path"], "model", config['testing_name'], "best_model", "snapshots"))
+            os.makedirs(os.path.join(config["project_path"], "model", config['testing_name'], "model_losses"))
+            if config['testing_name'] != '':
+                os.makedirs(os.path.join(config["project_path"], "model", config['testing_name'], "evaluate"))
 
         # make sure torch uses cuda for GPU computing
         if torch.cuda.is_available():
@@ -551,48 +554,48 @@ def train_model(
         # HYPERPARAMETERS
         # General
         SEED = 19
-        TRAIN_BATCH_SIZE = cfg["batch_size"]
-        TEST_BATCH_SIZE = int(cfg["batch_size"] / 4)
-        EPOCHS = cfg["max_epochs"]
-        ZDIMS = cfg["zdims"]
-        GAMMA = cfg['gamma']
-        BETA = cfg["beta"]
-        SNAPSHOT = cfg["model_snapshot"]
-        LEARNING_RATE = cfg["learning_rate"]
-        NUM_FEATURES = cfg["num_features"]
+        TRAIN_BATCH_SIZE = config["batch_size"]
+        TEST_BATCH_SIZE = int(config["batch_size"] / 4)
+        EPOCHS = config["max_epochs"]
+        ZDIMS = config["zdims"]
+        GAMMA = config['gamma']
+        BETA = config["beta"]
+        SNAPSHOT = config["model_snapshot"]
+        LEARNING_RATE = config["learning_rate"]
+        NUM_FEATURES = config["num_features"]
         if not fixed:
             NUM_FEATURES = NUM_FEATURES - 3
-        TEMPORAL_WINDOW = cfg["time_window"] * 2
-        FUTURE_DECODER = cfg["prediction_decoder"]
-        FUTURE_STEPS = cfg["prediction_steps"]
+        TEMPORAL_WINDOW = config["time_window"] * 2
+        FUTURE_DECODER = config["prediction_decoder"]
+        FUTURE_STEPS = config["prediction_steps"]
 
         # RNN
-        hidden_size_layer_1 = cfg["hidden_size_layer_1"]
-        hidden_size_layer_2 = cfg["hidden_size_layer_2"]
-        hidden_size_rec = cfg["hidden_size_rec"]
-        hidden_size_pred = cfg["hidden_size_pred"]
-        dropout_encoder = cfg["dropout_encoder"]
-        dropout_rec = cfg["dropout_rec"]
-        dropout_pred = cfg["dropout_pred"]
-        noise = cfg["noise"]
-        scheduler_step_size = cfg["scheduler_step_size"]
-        softplus = cfg["softplus"]
+        HIDDEN_SIZE_LAYER_1 = config["hidden_size_layer_1"]
+        HIDDEN_SIZE_LAYER_2 = config["hidden_size_layer_2"]
+        HIDDEN_SIZE_REC = config["hidden_size_rec"]
+        HIDDEN_SIZE_PRED = config["hidden_size_pred"]
+        DROPOUT_ENCODER = config["dropout_encoder"]
+        DROPOUT_REC = config["dropout_rec"]
+        DROPOUT_PRED = config["dropout_pred"]
+        NOISE = config["noise"]
+        SOFTPLUS = config["softplus"]
 
         # Loss
-        MSE_REC_REDUCTION = cfg["mse_reconstruction_reduction"]
-        MSE_PRED_REDUCTION = cfg["mse_prediction_reduction"]
-        KMEANS_LOSS = cfg["kmeans_loss"]
-        KMEANS_LAMBDA = cfg["kmeans_lambda"]
-        KL_START = cfg["kl_start"]
-        ANNEALTIME = cfg["annealtime"]
-        anneal_function = cfg["anneal_function"]
-        optimizer_scheduler = cfg["scheduler"]
+        MSE_REC_REDUCTION = config["mse_reconstruction_reduction"]
+        MSE_PRED_REDUCTION = config["mse_prediction_reduction"]
+        KMEANS_LOSS = config["kmeans_loss"]
+        KMEANS_LAMBDA = config["kmeans_lambda"]
+        KL_START = config["kl_start"]
+        ANNEALTIME = config["annealtime"]
+        ANNEAL_FUNCTION = config["anneal_function"]
+        OPTIMIZER_SCHEDULER = config["scheduler"]
+        SCHEDULER_STEP_SIZE = config["scheduler_step_size"]
 
         BEST_LOSS = 999999
         convergence = 0
         logger.info(
             "Latent Dimensions: %d, Time window: %d, Batch Size: %d, Beta: %.4f, Gamma: %d, lr: %.4f\n"
-            % (ZDIMS, cfg["time_window"], TRAIN_BATCH_SIZE, BETA, GAMMA, LEARNING_RATE)
+            % (ZDIMS, config["time_window"], TRAIN_BATCH_SIZE, BETA, GAMMA, LEARNING_RATE)
         )
 
         # simple logging of diverse losses
@@ -615,14 +618,14 @@ def train_model(
                 NUM_FEATURES,
                 FUTURE_DECODER,
                 FUTURE_STEPS,
-                hidden_size_layer_1,
-                hidden_size_layer_2,
-                hidden_size_rec,
-                hidden_size_pred,
-                dropout_encoder,
-                dropout_rec,
-                dropout_pred,
-                softplus,
+                HIDDEN_SIZE_LAYER_1,
+                HIDDEN_SIZE_LAYER_2,
+                HIDDEN_SIZE_REC,
+                HIDDEN_SIZE_PRED,
+                DROPOUT_ENCODER,
+                DROPOUT_REC,
+                DROPOUT_PRED,
+                SOFTPLUS,
             ).to(DEVICE)
 
         if pretrained_weights:
@@ -630,19 +633,21 @@ def train_model(
                 logger.info(
                     "Loading pretrained weights from model: %s\n"
                     % os.path.join(
-                        cfg["project_path"],
+                        config["project_path"],
                         "model",
+                        config['testing_name'],
                         "best_model",
-                        pretrained_model + "_" + cfg["project_name"] + ".pkl",
+                        pretrained_model + "_" + config["project_name"] + ".pkl",
                     )
                 )
                 model.load_state_dict(
                     torch.load(
                         os.path.join(
-                            cfg["project_path"],
+                            config["project_path"],
                             "model",
+                            config['testing_name'],
                             "best_model",
-                            pretrained_model + "_" + cfg["project_name"] + ".pkl",
+                            pretrained_model + "_" + config["project_name"] + ".pkl",
                         )
                     )
                 )
@@ -652,10 +657,11 @@ def train_model(
                 logger.info(
                     "No file found at %s\n"
                     % os.path.join(
-                        cfg["project_path"],
+                        config["project_path"],
                         "model",
+                        config['testing_name'],
                         "best_model",
-                        pretrained_model + "_" + cfg["project_name"] + ".pkl",
+                        pretrained_model + "_" + config["project_name"] + ".pkl",
                     )
                 )
                 try:
@@ -668,13 +674,13 @@ def train_model(
 
         """ DATASET """
         trainset = SEQUENCE_DATASET(
-            os.path.join(cfg["project_path"], "data", "train", ""),
+            os.path.join(config["project_path"], "data", "train", ""),
             data="train_seq.npy",
             train=True,
             temporal_window=TEMPORAL_WINDOW,
         )
         testset = SEQUENCE_DATASET(
-            os.path.join(cfg["project_path"], "data", "train", ""),
+            os.path.join(config["project_path"], "data", "train", ""),
             data="test_seq.npy",
             train=False,
             temporal_window=TEMPORAL_WINDOW,
@@ -685,24 +691,30 @@ def train_model(
 
         optimizer = torch.optim.Adam(model.parameters(), lr=LEARNING_RATE, amsgrad=True)
 
-        if optimizer_scheduler:
+        if OPTIMIZER_SCHEDULER:
             logger.info(
-                "Scheduler step size: %d, Scheduler gamma: %.2f\n" % (scheduler_step_size, cfg["scheduler_gamma"])
+                "Scheduler step size: %d, Scheduler gamma: %.2f\n" % (SCHEDULER_STEP_SIZE, config["scheduler_gamma"])
             )
             # Thanks to @alexcwsmith for the optimized scheduler contribution
             scheduler = ReduceLROnPlateau(
                 optimizer,
                 "min",
-                factor=cfg["scheduler_gamma"],
-                patience=cfg["scheduler_step_size"],
+                factor=config["scheduler_gamma"],
+                patience=config["scheduler_step_size"],
                 threshold=1e-3,
                 threshold_mode="rel",
                 verbose=True,
             )
         else:
-            scheduler = StepLR(optimizer, step_size=scheduler_step_size, gamma=1, last_epoch=-1)
+            scheduler = StepLR(optimizer, step_size=SCHEDULER_STEP_SIZE, gamma=1, last_epoch=-1)
 
-        logger.info("Start training... ")
+        best_model_save_file = os.path.join(
+                            config["project_path"],
+                            "model",
+                            config['testing_name'],
+                            "best_model",
+                            model_name + "_" + config["project_name"] + ".pkl",)
+        logger.info(f"Start training... 11 kdm_dev")
         for epoch in tqdm(
             range(1, EPOCHS),
             desc="Training Model",
@@ -715,7 +727,7 @@ def train_model(
                 epoch,
                 model,
                 optimizer,
-                anneal_function,
+                ANNEAL_FUNCTION,
                 GAMMA,
                 BETA,
                 KL_START,
@@ -729,7 +741,7 @@ def train_model(
                 KMEANS_LOSS,
                 KMEANS_LAMBDA,
                 TRAIN_BATCH_SIZE,
-                noise,
+                NOISE,
             )
             current_loss, mse_test_loss = test(
                 test_loader,
@@ -758,39 +770,33 @@ def train_model(
             fut_losses.append(fut_loss)
 
             # save best model
-            if weight > 0.99 and current_loss <= BEST_LOSS:
+            if weight > 0.99 and current_loss <= BEST_LOSS and epoch > ANNEALTIME + 10:
                 BEST_LOSS = current_loss
                 logger.info("Saving model!")
-                torch.save(
-                    model.state_dict(),
-                    os.path.join(
-                        cfg["project_path"],
-                        "model",
-                        "best_model",
-                        model_name + "_" + cfg["project_name"] + ".pkl",
-                    ),
-                )
+                torch.save(model.state_dict(), best_model_save_file)
                 convergence = 0
             else:
-                convergence += 1
+                if weight > 0.99 and epoch > ANNEALTIME + 10:
+                    convergence += 1
 
             if epoch % SNAPSHOT == 0:
-                logger.info("Saving model snapshot!\n")
+                logger.info("Saving model snapshot! did we get here?\n")
                 torch.save(
                     model.state_dict(),
                     os.path.join(
-                        cfg["project_path"],
+                        config["project_path"],
                         "model",
+                        config['testing_name'],
                         "best_model",
                         "snapshots",
-                        model_name + "_" + cfg["project_name"] + "_epoch_" + str(epoch) + ".pkl",
+                        model_name + "_" + config["project_name"] + "_epoch_" + str(epoch) + ".pkl",
                     ),
                 )
 
-            if convergence > cfg["model_convergence"]:
-                # if not os.path.isfile(best_model_save_file):
-                #     logger.info("Saving model!")
-                #     torch.save(model.state_dict(), best_model_save_file)
+            if convergence > config["model_convergence"]:
+                if not os.path.isfile(best_model_save_file):
+                    logger.info("Saving model!")
+                    torch.save(model.state_dict(), best_model_save_file)
 
 
                 logger.info("Finished training...")
@@ -821,8 +827,9 @@ def train_model(
             for name, loss in loss_dict.items():
                 np.save(
                 os.path.join(
-                    cfg["project_path"],
+                    config["project_path"],
                     "model",
+                    config['testing_name'],
                     "model_losses",
                     f"{name}_{model_name}",
                     ),
@@ -831,7 +838,7 @@ def train_model(
                 
             logger.info("\n")
 
-        if convergence < cfg["model_convergence"]:
+        if convergence < config["model_convergence"]:
             logger.info("Finished training...")
             logger.info(
                 "Model seems to have not reached convergence. You may want to check your model \n"
