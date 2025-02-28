@@ -4,16 +4,13 @@ import numpy as np
 from matplotlib import pyplot as plt
 import torch
 import torch.utils.data as Data
+from sklearn.manifold import TSNE
+from sklearn.decomposition import PCA
+from sklearn.cluster import KMeans
 
 from vame.model.rnn_vae import RNN_VAE
 
-
-use_gpu = torch.cuda.is_available()
-if use_gpu:
-    pass
-else:
-    torch.device("cpu")
-
+DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 def plot_reconstruction(
     filepath: str,
@@ -63,12 +60,9 @@ def plot_reconstruction(
     dataiter = iter(test_loader)
     x = next(dataiter)
     x = x.permute(0, 2, 1)
-    if use_gpu:
-        data = x[:, :seq_len_half, :].type("torch.FloatTensor").cuda()
-        data_fut = x[:, seq_len_half : seq_len_half + FUTURE_STEPS, :].type("torch.FloatTensor").cuda()
-    else:
-        data = x[:, :seq_len_half, :].type("torch.FloatTensor").to()
-        data_fut = x[:, seq_len_half : seq_len_half + FUTURE_STEPS, :].type("torch.FloatTensor").to()
+    data = x[:, :seq_len_half, :].type("torch.FloatTensor").to(DEVICE)
+    data_fut = x[:, seq_len_half : seq_len_half + FUTURE_STEPS, :].type("torch.FloatTensor").to(DEVICE)
+
     if FUTURE_DECODER:
         x_tilde, future, latent, mu, logvar = model(data)
 
@@ -130,12 +124,13 @@ def plot_reconstruction(
 
     if show_figure:
         plt.show()
+        plt.close()
     else:
         plt.close(fig)
 
 
 def plot_loss(
-    cfg: dict,
+    config: dict,
     model_name: str,
     save_to_file: bool = False,
     show_figure: bool = True,
@@ -150,7 +145,7 @@ def plot_loss(
 
     Parameters
     ----------
-    cfg : dict
+    config : dict
         Configuration dictionary.
     model_name : str
         Name of the model.
@@ -163,7 +158,7 @@ def plot_loss(
     -------
     None
     """
-    basepath = os.path.join(cfg["project_path"], "model", "model_losses")
+    basepath = os.path.join(config["project_path"], "model", config["testing_name"], "model_losses")
     train_loss = np.load(os.path.join(basepath, "train_losses_" + model_name + ".npy"))
     test_loss = np.load(os.path.join(basepath, "test_losses_" + model_name + ".npy"))
     mse_loss_train = np.load(os.path.join(basepath, "mse_train_losses_" + model_name + ".npy"))
@@ -186,10 +181,79 @@ def plot_loss(
     ax1.legend()
 
     if save_to_file:
-        evaluate_path = os.path.join(cfg["project_path"], "model", "evaluate")
-        fig.savefig(os.path.join(evaluate_path, "MSE-and-KL-Loss" + model_name + ".png"))
+        evaluate_path = os.path.join(config["project_path"], "model", config["testing_name"], "evaluate", "")
+        fig.savefig(evaluate_path + "Loss_plot_" + model_name + ".png")
 
     if show_figure:
         plt.show()
+        plt.close()
     else:
         plt.close(fig)
+
+
+def visualize_latent_space(
+        config: dict,
+        model: RNN_VAE,
+        dataloader: Data.DataLoader,
+        FUTURE_DECODER,
+        TEMPORAL_WINDOW,
+        CLUSTERS,
+        save_to_file: bool,
+        results_folder: Optional[str] = None
+):
+    latent_vectors = []
+    seq_len_half = int(TEMPORAL_WINDOW / 2)
+
+    with torch.no_grad():
+        for data in dataloader:
+            data = data.permute(0, 2, 1)
+            data = data[:, :seq_len_half, :]
+            data = data.type("torch.FloatTensor").to(DEVICE)
+            if FUTURE_DECODER:
+                data_tilde, future, latent, mu, logvar = model(data)
+            else:
+                data_tilde, latent, mu, logvar = model(data)
+
+            z = model.reparameterize(mu, logvar)
+            
+            latent_vectors.append(z.cpu().numpy())
+            # can use reconstruction loss as labels
+    
+    # Flatten layers 
+    latent_vectors = np.concatenate(latent_vectors)
+
+    # Clustering
+    kmeans = kmeans = KMeans(
+            init="k-means++",
+            n_clusters=CLUSTERS,
+            random_state=42,
+            n_init=20,
+        ).fit(latent_vectors)
+    labels = kmeans.fit_predict(latent_vectors)
+
+    fig, ax = plt.subplots(1,2, figsize = (13,7))
+    # Reduce dimensionality
+    pca = PCA(n_components=2)
+    latent_2d = pca.fit_transform(latent_vectors)
+
+    ax[0].scatter(latent_2d[:, 0], latent_2d[:, 1], 
+                          c=labels, cmap='viridis', s=1, alpha = 0.3) 
+    ax[0].set_title('VAE Latent Space (PCA)')
+
+    tsne = TSNE(n_components=2, random_state=42)
+    latent_2d = tsne.fit_transform(latent_vectors)
+
+    # Plot
+    scatter = ax[1].scatter(latent_2d[:, 0], latent_2d[:, 1], 
+                          c=labels, cmap='viridis', s=1, alpha = 0.3) 
+    # ax[1].colorbar(scatter)
+    ax[1].set_title('VAE Latent Space (tsne)')
+    ax[1].set_xlabel('t-SNE Dimension 1')
+    ax[1].set_ylabel('t-SNE Dimension 2')
+
+    if save_to_file:
+        evaluate_path = os.path.join(config["project_path"], "model", config["testing_name"], "evaluate", "")
+        fig.savefig(evaluate_path + "Latent_space_PCA_tsne_" + config["model_name"] + ".png")
+
+    plt.show()
+    plt.close()
