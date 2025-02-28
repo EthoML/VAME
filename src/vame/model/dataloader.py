@@ -74,14 +74,9 @@ class SEQUENCE_DATASET(Dataset):
         """
         return self.data_points
 
-    def __getitem__(self, index: int) -> torch.Tensor:
+    def __getitem__(self) -> torch.Tensor:
         """
-        Get a normalized sequence at the specified index.
-
-        Parameters
-        ----------
-        index : int
-            Index of the item.
+        Get a normalized sequence at a random index [not: the specified index.]
 
         Returns
         -------
@@ -89,9 +84,9 @@ class SEQUENCE_DATASET(Dataset):
             Normalized sequence data at the specified index.
         """
         temp_window = self.temporal_window
-        nf = self.data_points
-        start = np.random.choice(nf - temp_window)
-        end = start + temp_window
+        nf = self.data_points # length of dataset
+        start = np.random.choice(nf - temp_window) 
+        end = start + temp_window 
         sequence = self.X[:, start:end]
         sequence = (sequence - self.mean) / self.std
         return torch.from_numpy(sequence)
