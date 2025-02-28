@@ -1,6 +1,14 @@
 import cv2
 from typing import List
-import numpy as np
+from pathlib import Path
+import shutil
+import os
+
+from vame.logging.logger import VameLogger
+
+
+logger_config = VameLogger(__name__)
+logger = logger_config.logger
 
 
 def get_video_frame_rate(video_path):
@@ -10,6 +18,58 @@ def get_video_frame_rate(video_path):
     frame_rate = int(video.get(cv2.CAP_PROP_FPS))
     video.release()
     return frame_rate
+
+
+def add_videos_to_project(
+    config: dict,
+    videos: List[str],
+    copy_videos: bool = False,
+) -> None:
+    """
+    Add videos to the project, ensuring video stems match session names.
+
+    Parameters
+    ----------
+    config : dict
+        Configuration settings for the project.
+    videos : List[str]
+        List of video file paths to add.
+    copy_videos : bool, optional
+        If True, copy videos to project directory. If False, create symbolic links, by default False
+
+    Raises
+    ------
+    ValueError
+        If video stems don't match session names.
+    """
+    session_names = config.get("session_names", [])
+    if not session_names:
+        raise ValueError("No session names found in config")
+
+    if len(videos) != len(session_names):
+        raise ValueError(
+            f"Number of videos ({len(videos)}) does not match number of session names ({len(session_names)})"
+        )
+
+    # Extract stems from video paths and verify they match session names
+    video_stems = [Path(video).stem for video in videos]
+    for video_stem in video_stems:
+        if video_stem not in session_names:
+            raise ValueError(
+                f"Video stem '{video_stem}' does not match any session name in {session_names}"
+            )
+
+    # Copy / link videos to project directory
+    project_path = Path(config["project_path"])
+    data_raw_path = project_path / "data" / "raw"
+    destinations = [data_raw_path / Path(vp).name for vp in videos]
+    for src, dst in zip(videos, destinations):
+        if copy_videos:
+            logger.info(f"Copying {src} to {dst}")
+            shutil.copy(os.fspath(src), os.fspath(dst))
+        else:
+            logger.info(f"Creating symbolic link from {src} to {dst}")
+            os.symlink(os.fspath(src), os.fspath(dst))
 
 
 # def play_aligned_video(

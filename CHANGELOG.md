@@ -1,3 +1,16 @@
+# v0.8.0
+
+### Fixes
+
+- OS aware dependencies installation, specially important for pytorch
+
+### Features
+
+- Initialize project and run pipeline without videos ([Issue #129](https://github.com/EthoML/VAME/issues/129))
+- Allow adding videos later on in the project ([Issue #129](https://github.com/EthoML/VAME/issues/129))
+- Run on Google colab tags in documentation pages  ([Issue #144](https://github.com/EthoML/VAME/issues/144))
+
+
 # v0.7.0
 
 ### Fixes

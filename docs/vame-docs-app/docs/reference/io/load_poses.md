@@ -6,10 +6,11 @@ title: io.load_poses
 #### load\_pose\_estimation
 
 ```python
-def load_pose_estimation(
-    pose_estimation_file: Path | str, video_file: Path | str, fps: int,
-    source_software: Literal["DeepLabCut", "SLEAP", "LightningPose"]
-) -> xr.Dataset
+def load_pose_estimation(pose_estimation_file: Path | str,
+                         source_software: Literal["DeepLabCut", "SLEAP",
+                                                  "LightningPose"],
+                         video_file: Optional[Path | str] = None,
+                         fps: Optional[float] = None) -> xr.Dataset
 ```
 
 Load pose estimation data.
@@ -18,7 +19,7 @@ Load pose estimation data.
 
 * **pose_estimation_file** (`Path or str`): Path to the pose estimation file.
 * **video_file** (`Path or str`): Path to the video file.
-* **fps** (`int`): Sampling rate of the video.
+* **fps** (`float, optional`): Sampling rate of the video.
 * **source_software** (`Literal["DeepLabCut", "SLEAP", "LightningPose"]`): Source software used for pose estimation.
 
 **Returns**
@@ -52,7 +53,7 @@ def nc_to_dataframe(nc_data)
 ```python
 def read_pose_estimation_file(
     file_path: str,
-    file_type: Optional[PoseEstimationFiletype] = None,
+    file_type: Optional[Literal["csv", "nwb", "slp", "h5"]] = None,
     path_to_pose_nwb_series_data: Optional[str] = None
 ) -> Tuple[pd.DataFrame, np.ndarray, xr.Dataset]
 ```

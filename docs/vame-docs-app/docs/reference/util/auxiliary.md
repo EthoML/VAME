@@ -3,6 +3,34 @@ sidebar_label: auxiliary
 title: util.auxiliary
 ---
 
+#### get\_version
+
+```python
+def get_version() -> str
+```
+
+Gets the VAME package version from pyproject.toml.
+
+**Returns**
+
+* `str`: The version string.
+
+#### \_convert\_enums\_to\_values
+
+```python
+def _convert_enums_to_values(obj: Any) -> Any
+```
+
+Recursively converts enum values to their string representations.
+
+**Parameters**
+
+* **obj** (`Any`): The object to convert.
+
+**Returns**
+
+* `Any`: The converted object with enum values replaced by their string representations.
+
 #### create\_config\_template
 
 ```python
@@ -34,15 +62,15 @@ Reads structured config file defining a project.
 #### write\_config
 
 ```python
-def write_config(configname: str, cfg: dict) -> None
+def write_config(config_path: str, config: dict) -> None
 ```
 
 Write structured config file.
 
 **Parameters**
 
-* **configname** (`str`): Path to the config file.
-* **cfg** (`dict`): Dictionary containing the config data.
+* **config_path** (`str`): Path to the config file.
+* **config** (`dict`): Dictionary containing the config data.
 
 #### read\_states
 

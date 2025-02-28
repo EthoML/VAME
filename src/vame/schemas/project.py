@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field, ConfigDict
-from typing import List, Optional
+from typing import List, Optional, Literal
 from datetime import datetime, timezone
 from enum import Enum
 
@@ -12,18 +12,12 @@ class SegmentationAlgorithms(str, Enum):
         use_enum_values = True
 
 
-class PoseEstimationFiletype(str, Enum):
-    csv = "csv"
-    nwb = "nwb"
-    slp = "slp"
-    h5 = "h5"
-
-    class Config:
-        use_enum_values = True
-
-
 class ProjectSchema(BaseModel):
     # Project parameters
+    vame_version: str = Field(
+        ...,
+        title="VAME version",
+    )
     project_name: str = Field(
         ...,
         title="Project name",
@@ -52,7 +46,7 @@ class ProjectSchema(BaseModel):
         ...,
         title="Session names",
     )
-    pose_estimation_filetype: PoseEstimationFiletype = Field(
+    pose_estimation_filetype: Literal["csv", "nwb", "slp", "h5"] = Field(
         title="Pose estimation filetype",
     )
     paths_to_pose_nwb_series_data: Optional[List[str]] = Field(
@@ -175,7 +169,7 @@ class ProjectSchema(BaseModel):
         default=0.2,
         title="Scheduler gamma",
     )
-    scheduler_threshold: float = Field(
+    scheduler_threshold: Optional[float] = Field(
         default=None,
         title="Scheduler threshold",
     )
@@ -188,8 +182,8 @@ class ProjectSchema(BaseModel):
     segmentation_algorithms: List[SegmentationAlgorithms] = Field(
         title="Segmentation algorithms",
         default_factory=lambda: [
-            SegmentationAlgorithms.hmm.value,
-            SegmentationAlgorithms.kmeans.value,
+            SegmentationAlgorithms.hmm,
+            SegmentationAlgorithms.kmeans,
         ],
     )
     hmm_trained: bool = Field(

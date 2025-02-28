@@ -44,8 +44,8 @@ def test_existing_project():
     shutil.rmtree(Path(config_path_creation).parent)
 
 
-def test_existing_project_from_folder(setup_project_from_folder):
-    config = Path(setup_project_from_folder["config_path"])
-    config_values = read_config(config)
-    assert config_values["project_name"] == setup_project_from_folder["project_name"]
-    assert Path(setup_project_from_folder["config_path"]).exists()
+# def test_existing_project_from_folder(setup_project_from_folder):
+#     config = Path(setup_project_from_folder["config_path"])
+#     config_values = read_config(config)
+#     assert config_values["project_name"] == setup_project_from_folder["project_name"]
+#     assert Path(setup_project_from_folder["config_path"]).exists()

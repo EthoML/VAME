@@ -2,8 +2,48 @@ import os
 import json
 import yaml
 import ruamel.yaml
+import tomllib
 from pathlib import Path
-from typing import Tuple
+from typing import Tuple, Any
+from enum import Enum
+
+
+def get_version() -> str:
+    """
+    Gets the VAME package version from pyproject.toml.
+
+    Returns
+    -------
+    str
+        The version string.
+    """
+    pyproject_path = Path(__file__).parent.parent.parent.parent / "pyproject.toml"
+    with open(pyproject_path, "rb") as f:
+        pyproject = tomllib.load(f)
+    return pyproject["project"]["version"]
+
+
+def _convert_enums_to_values(obj: Any) -> Any:
+    """
+    Recursively converts enum values to their string representations.
+
+    Parameters
+    ----------
+    obj : Any
+        The object to convert.
+
+    Returns
+    -------
+    Any
+        The converted object with enum values replaced by their string representations.
+    """
+    if isinstance(obj, Enum):
+        return obj.value
+    elif isinstance(obj, dict):
+        return {key: _convert_enums_to_values(value) for key, value in obj.items()}
+    elif isinstance(obj, (list, tuple)):
+        return [_convert_enums_to_values(item) for item in obj]
+    return obj
 
 
 def create_config_template() -> Tuple[dict, ruamel.yaml.YAML]:
@@ -17,6 +57,7 @@ def create_config_template() -> Tuple[dict, ruamel.yaml.YAML]:
     """
     yaml_str = """\
 # Project configurations
+    vame_version:
     project_name:
     model_name:
     n_clusters:
@@ -136,13 +177,19 @@ def read_config(config_file: str) -> dict:
                 curr_dir = os.path.dirname(config_file)
                 if config["project_path"] != curr_dir:
                     config["project_path"] = curr_dir
-                    write_config(config_file, config)
+                    write_config(
+                        config_path=config_file,
+                        config=config,
+                    )
         except Exception as err:
             if len(err.args) > 2:
                 if err.args[2] == "could not determine a constructor for the tag '!!python/tuple'":
                     with open(path, "r") as ymlfile:
                         config = yaml.load(ymlfile, Loader=yaml.SafeLoader)
-                        write_config(config_file, config)
+                        write_config(
+                            config_path=config_file,
+                            config=config,
+                        )
                 else:
                     raise
     else:
@@ -153,7 +200,7 @@ def read_config(config_file: str) -> dict:
 
 
 def write_config(
-    configname: str,
+    config_path: str,
     config: dict,
 ) -> None:
     """
@@ -161,17 +208,20 @@ def write_config(
 
     Parameters
     ----------
-    configname : str
+    config_path : str
         Path to the config file.
     config : dict
         Dictionary containing the config data.
     """
-    with open(configname, "w") as cf:
-        ruamelFile = ruamel.yaml.YAML()
-        config_file, ruamelFile = create_config_template()
+    with open(config_path, "w") as cf:
+        cfg_file, ruamelFile = create_config_template()
+
+        # Convert any enum values to strings before writing
+        config = _convert_enums_to_values(config)
+
         for key in config.keys():
-            config_file[key] = config[key]
-        ruamelFile.dump(config_file, cf)
+            cfg_file[key] = config[key]
+        ruamelFile.dump(cfg_file, cf)
 
 
 def read_states(config: dict) -> dict:
