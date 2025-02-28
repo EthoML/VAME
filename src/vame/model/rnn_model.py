@@ -6,7 +6,7 @@ from torch import nn
 # The Model is partially adapted from the Timeseries Clustering repository developed by Tejas Lodaya:
 # https://github.com/tejaslodaya/timeseries-clustering-vae/blob/master/vrae/vrae.py
 class Encoder(nn.Module):
-    """Encoder module of the Variational Autoencoder."""
+    """Encoder module of the Variational Autoencoder. [Bidirectional GRU encoder]"""
 
     def __init__(
         self,
@@ -46,13 +46,13 @@ class Encoder(nn.Module):
             batch_first=True,
             dropout=self.dropout,
             bidirectional=self.bidirectional,
-        )  # UNRELEASED!
+        ) 
 
         self.hidden_factor = (2 if self.bidirectional else 1) * self.n_layers
 
     def forward(self, inputs: torch.Tensor) -> torch.Tensor:
         """
-        Forward pass of the Encoder module.
+        Forward pass of the Encoder module. [2 layers]
 
         Parameters
         ----------
@@ -64,7 +64,16 @@ class Encoder(nn.Module):
         torch.Tensor:
             Encoded representation tensor of shape (batch_size, hidden_size_layer_1 * 4).
         """
-        outputs_1, hidden_1 = self.encoder_rnn(inputs)  # UNRELEASED!
+        outputs_1, hidden_1 = self.encoder_rnn(inputs)
+        # # last bidirectional layer [paper implementation]
+        # Extract the hidden states from the last layer for both directions
+        # forward_hidden = hidden_1[-2, :, :]   # Last layer, forward direction
+        # backward_hidden = hidden_1[-1, :, :]  # Last layer, backward direction
+
+        # Concatenate the forward and backward hidden states
+        # hidden = torch.cat((forward_hidden, backward_hidden), dim=1)
+
+        # front 2 bidirectional layers [og code implementation]
         hidden = torch.cat(
             (
                 hidden_1[0, ...],
@@ -84,7 +93,7 @@ class Lambda(nn.Module):
         self,
         ZDIMS: int,
         hidden_size_layer_1: int,
-        softplus: bool,
+        SOFTPLUS: bool,
     ):
         """
         Initialize the Lambda module.
@@ -95,21 +104,19 @@ class Lambda(nn.Module):
             Size of the latent space.
         hidden_size_layer_1 : int
             Size of the first hidden layer.
-        hidden_size_layer_2 : int, deprecated
-            Size of the second hidden layer.
-        softplus : bool
+        SOFTPLUS : bool
             Whether to use softplus activation for logvar.
         """
         super(Lambda, self).__init__()
 
-        self.hid_dim = hidden_size_layer_1 * 4
+        self.hid_dim = hidden_size_layer_1 * 4 # og 4, new 2 for encoder output
         self.latent_length = ZDIMS
-        self.softplus = softplus
+        self.SOFTPLUS = SOFTPLUS
 
         self.hidden_to_mean = nn.Linear(self.hid_dim, self.latent_length)
         self.hidden_to_logvar = nn.Linear(self.hid_dim, self.latent_length)
 
-        if self.softplus is True:
+        if self.SOFTPLUS is True:
             print(
                 "Using a softplus activation to ensures that the variance is parameterized as non-negative and activated by a smooth function"
             )
@@ -133,7 +140,7 @@ class Lambda(nn.Module):
             Latent space tensor, mean tensor, logvar tensor.
         """
         self.mean = self.hidden_to_mean(hidden)
-        if self.softplus is True:
+        if self.SOFTPLUS is True:
             self.logvar = self.softplus_fn(self.hidden_to_logvar(hidden))
         else:
             self.logvar = self.hidden_to_logvar(hidden)
@@ -337,7 +344,7 @@ class RNN_VAE(nn.Module):
         dropout_encoder: float,
         dropout_rec: float,
         dropout_pred: float,
-        softplus: bool,
+        SOFTPLUS: bool,
     ):
         """
         Initialize the VAE module.
@@ -364,8 +371,14 @@ class RNN_VAE(nn.Module):
             Size of the prediction hidden layer.
         dropout_encoder : float
             Dropout rate for encoder.
+        dropout_rec : float
+            Dropout rate for reconstruction.
+        dropout_pred : float
+            Dropout rate for prediction
+        SOFTPLUS: bool
+            Boolean to activate softplus
         """
-        super(RNN_VAE, self).__init__()
+        super().__init__()
 
         self.FUTURE_DECODER = FUTURE_DECODER
         self.seq_len = int(TEMPORAL_WINDOW / 2)
@@ -378,7 +391,7 @@ class RNN_VAE(nn.Module):
         self.lmbda = Lambda(
             ZDIMS,
             hidden_size_layer_1,
-            softplus,
+            SOFTPLUS,
         )
         self.decoder = Decoder(
             self.seq_len,
@@ -437,3 +450,29 @@ class RNN_VAE(nn.Module):
             return prediction, future, z, mu, logvar
         else:
             return prediction, z, mu, logvar
+    
+    def reparameterize(self, mu:torch.Tensor, logvar: torch.Tensor):
+        """
+        Reparameterization trick to sample from N(mu, logvar) to N(0, 1)
+
+        Parameters
+        ----------
+        mu : torch.Tensor
+            Mean of latent Gaussian
+
+        logvar : torch.Tensor
+            log variance of latent Gaussian
+
+        Returns
+        ----------
+        torch.Tensor
+            Sampled latent vector
+        """
+        # standard deviation
+        std = torch.exp(0.5 * logvar)
+        # random noise
+        eps = torch.randn_like(std)
+
+        return mu + eps * std
+
+
