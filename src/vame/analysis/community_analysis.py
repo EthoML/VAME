@@ -484,7 +484,7 @@ def community(
             np.save(
                 os.path.join(
                     path_to_dir,
-                    "cohort_" + segmentation_algorithm + "_labels" + ".npy",
+                    "cohort_" + segmentation_algorithm + "_label" + ".npy",
                 ),
                 cohort_motif_labels,
             )
@@ -492,7 +492,7 @@ def community(
             np.save(
                 os.path.join(
                     path_to_dir,
-                    "cohort_" + segmentation_algorithm + "_counts" + ".npy",
+                    "cohort_" + segmentation_algorithm + "_count" + ".npy",
                 ),
                 cohort_motif_counts,
             )
