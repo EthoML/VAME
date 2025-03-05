@@ -74,7 +74,7 @@ class SEQUENCE_DATASET(Dataset):
         """
         return self.data_points
 
-    def __getitem__(self) -> torch.Tensor:
+    def __getitem__(self, idx) -> torch.Tensor:
         """
         Get a normalized sequence at a random index [not: the specified index.]
 
