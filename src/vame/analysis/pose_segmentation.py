@@ -20,7 +20,7 @@ from vame.io.load_poses import read_pose_estimation_file
 from vame.util.cli import get_sessions_from_user_input
 from vame.util.model_util import load_model
 from vame.preprocessing.to_model import format_xarray_for_rnn
-
+import math
 
 logger_config = VameLogger(__name__)
 logger = logger_config.logger
@@ -106,7 +106,7 @@ def get_latent_vectors(
     ----------
     project_path: str
         Path to vame project folder
-    session: list
+    sessions: list
         List of sessions
     seg: str
         Type of segmentation algorithm
@@ -124,7 +124,6 @@ def get_latent_vectors(
         latent_vector_path = os.path.join(
             str(project_path),
             "results",
-            testing_name,
             session,
             seg + "-" + str(n_clusters),
             "latent_vector_" + session + ".npy",
@@ -280,17 +279,58 @@ def get_session_data(
 
     return session_motif_labels, model_cluster_center, centroid_cluster_center, geo_med_cluster_center
 
+# duck: move out
+def matrix_dimension(n_subplots):
+    """
+    Calculates the optimal plot dimensions (rows, cols) for a subplot grid with concideration for edge cases.
+    * developed to handel varying numbers of n motifs
+
+    Parameters
+    ----------
+    n_subplots : int
+       total number of subplots needed
+
+    Returns
+    -------
+    tuple (int,int)
+        (row, col)
+    """
+    #initialize variables
+    best_rows = 1
+    best_cols = n_subplots
+    min_diff = n_subplots - 1
+
+    # check relavent divisors
+    for rows in range(1, int(math.sqrt(n_subplots)) + 1):
+        if n_subplots % rows == 0:
+            cols = n_subplots // rows
+            diff = abs(cols - rows)
+
+            # check fit
+            if diff < min_diff:
+                min_diff = diff
+                best_rows = rows
+                best_cols = cols
+            # Prioritize completely filled grids
+            elif diff == min_diff and rows * cols == n_subplots:
+                best_rows, best_cols = rows, cols
+
+    
+    if best_rows * best_cols != n_subplots:
+        return None  # No valid dimensions found
+
+    return (best_rows, best_cols)
 
 def plot_cluster_centers(config: dict) -> None:
     project_path = config["project_path"]
     sessions = config["session_names"]
     # sessions = ['Session01']
-    testing_name = config["testing_name"]
     seg = 'kmeans'
     n_clusters = config["n_clusters"]
+    plt_dims = matrix_dimension(n_clusters)
 
     # Get latent vectors for each session
-    session_latent_vector = get_latent_vectors(project_path, sessions, testing_name, seg, n_clusters)
+    session_latent_vector = get_latent_vectors(project_path, sessions, seg, n_clusters)
     cohort_latent_vector = np.concatenate(session_latent_vector)  # Shape: (all frames, n_clusters)
 
 
@@ -299,67 +339,70 @@ def plot_cluster_centers(config: dict) -> None:
     pca_latent_vectors = pca.fit_transform(cohort_latent_vector)
 
     # Color for each session
-    # cmap = cm.get_cmap('tab10', len(sessions))  # 
-    cmap = ['red', 'darkorange', 'darkgreen', 'mediumblue', 'purple']
+    cmap = cm.get_cmap('tab20b')  # 
+    # cmap = ['red', 'darkorange', 'darkgreen', 'mediumblue', 'purple']
 
     cohort_pca_latent_vectors = []
     start_idx = 0
 
-    for m in range(0,n_clusters):
-        plt.clf()
-        for i, session in enumerate(sessions):
-            # print(session)
-            frames = session_latent_vector[i].shape[0]
-            # print('frames',frames)
+    fig, ax = plt.subplots(*plt_dims, figsize = (12,10), sharex = True, sharey= True)
+    
+    cur_motif = 0
+    for row in range(plt_dims[0]):
+        for col in range(plt_dims[1]):
+            for i, session in enumerate(sessions):
+                frames = session_latent_vector[i].shape[0]
 
-            # Extract PCA-transformed session data
-            session_pca = pca_latent_vectors[start_idx: start_idx + frames]
-            cohort_pca_latent_vectors.append(session_pca)  # Append whole session PCA data
-            start_idx += frames  # Update index for the next session
-            # print('session pca', session_pca.shape)
-            # print('start idx',start_idx)
+                # Extract PCA-transformed session data
+                session_pca = pca_latent_vectors[start_idx: start_idx + frames]
+                cohort_pca_latent_vectors.append(session_pca)  # Append whole session PCA data
+                start_idx += frames  # Update index for the next session
+                # print('session pca', session_pca.shape)
+                # print('start idx',start_idx)
 
-            # Get session data
-            s_motif_labels, model_cluster_center, centroid_cluster_center, geo_med_cluster_center = get_session_data(
-                project_path, session,testing_name, seg, n_clusters
-            )
-            motif_indices = np.where(s_motif_labels == m)[0]  # Get motif indices for this cluster
-            # print(motif_indices.shape)
-            motif_pca = session_pca[motif_indices]
+                # Get session data
+                s_motif_labels, model_cluster_center, centroid_cluster_center, geo_med_cluster_center = get_session_data(
+                    project_path, session,testing_name, seg, n_clusters
+                )
+                motif_indices = np.where(s_motif_labels == cur_motif)[0]  # Get motif indices for this cluster
+                # print(motif_indices.shape)
+                motif_pca = session_pca[motif_indices]
 
-            # Transform centers using PCA
-            model_center_pca = pca.transform(model_cluster_center[m,:].reshape(1,-1))
-            centroid_center_pca = pca.transform(centroid_cluster_center[m,:].reshape(1,-1)) #double check dimensions [m,:] or [:,m]
-            geo_med_center_pca = pca.transform(geo_med_cluster_center[m,:].reshape(1,-1))
+                # Transform centers using PCA
+                model_center_pca = pca.transform(model_cluster_center[cur_motif,:].reshape(1,-1))
+                centroid_center_pca = pca.transform(centroid_cluster_center[cur_motif,:].reshape(1,-1)) #double check dimensions [m,:] or [:,m]
+                geo_med_center_pca = pca.transform(geo_med_cluster_center[cur_motif,:].reshape(1,-1))
 
-            # Scatter plot with a unique session color
-            points = 500
-            # random_list = random.sample(range(len(motif_pca)), points )
-            # plt.scatter(
-                # motif_pca[random_list, 0], motif_pca[random_list, 1], 
-                # motif_pca[0:points, 0], motif_pca[0:points, 1], 
-                # motif_pca[:, 0], motif_pca[:, 1], 
-                # alpha=0.1, color=cmap[i], s=5, label=f"{session} - Motif {m}")
-            plt.scatter(centroid_center_pca[:, 0], centroid_center_pca[:, 1], 
-                    color=cmap[i], s=100, marker='x', label=f"{session} Centroid Center")
-            plt.scatter(geo_med_center_pca[:, 0], geo_med_center_pca[:, 1], 
-                    color=cmap[i], s=100, marker='+', label=f"{session} Geo-Median Center")
+                # Scatter plot with a unique session color
+                points = 100 if len(motif_pca) > 100 else len(motif_pca)
+                random_list = random.sample(range(len(motif_pca)), points )
+                ax[row][col].scatter(
+                    motif_pca[random_list, 0], motif_pca[random_list, 1], 
+                    # motif_pca[0:points, 0], motif_pca[0:points, 1], 
+                    # motif_pca[:, 0], motif_pca[:, 1], 
+                    alpha=0.1, color=cmap(i), s=3, label=f"{session} - Motif {cur_motif}")
+                ax[row][col].scatter(centroid_center_pca[:, 0], centroid_center_pca[:, 1], 
+                        color= cmap(i),s=50, marker='x', label=f"{session} Centroid Center")
+                ax[row][col].scatter(geo_med_center_pca[:, 0], geo_med_center_pca[:, 1], 
+                        color= cmap(i), s=50, marker='+', label=f"{session} Geo-Median Center")
+                ax[row][col].set(title = 'Motif ' + str(cur_motif))
             
-        start_idx = 0
+            start_idx = 0
 
-        # # Plot model center
-        plt.scatter(model_center_pca[:, 0], model_center_pca[:, 1], 
-                    color='black', marker='X', label="Model Center")
-        
+            # # Plot model center
+            ax[row][col].scatter(model_center_pca[:, 0], model_center_pca[:, 1], 
+                        color='black', marker='X', label="Model Center")
 
-        plt.xlabel("PC1")
-        plt.ylabel("PC2")
-        plt.title(f"PCA Projection of Latent Vectors for Motif {m}")
-        plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
-        plt.tight_layout()
-        plt.show()
+            cur_motif += 1
 
-plot_cluster_centers(config_dict)
+    # plt.xlabel("PC1")
+    # plt.ylabel("PC2")
+    # plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
+    plt.suptitle(f"PCA Projection of Latent Vectors for Motifs")
+    plt.tight_layout()
+    plt.show()
+
+# plot_cluster_centers(config_dict)
 
 def save_session_data(
     project_path: str,
@@ -523,7 +566,7 @@ def same_segmentation(
         idx += file_len  # updating the session start index
         center_type = 'geometric_mean'
         vis_type = 'pca'
-        session_cluster_center_centroid, session_cluster_center_geo_median = get_session_cluster_center(cfg["project_path"],
+        session_cluster_center_centroid, session_cluster_center_geo_median = get_session_cluster_center(config["project_path"],
                                                                                                         session,
                                                                                                         segmentation_algorithm,
                                                                                                         latent_vectors[i],
@@ -533,9 +576,8 @@ def same_segmentation(
 
         #pass session_cluster_center to this function to save
         #make sure the dimensions are correct.
-        save_session_data(cfg["project_path"], 
+        save_session_data(config["project_path"], 
                           session, 
-                          cfg["testing_name"], 
                           session_labels, 
                           cluster_center,
                           session_cluster_center_centroid,
@@ -545,17 +587,17 @@ def same_segmentation(
                           n_clusters,
                           segmentation_algorithm)
 
-        save_session_data(
-            config["project_path"], 
-            config["testing_name"],
-            session, 
-            session_labels, 
-            cluster_center,
-            latent_vectors[i],
-            motif_usage,
-            n_clusters,
-            segmentation_algorithm
-        )
+        # save_session_data(
+        #     config["project_path"], 
+        #     config["testing_name"],
+        #     session, 
+        #     session_labels, 
+        #     cluster_center,
+        #     latent_vectors[i],
+        #     motif_usage,
+        #     n_clusters,
+        #     segmentation_algorithm
+        # )
 
 
 
