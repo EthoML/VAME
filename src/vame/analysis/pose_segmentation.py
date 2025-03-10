@@ -3,10 +3,12 @@ import tqdm
 import torch
 import pickle
 import numpy as np
+import matplotlib.pyplot as plt
 from pathlib import Path
 from typing import List, Tuple, Union
 from hmmlearn import hmm
 from sklearn.cluster import KMeans
+
 
 from vame.schemas.states import save_state, SegmentSessionFunctionSchema
 from vame.logging.logger import VameLogger, TqdmToLogger
@@ -391,7 +393,37 @@ def individual_segmentation(
         )
     return labels, cluster_centers, motif_usages
 
+def plot_motif_thresholding(
+    config: dict
+) -> None:
 
+    results_path = os.path.join(config["project_path"], 'results')
+    all_session_m_counts = []
+    for s in config["session_names"]:
+        session_motif_count = np.load(os.path.join(results_path, 
+                                                   s, 
+                                                   config["model_name"],
+                                                   "kmeans-30",
+                                                   "motif_usage_" + s + ".npy"))
+        session_motif_count_desc = np.sort(session_motif_count)[::-1] #sort by descending order
+        total_motifs = np.sum(session_motif_count_desc)
+        sess_motif_count_desc_perc = (session_motif_count_desc / total_motifs) * 100
+        all_session_m_counts.append(sess_motif_count_desc_perc)
+        
+        plt.plot(sess_motif_count_desc_perc, color='blue', linewidth=0.5)
+
+    all_session_m_counts = np.array(all_session_m_counts)
+    mean_session_m_counts = np.mean(all_session_m_counts, axis=0)
+
+    plt.plot([], [], color='blue', label='Session sorted motif') #single blue line key
+    plt.plot(mean_session_m_counts, color='r', label="Sorted motif mean") #red mean line
+    plt.axhline(y=1, color='black', linestyle='--', label="1% Threshold") #threshold line
+    plt.xlabel("Sorted Session Index")
+    plt.ylabel("Motif Percentage (%)")
+    plt.title("Motif Count as Percentage")
+    plt.legend()
+    plt.show()
+        
 @save_state(model=SegmentSessionFunctionSchema)
 def segment_session(
     config: dict,
@@ -554,7 +586,9 @@ def segment_session(
                     "to get the full picture of the spatiotemporal dynamic. To get an idea of the behavior captured by VAME, "
                     "run vame.motif_videos(). This will leave you with short snippets of certain movements."
                 )
-            
+
+        plot_motif_thresholding(config) 
+
     except Exception as e:
         logger.exception(f"An error occurred during pose segmentation: {e}")
     finally:
