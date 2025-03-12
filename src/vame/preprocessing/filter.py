@@ -65,7 +65,7 @@ def savgol_filtering(
 
         # Update the dataset with the filtered position values
         ds[save_to_variable] = (ds[read_from_variable].dims, filtered_position)
-        ds.attrs.update({"processed_filtered": True})
+        ds.attrs.update({"processed_filtered": "True"})
 
         # Save the filtered dataset to file
         filtered_file_path = str(Path(project_path) / "data" / "processed" / f"{session}_processed.nc")

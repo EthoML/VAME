@@ -78,7 +78,7 @@ def lowconf_cleaning(
 
         # Update the dataset with the cleaned position values
         ds[save_to_variable] = (ds[read_from_variable].dims, cleaned_position)
-        ds.attrs.update({"processed_confidence": True})
+        ds.attrs.update({"processed_confidence": "True"})
 
         ds["percentage_low_confidence"] = (["space", "keypoints", "individuals"], perc_interp_points)
 
@@ -167,7 +167,7 @@ def outlier_cleaning(
 
         # Update the dataset with the cleaned position values
         ds[save_to_variable] = (ds[read_from_variable].dims, cleaned_position)
-        ds.attrs.update({"processed_outliers": True})
+        ds.attrs.update({"processed_outliers": "True"})
 
         ds["percentage_iqr_outliers"] = (["space", "keypoints", "individuals"], perc_interp_points)
 

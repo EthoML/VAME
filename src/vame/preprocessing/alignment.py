@@ -105,7 +105,7 @@ def egocentrically_align_and_center(
         ds[save_to_variable] = (ds[read_from_variable].dims, position_aligned)
         ds.attrs.update(
             {
-                "processed_alignment": True,
+                "processed_alignment": "True",
                 "centered_reference_keypoint": centered_reference_keypoint,
                 "orientation_reference_keypoint": orientation_reference_keypoint,
             }
