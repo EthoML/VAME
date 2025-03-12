@@ -1,6 +1,5 @@
 from typing import List, Optional, Literal
 from pathlib import Path
-import matplotlib.pyplot as plt
 import xarray as xr
 
 import vame
@@ -26,12 +25,12 @@ class VAMEPipeline:
     def __init__(
         self,
         project_name: str,
-        videos: List[str],
         poses_estimations: List[str],
         source_software: Literal["DeepLabCut", "SLEAP", "LightningPose"],
         working_directory: str = ".",
+        videos: Optional[List[str]] = None,
         video_type: str = ".mp4",
-        fps: int | None = None,
+        fps: Optional[float] = None,
         copy_videos: bool = False,
         paths_to_pose_nwb_series_data: Optional[str] = None,
         config_kwargs: Optional[dict] = None,
