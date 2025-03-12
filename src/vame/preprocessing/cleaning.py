@@ -86,7 +86,7 @@ def lowconf_cleaning(
         cleaned_file_path = Path(project_path) / "data" / "processed" / f"{session}_processed.nc"
         ds.to_netcdf(
             path=cleaned_file_path,
-            engine="scipy",
+            engine="netcdf4",
         )
 
 
@@ -175,5 +175,5 @@ def outlier_cleaning(
         cleaned_file_path = str(Path(project_path) / "data" / "processed" / f"{session}_processed.nc")
         ds.to_netcdf(
             path=cleaned_file_path,
-            engine="scipy",
+            engine="netcdf4",
         )

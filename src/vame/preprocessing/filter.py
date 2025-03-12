@@ -71,5 +71,5 @@ def savgol_filtering(
         filtered_file_path = str(Path(project_path) / "data" / "processed" / f"{session}_processed.nc")
         ds.to_netcdf(
             path=filtered_file_path,
-            engine="scipy",
+            engine="netcdf4",
         )

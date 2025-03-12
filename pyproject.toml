@@ -26,6 +26,7 @@ dependencies = [
     "pynwb>=2.8.3",
     "tables>=3.10.0",
     "movement==0.0.20",
+    "netCDF4==1.7.2",
 ]
 readme = { file = 'README.md', content-type = 'text/markdown' }
 

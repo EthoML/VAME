@@ -175,14 +175,14 @@ def init_new_project(
         output_name = data_raw_path / Path(pes_path).stem
         ds.to_netcdf(
             path=f"{output_name}.nc",
-            engine="scipy",
+            engine="netcdf4",
         )
         num_features_list.append(ds.space.shape[0] * ds.keypoints.shape[0])
 
         output_processed_name = data_processed_path / Path(pes_path).stem
         ds.to_netcdf(
             path=f"{output_processed_name}_processed.nc",
-            engine="scipy",
+            engine="netcdf4",
         )
 
     # Set configuration parameters
