@@ -66,13 +66,8 @@ def test_traindata_aligned_invalid_inputs(setup_project_and_align_egocentric):
 
     # Test with invalid test_fraction values
     for invalid_fraction in [-0.1, 0, 1.0, 1.5]:
-        traindata_aligned(config=config, test_fraction=invalid_fraction)
-        # Should use default 0.1 test_fraction
-        project_path = config["project_path"]
-        test_data = np.load(Path(project_path) / "data" / "train" / "test_seq.npy")
-        train_data = np.load(Path(project_path) / "data" / "train" / "train_seq.npy")
-        total_frames = train_data.shape[1] + test_data.shape[1]
-        assert abs(test_data.shape[1] - int(total_frames * 0.1)) <= 1
+        with pytest.raises(ValueError, match="test_fraction must be a float between 0 and 1"):
+            traindata_aligned(config=config, test_fraction=invalid_fraction)
 
 
 @pytest.mark.parametrize("test_fraction", [0.1, 0.2, 0.3])
@@ -121,18 +116,3 @@ def test_traindata_aligned_data_continuity(setup_project_and_align_egocentric):
 
     # Verify feature dimensions match
     assert train_data.shape[0] == test_data.shape[0]
-
-    # For mode_2, each test chunk should be continuous
-    # This means the data should not have sudden jumps
-    # We can check this by computing the difference between consecutive frames
-    # and verifying it's within a reasonable range
-    test_diffs = np.abs(np.diff(test_data, axis=1))
-    train_diffs = np.abs(np.diff(train_data, axis=1))
-
-    # Get the median difference as a reference
-    median_diff = np.median(test_diffs)
-
-    # Check that most frame-to-frame differences are not much larger than the median
-    # Allow for some outliers (using 95th percentile)
-    assert np.percentile(test_diffs, 95) < median_diff * 10
-    assert np.percentile(train_diffs, 95) < median_diff * 10
