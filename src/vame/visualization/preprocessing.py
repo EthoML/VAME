@@ -41,7 +41,8 @@ def visualize_preprocessing_scatter(
 
     for i, frame in enumerate(frames):
         # Compute dynamic limits for the original positions
-        x_orig, y_orig = original_positions[frame, 0, :, 0], original_positions[frame, 0, :, 1]
+        x_orig = original_positions[frame, 0, :, 0]
+        y_orig = original_positions[frame, 1, :, 0]
 
         # Identify keypoints that are NaN
         nan_keypoints = [
@@ -80,7 +81,8 @@ def visualize_preprocessing_scatter(
             ax_original.set_ylim(y_min, y_max)
 
         # Compute dynamic limits for the cleaned positions
-        x_cleaned, y_cleaned = cleaned_positions[frame, 0, :, 0], cleaned_positions[frame, 0, :, 1]
+        x_cleaned = cleaned_positions[frame, 0, :, 0]
+        y_cleaned = cleaned_positions[frame, 1, :, 0]
         x_min_cleaned, x_max_cleaned = x_cleaned.min() - 10, x_cleaned.max() + 10  # Add a margin
         y_min_cleaned, y_max_cleaned = y_cleaned.min() - 10, y_cleaned.max() + 10
 
@@ -99,7 +101,8 @@ def visualize_preprocessing_scatter(
         ax_cleaned.set_ylim(y_min_cleaned, y_max_cleaned)
 
         # Compute dynamic limits for the aligned positions
-        x_aligned, y_aligned = aligned_positions[frame, 0, :, 0], aligned_positions[frame, 0, :, 1]
+        x_aligned = aligned_positions[frame, 0, :, 0]
+        y_aligned = aligned_positions[frame, 1, :, 0]
         x_min_aligned, x_max_aligned = x_aligned.min() - 10, x_aligned.max() + 10  # Add a margin
         y_min_aligned, y_max_aligned = y_aligned.min() - 10, y_aligned.max() + 10
 
