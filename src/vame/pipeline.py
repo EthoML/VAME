@@ -162,15 +162,30 @@ class VAMEPipeline:
             orientation_reference_keypoint=orientation_reference_keypoint,
         )
 
-    def create_training_set(self) -> None:
+    def create_training_set(
+        self,
+        test_fraction: float = 0.1,
+        split_mode: Literal["mode_1", "mode_2"] = "mode_1",
+    ) -> None:
         """
         Creates the training set.
+
+        Parameters
+        ----------
+        test_fraction : float
+            Test fraction.
+        split_mode : str, optional
+            Split mode, by default "mode_1".
 
         Returns
         -------
         None
         """
-        vame.create_trainset(config=self.config)
+        vame.create_trainset(
+            config=self.config,
+            test_fraction=test_fraction,
+            split_mode=split_mode,
+        )
 
     def train_model(self) -> None:
         """
@@ -432,6 +447,7 @@ class VAMEPipeline:
         self,
         from_step: int = 0,
         preprocessing_kwargs: dict = {},
+        trainingset_kwargs: dict = {},
     ) -> None:
         """
         Runs the pipeline.
@@ -442,6 +458,8 @@ class VAMEPipeline:
             Start from step, by default 0.
         preprocessing_kwargs : dict, optional
             Preprocessing keyword arguments, by default {}.
+        trainingset_kwargs : dict, optional
+            Training set keyword arguments, by default {}.
 
         Returns
         -------
@@ -450,7 +468,7 @@ class VAMEPipeline:
         if from_step == 0:
             self.preprocessing(**preprocessing_kwargs)
         if from_step <= 1:
-            self.create_training_set()
+            self.create_training_set(**trainingset_kwargs)
         if from_step <= 2:
             self.train_model()
         if from_step <= 3:

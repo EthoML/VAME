@@ -285,13 +285,13 @@ def traindata_aligned(
 @save_state(model=CreateTrainsetFunctionSchema)
 def create_trainset(
     config: dict,
-    save_logs: bool = False,
     test_fraction: float = 0.1,
     read_from_variable: str = "position_processed",
     split_mode: Literal["mode_1", "mode_2"] = "mode_1",
+    save_logs: bool = False,
 ) -> None:
     """
-    Creates a training and test datasets for the VAME model.
+    Creates training and test datasets for the VAME model.
     Fills in the values in the "create_trainset" key of the states.json file.
     Creates the training dataset for VAME at:
     - project_name/
