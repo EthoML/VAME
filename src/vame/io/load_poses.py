@@ -10,7 +10,7 @@ def load_pose_estimation(
     pose_estimation_file: Path | str,
     source_software: Literal["DeepLabCut", "SLEAP", "LightningPose"],
     video_file: Optional[Path | str] = None,
-    fps: Optional[int] = None,
+    fps: Optional[float] = None,
 ) -> xr.Dataset:
     """
     Load pose estimation data.
@@ -21,7 +21,7 @@ def load_pose_estimation(
         Path to the pose estimation file.
     video_file : Path or str
         Path to the video file.
-    fps : int
+    fps : float, optional
         Sampling rate of the video.
     source_software : Literal["DeepLabCut", "SLEAP", "LightningPose"]
         Source software used for pose estimation.
@@ -57,7 +57,7 @@ def load_vame_dataset(ds_path: Path | str) -> xr.Dataset:
     """
     # Windows will not allow opened files to be overwritten,
     # so we need to load data into memory, close the file and move on with the operations
-    with xr.open_dataset(ds_path, engine="scipy") as tmp_ds:
+    with xr.open_dataset(ds_path, engine="netcdf4") as tmp_ds:
         ds_in_memory = tmp_ds.load()  # read entire file into memory
     return ds_in_memory
 

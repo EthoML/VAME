@@ -6,11 +6,11 @@ from torch.optim.lr_scheduler import StepLR, ReduceLROnPlateau
 import os
 import numpy as np
 from pathlib import Path
+from tqdm import tqdm
 from typing import Tuple
-from vame.util.auxiliary import read_config
+
 from vame.model.dataloader import SEQUENCE_DATASET
 from vame.model.rnn_model import RNN_VAE
-from tqdm import tqdm
 from vame.schemas.states import TrainModelFunctionSchema, save_state
 from vame.logging.logger import VameLogger, TqdmToLogger
 
@@ -22,10 +22,10 @@ tqdm_to_logger = TqdmToLogger(logger)
 # make sure torch uses cuda for GPU computing
 use_gpu = torch.cuda.is_available()
 if use_gpu:
-    logger.info("Using CUDA")
-    logger.info(f"GPU active: {torch.cuda.is_available()}")
+    logger.info("GPU detected")
     logger.info(f"GPU used: {torch.cuda.get_device_name(0)}")
 else:
+    logger.info("No GPU found... proceeding with CPU (slow!)")
     torch.device("cpu")
 
 

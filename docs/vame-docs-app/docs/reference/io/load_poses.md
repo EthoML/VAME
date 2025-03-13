@@ -10,7 +10,7 @@ def load_pose_estimation(pose_estimation_file: Path | str,
                          source_software: Literal["DeepLabCut", "SLEAP",
                                                   "LightningPose"],
                          video_file: Optional[Path | str] = None,
-                         fps: Optional[int] = None) -> xr.Dataset
+                         fps: Optional[float] = None) -> xr.Dataset
 ```
 
 Load pose estimation data.
@@ -19,7 +19,7 @@ Load pose estimation data.
 
 * **pose_estimation_file** (`Path or str`): Path to the pose estimation file.
 * **video_file** (`Path or str`): Path to the video file.
-* **fps** (`int`): Sampling rate of the video.
+* **fps** (`float, optional`): Sampling rate of the video.
 * **source_software** (`Literal["DeepLabCut", "SLEAP", "LightningPose"]`): Source software used for pose estimation.
 
 **Returns**

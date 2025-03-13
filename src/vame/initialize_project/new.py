@@ -8,7 +8,7 @@ import os
 from vame.schemas.project import ProjectSchema
 from vame.schemas.states import VAMEPipelineStatesSchema
 from vame.logging.logger import VameLogger
-from vame.util.auxiliary import write_config, read_config
+from vame.util.auxiliary import write_config, read_config, get_version
 from vame.video.video import get_video_frame_rate
 from vame.io.load_poses import load_pose_estimation
 
@@ -24,7 +24,7 @@ def init_new_project(
     working_directory: str = ".",
     videos: Optional[List[str]] = None,
     video_type: str = ".mp4",
-    fps: int | None = None,
+    fps: Optional[float] = None,
     copy_videos: bool = False,
     paths_to_pose_nwb_series_data: Optional[str] = None,
     config_kwargs: Optional[dict] = None,
@@ -157,7 +157,9 @@ def init_new_project(
             fps = get_video_frame_rate(str(videos_paths[0]))
             logger.info(f"Estimated FPS: {fps}")
     else:
-        videos_paths = [None] * len(pes_paths)
+        if fps is None:
+            raise ValueError("FPS must be provided if no videos are provided.")
+        videos_paths = [""] * len(pes_paths)
         logger.info("No videos provided.")
 
     # Copy pose estimation data
@@ -173,14 +175,14 @@ def init_new_project(
         output_name = data_raw_path / Path(pes_path).stem
         ds.to_netcdf(
             path=f"{output_name}.nc",
-            engine="scipy",
+            engine="netcdf4",
         )
         num_features_list.append(ds.space.shape[0] * ds.keypoints.shape[0])
 
         output_processed_name = data_processed_path / Path(pes_path).stem
         ds.to_netcdf(
             path=f"{output_processed_name}_processed.nc",
-            engine="scipy",
+            engine="netcdf4",
         )
 
     # Set configuration parameters
@@ -194,6 +196,7 @@ def init_new_project(
 
     # Create config.yaml file
     new_project = ProjectSchema(
+        vame_version=get_version(),
         project_name=project_name,
         creation_datetime=creation_datetime,
         project_path=str(project_path),

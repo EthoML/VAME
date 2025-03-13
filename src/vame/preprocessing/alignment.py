@@ -60,25 +60,26 @@ def egocentrically_align_and_center(
         idx1 = np.where(keypoints == centered_reference_keypoint)[0][0]
         idx2 = np.where(keypoints == orientation_reference_keypoint)[0][0]
 
-        # Extract processed positions values, with shape: (time, individuals, keypoints, space)
+        # Extract processed positions values, with shape: (time, space, keypoints, individuals)
         position_processed = np.copy(ds[read_from_variable].values)
         position_aligned = np.empty_like(position_processed)
 
         # Loop over individuals
-        for individual in range(position_processed.shape[1]):
-            # Shape: (time, keypoints, space)
-            individual_positions = position_processed[:, individual, :, :]
+        for individual in range(position_processed.shape[3]):
+            # Shape: (time, space, keypoints)
+            individual_positions = position_processed[:, :, :, individual]
             centralized_positions = np.empty_like(individual_positions)
 
             # Centralize all positions around the first keypoint
-            for kp in range(individual_positions.shape[1]):
-                for space in range(individual_positions.shape[2]):
-                    centralized_positions[:, kp, space] = (
-                        individual_positions[:, kp, space] - individual_positions[:, idx1, space]
+            for kp in range(individual_positions.shape[2]):
+                for space in range(individual_positions.shape[1]):
+                    centralized_positions[:, space, kp] = (
+                        individual_positions[:, space, kp] - individual_positions[:, space, idx1]
                     )
 
             # Calculate vectors between keypoints
-            vector = centralized_positions[:, idx2, :]  # Vector from keypoint1 to keypoint2
+            # Transpose to get (time, 2) shape for x,y coordinates
+            vector = centralized_positions[:, :, idx2]  # Vector from keypoint1 to keypoint2
             angles = np.arctan2(vector[:, 0], vector[:, 1])  # Angles in radians
 
             # Apply rotation to align the second keypoint along the y-axis
@@ -89,20 +90,22 @@ def egocentrically_align_and_center(
                         [np.sin(angles[t]), np.cos(angles[t])],
                     ]
                 )
-                frame_positions = centralized_positions[t, :, :]
+                # Transpose to get (keypoints, space) for matrix multiplication
+                frame_positions = centralized_positions[t].T
                 rotated_positions = (rotation_matrix @ frame_positions.T).T
 
                 # Check and ensure the y-value of orientation_reference_keypoint is negative
                 if rotated_positions[idx2, 1] > 0:
                     rotated_positions[:, :] *= -1  # Flip all coordinates
 
-                position_aligned[t, individual, :, :] = rotated_positions
+                # Transpose back to (space, keypoints)
+                position_aligned[t, :, :, individual] = rotated_positions.T
 
         # Update the dataset with the cleaned position values
         ds[save_to_variable] = (ds[read_from_variable].dims, position_aligned)
         ds.attrs.update(
             {
-                "processed_alignment": True,
+                "processed_alignment": "True",
                 "centered_reference_keypoint": centered_reference_keypoint,
                 "orientation_reference_keypoint": orientation_reference_keypoint,
             }
@@ -112,5 +115,5 @@ def egocentrically_align_and_center(
         cleaned_file_path = str(Path(project_path) / "data" / "processed" / f"{session}_processed.nc")
         ds.to_netcdf(
             path=cleaned_file_path,
-            engine="scipy",
+            engine="netcdf4",
         )

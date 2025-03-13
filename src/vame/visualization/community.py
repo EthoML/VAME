@@ -156,7 +156,9 @@ def draw_tree(
 
     if save_to_file and results_dir:
         save_fig_path = Path(results_dir) / "tree.png"
+        save_fig_pdf_path = Path(results_dir) / "tree.pdf"
         plt.savefig(save_fig_path, bbox_inches="tight")
+        plt.savefig(save_fig_pdf_path, bbox_inches="tight")
 
     if show_figure:
         plt.show()

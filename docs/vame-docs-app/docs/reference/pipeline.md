@@ -19,12 +19,12 @@ VAME pipeline class.
 
 ```python
 def __init__(project_name: str,
-             videos: List[str],
              poses_estimations: List[str],
              source_software: Literal["DeepLabCut", "SLEAP", "LightningPose"],
              working_directory: str = ".",
+             videos: Optional[List[str]] = None,
              video_type: str = ".mp4",
-             fps: int | None = None,
+             fps: Optional[float] = None,
              copy_videos: bool = False,
              paths_to_pose_nwb_series_data: Optional[str] = None,
              config_kwargs: Optional[dict] = None) -> None
@@ -106,10 +106,17 @@ Preprocesses the data.
 #### create\_training\_set
 
 ```python
-def create_training_set() -> None
+def create_training_set(
+        test_fraction: float = 0.1,
+        split_mode: Literal["mode_1", "mode_2"] = "mode_1") -> None
 ```
 
 Creates the training set.
+
+**Parameters**
+
+* **test_fraction** (`float`): Test fraction.
+* **split_mode** (`str, optional`): Split mode, by default &quot;mode_1&quot;.
 
 **Returns**
 
@@ -316,7 +323,9 @@ Generates the project report.
 #### run\_pipeline
 
 ```python
-def run_pipeline(from_step: int = 0, preprocessing_kwargs: dict = {}) -> None
+def run_pipeline(from_step: int = 0,
+                 preprocessing_kwargs: dict = {},
+                 trainingset_kwargs: dict = {}) -> None
 ```
 
 Runs the pipeline.
@@ -325,6 +334,7 @@ Runs the pipeline.
 
 * **from_step** (`int, optional`): Start from step, by default 0.
 * **preprocessing_kwargs** (`dict, optional`): Preprocessing keyword arguments, by default {}.
+* **trainingset_kwargs** (`dict, optional`): Training set keyword arguments, by default {}.
 
 **Returns**
 

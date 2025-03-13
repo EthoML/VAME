@@ -166,8 +166,7 @@ cut tree, and number of clusters. (markov chain to tree -&gt; community detectio
 ```python
 def get_cohort_community_labels(
         motif_labels: List[np.ndarray],
-        cohort_community_bag: list,
-        median_filter_size: int = 7) -> List[np.ndarray]
+        cohort_community_bag: list) -> List[np.ndarray]
 ```
 
 Transform kmeans/hmm parameterized latent vector motifs into communities.
@@ -177,7 +176,6 @@ Get cohort community labels for given labels, and community bags.
 
 * **labels** (`List[np.ndarray]`): List of label arrays.
 * **cohort_community_bag** (`np.ndarray`): List of community bags. Dimensions: (n_communities, n_clusters_in_community)
-* **median_filter_size** (`int, optional`): Size of the median filter, in number of frames. Defaults to 7.
 
 **Returns**
 

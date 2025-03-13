@@ -528,7 +528,7 @@
 #             )
 #             # save to file
 #             result_file = Path(project_path) / "data" / "processed" / session / f"{session}-aligned.nc"
-#             ds.to_netcdf(result_file, engine="scipy")
+#             ds.to_netcdf(result_file, engine="netcdf4")
 
 #         logger.info("Your data is now in the right format and you can call vame.create_trainset()")
 #     except Exception as e:
