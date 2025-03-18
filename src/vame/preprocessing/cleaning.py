@@ -97,7 +97,8 @@ def outlier_cleaning(
 ) -> None:
     """
     Clean the outliers from the dataset. Processes position data by:
-     - setting outlier points to NaN
+     - rescaling data by individual anatomical scale
+     - setting outlier points to NaN based on IQR cutoff
      - interpolating NaN points
 
     Parameters
@@ -113,7 +114,7 @@ def outlier_cleaning(
     -------
     None
     """
-    logger.info("Cleaning outliers with Z-score transformation and IQR cutoff.")
+    logger.info("Cleaning outliers with anatomical rescaling and IQR cutoff.")
     project_path = config["project_path"]
     sessions = config["session_names"]
 
@@ -138,36 +139,51 @@ def outlier_cleaning(
                     if np.all(series == 0):
                         continue
 
-                    # Calculate Z-score
-                    z_series = (series - np.nanmean(series)) / np.nanstd(series)
+                    # Get individual scale for this individual
+                    individual_scale = ds["individual_scale"].values[individual]
+
+                    # Rescale by individual_scale
+                    rescaled_series = series / individual_scale
 
                     # Set outlier positions to NaN, based on IQR cutoff
                     if config["robust"]:
                         iqr_factor = config["iqr_factor"]
-                        iqr_val = iqr(z_series)
-                        outlier_mask = np.abs(z_series) > iqr_factor * iqr_val
-                        z_series[outlier_mask] = np.nan
+                        iqr_val = iqr(rescaled_series)
+                        # Calculate median for rescaled series
+                        median_val = np.nanmedian(rescaled_series)
+                        # Define bounds using median and IQR
+                        lower_bound = median_val - iqr_factor * iqr_val
+                        upper_bound = median_val + iqr_factor * iqr_val
+                        # Identify outliers
+                        outlier_mask = (rescaled_series < lower_bound) | (rescaled_series > upper_bound)
+
+                        # Set outliers to NaN
+                        rescaled_series[outlier_mask] = np.nan
                         perc_interp_points[space, keypoint, individual] = (
                             100 * np.sum(outlier_mask) / len(outlier_mask)
                         )
 
                         # Interpolate NaN values
                         if not outlier_mask.all():
-                            z_series[outlier_mask] = np.interp(
+                            rescaled_series[outlier_mask] = np.interp(
                                 np.flatnonzero(outlier_mask),
                                 np.flatnonzero(~outlier_mask),
-                                z_series[~outlier_mask],
+                                rescaled_series[~outlier_mask],
                             )
 
-                        # Redo the z-score to remove the bias of the now-removed outliers
-                        z_series = (z_series - np.nanmean(z_series)) / np.nanstd(z_series)
+                        # CHANGED WHEN REMOVED Z-SCORE
+                        # # Redo the z-score to remove the bias of the now-removed outliers
+                        # z_series = (z_series - np.nanmean(z_series)) / np.nanstd(z_series)
 
-                    # Update the processed position array
-                    cleaned_position[:, space, keypoint, individual] = z_series
+                    # Store the rescaled series
+                    cleaned_position[:, space, keypoint, individual] = rescaled_series
 
         # Update the dataset with the cleaned position values
         ds[save_to_variable] = (ds[read_from_variable].dims, cleaned_position)
-        ds.attrs.update({"processed_outliers": "True"})
+        ds.attrs.update({
+            "processed_outliers": "True",
+            "rescaled_by_individual_scale": "True"
+        })
 
         ds["percentage_iqr_outliers"] = (["space", "keypoints", "individuals"], perc_interp_points)
 

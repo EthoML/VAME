@@ -9,6 +9,39 @@ logger_config = VameLogger(__name__)
 logger = logger_config.logger
 
 
+def calculate_geometric_distance(positions, keypoint1_idx, keypoint2_idx):
+    """
+    Calculate the geometric distance between two keypoints.
+
+    Parameters
+    ----------
+    positions : np.ndarray
+        Array of positions with shape (time, space, keypoints, individuals) or (time, space, keypoints)
+    keypoint1_idx : int
+        Index of the first keypoint
+    keypoint2_idx : int
+        Index of the second keypoint
+
+    Returns
+    -------
+    np.ndarray
+        Array of distances with shape (time, individuals) or (time,)
+    """
+    # Extract positions for the two keypoints
+    if positions.ndim == 4:  # (time, space, keypoints, individuals)
+        kp1 = positions[:, :, keypoint1_idx, :]
+        kp2 = positions[:, :, keypoint2_idx, :]
+        # Calculate Euclidean distance for each time point and individual
+        distances = np.sqrt(np.sum((kp1 - kp2)**2, axis=1))  # Result: (time, individuals)
+    else:  # (time, space, keypoints)
+        kp1 = positions[:, :, keypoint1_idx]
+        kp2 = positions[:, :, keypoint2_idx]
+        # Calculate Euclidean distance for each time point
+        distances = np.sqrt(np.sum((kp1 - kp2)**2, axis=1))  # Result: (time,)
+
+    return distances
+
+
 def egocentrically_align_and_center(
     config: dict,
     centered_reference_keypoint: str = "snout",
@@ -63,6 +96,21 @@ def egocentrically_align_and_center(
         # Extract processed positions values, with shape: (time, space, keypoints, individuals)
         position_processed = np.copy(ds[read_from_variable].values)
         position_aligned = np.empty_like(position_processed)
+
+        # Calculate individual scales (before alignment)
+        individual_scales = np.zeros(position_processed.shape[3])
+        for individual in range(position_processed.shape[3]):
+            # Calculate distances between reference keypoints
+            distances = calculate_geometric_distance(
+                position_processed[:, :, :, individual],
+                idx1,
+                idx2
+            )
+            # Calculate median distance, excluding NaNs
+            individual_scales[individual] = np.nanmedian(distances)
+
+        # Store individual scales in the dataset
+        ds["individual_scale"] = (["individuals"], individual_scales)
 
         # Loop over individuals
         for individual in range(position_processed.shape[3]):
