@@ -12,13 +12,19 @@ def preprocessing(
     config: dict,
     centered_reference_keypoint: str = "snout",
     orientation_reference_keypoint: str = "tailbase",
+    run_lowconf_cleaning: bool = True,
+    run_egocentric_alignment: bool = True,
+    run_outlier_cleaning: bool = True,
+    run_rescaling: bool = False,
+    run_savgol_filtering: bool = True,
     save_logs: bool = False,
 ) -> None:
     """
     Preprocess the data by:
         - Cleaning low confidence data points
         - Egocentric alignment
-        - Outlier cleaning
+        - Outlier cleaning using IQR
+        - Rescaling
         - Savitzky-Golay filtering
 
     Parameters
@@ -35,35 +41,44 @@ def preprocessing(
     None
     """
     # Low-confidence cleaning
-    logger.info("Cleaning low confidence data points...")
-    lowconf_cleaning(
-        config=config,
-        read_from_variable="position",
-        save_to_variable="position_cleaned_lowconf",
-    )
+    if run_lowconf_cleaning:
+        logger.info("Cleaning low confidence data points...")
+        lowconf_cleaning(
+            config=config,
+            read_from_variable="position",
+            save_to_variable="position_cleaned_lowconf",
+        )
 
     # Egocentric alignment
-    logger.info("Egocentrically aligning and centering...")
-    egocentrically_align_and_center(
-        config=config,
-        centered_reference_keypoint=centered_reference_keypoint,
-        orientation_reference_keypoint=orientation_reference_keypoint,
-        read_from_variable="position_cleaned_lowconf",
-        save_to_variable="position_egocentric_aligned",
-    )
+    if run_egocentric_alignment:
+        logger.info("Egocentrically aligning and centering...")
+        egocentrically_align_and_center(
+            config=config,
+            centered_reference_keypoint=centered_reference_keypoint,
+            orientation_reference_keypoint=orientation_reference_keypoint,
+            read_from_variable="position_cleaned_lowconf",
+            save_to_variable="position_egocentric_aligned",
+        )
 
     # Outlier cleaning
-    logger.info("Cleaning outliers...")
-    outlier_cleaning(
-        config=config,
-        read_from_variable="position_egocentric_aligned",
-        save_to_variable="position_processed",
-    )
+    if run_outlier_cleaning:
+        logger.info("Cleaning outliers using IQR method...")
+        outlier_cleaning(
+            config=config,
+            read_from_variable="position_egocentric_aligned",
+            save_to_variable="position_processed",
+        )
+
+    # Rescaling
+    if run_rescaling:
+        logger.info("Rescaling...")
+        raise NotImplementedError("Rescaling is not implemented")
 
     # Savgol filtering
-    logger.info("Applying Savitzky-Golay filter...")
-    savgol_filtering(
-        config=config,
-        read_from_variable="position_processed",
-        save_to_variable="position_processed",
-    )
+    if run_savgol_filtering:
+        logger.info("Applying Savitzky-Golay filter...")
+        savgol_filtering(
+            config=config,
+            read_from_variable="position_processed",
+            save_to_variable="position_processed",
+        )
