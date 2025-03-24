@@ -2,6 +2,7 @@ from vame.logging.logger import VameLogger
 from vame.preprocessing.cleaning import lowconf_cleaning, outlier_cleaning
 from vame.preprocessing.alignment import egocentrically_align_and_center
 from vame.preprocessing.filter import savgol_filtering
+from vame.preprocessing.scaling import rescaling
 
 
 logger_config = VameLogger(__name__)
@@ -15,8 +16,8 @@ def preprocessing(
     run_lowconf_cleaning: bool = True,
     run_egocentric_alignment: bool = True,
     run_outlier_cleaning: bool = True,
-    run_rescaling: bool = False,
     run_savgol_filtering: bool = True,
+    run_rescaling: bool = False,
     save_logs: bool = False,
 ) -> None:
     """
@@ -69,11 +70,6 @@ def preprocessing(
             save_to_variable="position_processed",
         )
 
-    # Rescaling
-    if run_rescaling:
-        logger.info("Rescaling...")
-        raise NotImplementedError("Rescaling is not implemented")
-
     # Savgol filtering
     if run_savgol_filtering:
         logger.info("Applying Savitzky-Golay filter...")
@@ -81,4 +77,13 @@ def preprocessing(
             config=config,
             read_from_variable="position_processed",
             save_to_variable="position_processed",
+        )
+
+    # Rescaling
+    if run_rescaling:
+        logger.info("Rescaling...")
+        rescaling(
+            config=config,
+            read_from_variable="position_processed",
+            save_to_variable="position_scaled",
         )
