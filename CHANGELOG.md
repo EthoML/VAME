@@ -2,11 +2,20 @@
 
 ### Fixes
 
-- 
+- Fix movement sets fps to None, which is not accepted by ds.to_netcdf ([Issue #148](https://github.com/EthoML/VAME/issues/148))
+- Add tests for M1 ([Issue #149](https://github.com/EthoML/VAME/issues/149))
+- Fix imports for download sample data
+- Removed smoothing filter on community labels and save community fig as a .pdf
+- Save pose segmentation data after each session instead of segmentation algorithm method ([Issue #128](https://github.com/EthoML/VAME/issues/128))
+- Improve test/train set split ([Issue #146](https://github.com/EthoML/VAME/issues/146))
+- Re-order dataset dimensions to be in line with movement
+- Update netCDF engine to `netCDF4`
 
 ### Features
 
-- 
+- Update torch version to 2.5.1
+- Update movement version to 0.2.0
+- Add VAME package version to config ([Issue #147](https://github.com/EthoML/VAME/issues/147))
 
 
 # v0.8.0
