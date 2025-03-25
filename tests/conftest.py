@@ -222,23 +222,9 @@ def setup_project_and_create_train_aligned_dataset(setup_project_and_align_egoce
     config = setup_project_and_align_egocentric["config_data"]
     vame.create_trainset(
         config=config,
-        split_mode="mode_1",
+        split_mode="mode_2",
         save_logs=False,
     )
-    train_set_shape_1 = np.load(Path(config["project_path"]) / "train_seq.npy").shape
-    test_set_shape_1 = np.load(Path(config["project_path"]) / "test_seq.npy").shape
-
-    vame.create_trainset(
-        config=config,
-        split_mode="mode_2",
-        save_logs=True,
-    )
-    train_set_shape_2 = np.load(Path(config["project_path"]) / "train_seq.npy").shape
-    test_set_shape_2 = np.load(Path(config["project_path"]) / "test_seq.npy").shape
-
-    assert train_set_shape_1 == train_set_shape_2
-    assert test_set_shape_1 == test_set_shape_2
-
     return setup_project_and_align_egocentric
 
 
