@@ -9,6 +9,37 @@ logger_config = VameLogger(__name__)
 logger = logger_config.logger
 
 
+def calculate_geometric_distance(positions, keypoint1_idx, keypoint2_idx):
+    """
+    Calculate the geometric distance between two keypoints.
+    Parameters
+    ----------
+    positions : np.ndarray
+        Array of positions with shape (time, space, keypoints, individuals) or (time, space, keypoints)
+    keypoint1_idx : int
+        Index of the first keypoint
+    keypoint2_idx : int
+        Index of the second keypoint
+    Returns
+    -------
+    np.ndarray
+        Array of distances with shape (time, individuals) or (time,)
+    """
+    # Extract positions for the two keypoints
+    if positions.ndim == 4:  # (time, space, keypoints, individuals)
+        kp1 = positions[:, :, keypoint1_idx, :]
+        kp2 = positions[:, :, keypoint2_idx, :]
+        # Calculate Euclidean distance for each time point and individual
+        distances = np.sqrt(np.sum((kp1 - kp2)**2, axis=1))  # Result: (time, individuals)
+    else:  # (time, space, keypoints)
+        kp1 = positions[:, :, keypoint1_idx]
+        kp2 = positions[:, :, keypoint2_idx]
+        # Calculate Euclidean distance for each time point
+        distances = np.sqrt(np.sum((kp1 - kp2)**2, axis=1))  # Result: (time,)
+
+    return distances
+
+
 def egocentrically_align_and_center(
     config: dict,
     centered_reference_keypoint: str = "snout",
@@ -60,25 +91,41 @@ def egocentrically_align_and_center(
         idx1 = np.where(keypoints == centered_reference_keypoint)[0][0]
         idx2 = np.where(keypoints == orientation_reference_keypoint)[0][0]
 
-        # Extract processed positions values, with shape: (time, individuals, keypoints, space)
+        # Extract processed positions values, with shape: (time, space, keypoints, individuals)
         position_processed = np.copy(ds[read_from_variable].values)
         position_aligned = np.empty_like(position_processed)
 
+        # Calculate individual scales (before alignment)
+        individual_scales = np.zeros(position_processed.shape[3])
+        for individual in range(position_processed.shape[3]):
+            # Calculate distances between reference keypoints
+            distances = calculate_geometric_distance(
+                position_processed[:, :, :, individual],
+                idx1,
+                idx2
+            )
+            # Calculate median distance, excluding NaNs
+            individual_scales[individual] = np.nanmedian(distances)
+
+        # Store individual scales in the dataset
+        ds["individual_scale"] = (["individuals"], individual_scales)
+
         # Loop over individuals
-        for individual in range(position_processed.shape[1]):
-            # Shape: (time, keypoints, space)
-            individual_positions = position_processed[:, individual, :, :]
+        for individual in range(position_processed.shape[3]):
+            # Shape: (time, space, keypoints)
+            individual_positions = position_processed[:, :, :, individual]
             centralized_positions = np.empty_like(individual_positions)
 
             # Centralize all positions around the first keypoint
-            for kp in range(individual_positions.shape[1]):
-                for space in range(individual_positions.shape[2]):
-                    centralized_positions[:, kp, space] = (
-                        individual_positions[:, kp, space] - individual_positions[:, idx1, space]
+            for kp in range(individual_positions.shape[2]):
+                for space in range(individual_positions.shape[1]):
+                    centralized_positions[:, space, kp] = (
+                        individual_positions[:, space, kp] - individual_positions[:, space, idx1]
                     )
 
             # Calculate vectors between keypoints
-            vector = centralized_positions[:, idx2, :]  # Vector from keypoint1 to keypoint2
+            # Transpose to get (time, 2) shape for x,y coordinates
+            vector = centralized_positions[:, :, idx2]  # Vector from keypoint1 to keypoint2
             angles = np.arctan2(vector[:, 0], vector[:, 1])  # Angles in radians
 
             # Apply rotation to align the second keypoint along the y-axis
@@ -89,20 +136,22 @@ def egocentrically_align_and_center(
                         [np.sin(angles[t]), np.cos(angles[t])],
                     ]
                 )
-                frame_positions = centralized_positions[t, :, :]
+                # Transpose to get (keypoints, space) for matrix multiplication
+                frame_positions = centralized_positions[t].T
                 rotated_positions = (rotation_matrix @ frame_positions.T).T
 
                 # Check and ensure the y-value of orientation_reference_keypoint is negative
                 if rotated_positions[idx2, 1] > 0:
                     rotated_positions[:, :] *= -1  # Flip all coordinates
 
-                position_aligned[t, individual, :, :] = rotated_positions
+                # Transpose back to (space, keypoints)
+                position_aligned[t, :, :, individual] = rotated_positions.T
 
         # Update the dataset with the cleaned position values
         ds[save_to_variable] = (ds[read_from_variable].dims, position_aligned)
         ds.attrs.update(
             {
-                "processed_alignment": True,
+                "processed_alignment": "True",
                 "centered_reference_keypoint": centered_reference_keypoint,
                 "orientation_reference_keypoint": orientation_reference_keypoint,
             }
@@ -112,5 +161,5 @@ def egocentrically_align_and_center(
         cleaned_file_path = str(Path(project_path) / "data" / "processed" / f"{session}_processed.nc")
         ds.to_netcdf(
             path=cleaned_file_path,
-            engine="scipy",
+            engine="netcdf4",
         )

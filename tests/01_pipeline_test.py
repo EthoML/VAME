@@ -14,6 +14,7 @@ def test_pipeline(setup_pipeline):
     preprocessing_kwargs = {
         "centered_reference_keypoint": "Nose",
         "orientation_reference_keypoint": "Tailroot",
+        "run_rescaling": True,
     }
     pipeline.run_pipeline(preprocessing_kwargs=preprocessing_kwargs)
 
