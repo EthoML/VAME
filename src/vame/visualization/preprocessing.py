@@ -74,8 +74,15 @@ def visualize_preprocessing_scatter(
 
             ax_original.set_xlabel("X", fontsize=12)
             ax_original.set_ylabel("Y", fontsize=12)
-            ax_original.axhline(0, color="gray", linestyle="--")
-            ax_original.axvline(0, color="gray", linestyle="--")
+            # Get reference keypoint position for reference lines
+            ref_keypoint = ds.centered_reference_keypoint
+            ref_idx = np.where(keypoints_labels == ref_keypoint)[0][0]
+            ref_x = x_orig[ref_idx]
+            ref_y = y_orig[ref_idx]
+
+            # Draw reference lines through the reference keypoint
+            ax_original.axhline(ref_y, color="gray", linestyle="--")
+            ax_original.axvline(ref_x, color="gray", linestyle="--")
             # Ensure square aspect by making the limits have equal range
             x_range = x_max - x_min
             y_range = y_max - y_min
@@ -100,8 +107,15 @@ def visualize_preprocessing_scatter(
         ax_cleaned.set_title(f"Cleaned - Frame {frame}", fontsize=14)
         ax_cleaned.set_xlabel("X", fontsize=12)
         ax_cleaned.set_ylabel("Y", fontsize=12)
-        ax_cleaned.axhline(0, color="gray", linestyle="--")
-        ax_cleaned.axvline(0, color="gray", linestyle="--")
+        # Get reference keypoint position for reference lines
+        ref_keypoint = ds.centered_reference_keypoint
+        ref_idx = np.where(keypoints_labels == ref_keypoint)[0][0]
+        ref_x_cleaned = x_cleaned[ref_idx]
+        ref_y_cleaned = y_cleaned[ref_idx]
+
+        # Draw reference lines through the reference keypoint
+        ax_cleaned.axhline(ref_y_cleaned, color="gray", linestyle="--")
+        ax_cleaned.axvline(ref_x_cleaned, color="gray", linestyle="--")
         # Ensure square aspect by making the limits have equal range
         x_range_cleaned = x_max_cleaned - x_min_cleaned
         y_range_cleaned = y_max_cleaned - y_min_cleaned
