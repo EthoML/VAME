@@ -10,15 +10,44 @@ def visualize_preprocessing_scatter(
     config: dict,
     session_index: int = 0,
     frames: list = [],
-    original_positions_key: str = "position",
-    cleaned_positions_key: str = "position_cleaned_lowconf",
-    aligned_positions_key: str = "position_egocentric_aligned",
+    original_positions_key: str | None = "position",
+    cleaned_positions_key: str | None = "position_cleaned_lowconf",
+    aligned_positions_key: str | None = "position_egocentric_aligned",
+    filtered_positions_key: str | None = "position_processed",
+    scaled_positions_key: str | None = "position_scaled",
     save_to_file: bool = False,
     show_figure: bool = True,
 ):
     """
-    Visualize the preprocessing results by plotting the original, cleaned low-confidence,
-    and egocentric aligned positions of the keypoints in a scatter plot.
+    Visualize the preprocessing results by plotting the positions of the keypoints in a scatter plot.
+    Each position key parameter can be a string (to include that column) or None (to skip that column).
+
+    Parameters
+    ----------
+    config : dict
+        Configuration dictionary.
+    session_index : int, optional
+        Index of the session to visualize.
+    frames : list, optional
+        List of frames to visualize.
+    original_positions_key : str, optional
+        Key for the original positions.
+    cleaned_positions_key : str, optional
+        Key for the low confidence cleaned positions.
+    aligned_positions_key : str, optional
+        Key for the egocentric aligned positions.
+    filtered_positions_key : str, optional
+        Key for the filtered positions.
+    scaled_positions_key : str, optional
+        Key for the scaled positions.
+    save_to_file : bool, optional
+        Whether to save the figure to a file.
+    show_figure : bool, optional
+        Whether to show the figure.
+
+    Returns
+    -------
+    None
     """
     project_path = config["project_path"]
     sessions = config["session_names"]
@@ -28,132 +57,137 @@ def visualize_preprocessing_scatter(
     file_path = str(Path(project_path) / "data" / "processed" / f"{session}_processed.nc")
     _, _, ds = read_pose_estimation_file(file_path=file_path)
 
-    original_positions = ds[original_positions_key].values
-    cleaned_positions = ds[cleaned_positions_key].values
-    aligned_positions = ds[aligned_positions_key].values
+    # Create a list of position keys and labels, filtering out None values
+    position_keys = []
+    position_labels = []
+
+    if original_positions_key is not None:
+        if original_positions_key not in ds.keys():
+            raise KeyError(f"Key '{original_positions_key}' not found in dataset.")
+        position_keys.append(original_positions_key)
+        position_labels.append("Original")
+
+    if cleaned_positions_key is not None:
+        if cleaned_positions_key not in ds.keys():
+            raise KeyError(f"Key '{cleaned_positions_key}' not found in dataset.")
+        position_keys.append(cleaned_positions_key)
+        position_labels.append("Low conf cleaned")
+
+    if aligned_positions_key is not None:
+        if aligned_positions_key not in ds.keys():
+            raise KeyError(f"Key '{aligned_positions_key}' not found in dataset.")
+        position_keys.append(aligned_positions_key)
+        position_labels.append("Aligned")
+
+    if filtered_positions_key is not None:
+        if filtered_positions_key not in ds.keys():
+            raise KeyError(f"Key '{filtered_positions_key}' not found in dataset.")
+        position_keys.append(filtered_positions_key)
+        position_labels.append("Filtered")
+
+    if scaled_positions_key is not None:
+        if scaled_positions_key not in ds.keys():
+            raise KeyError(f"Key '{scaled_positions_key}' not found in dataset.")
+        position_keys.append(scaled_positions_key)
+        position_labels.append("Scaled")
+
+    # Load all position data
+    positions_data = {}
+    for key in position_keys:
+        positions_data[key] = ds[key].values
+
     keypoints_labels = ds.keypoints.values
 
     if not frames:
-        frames = [int(i * len(original_positions)) for i in [0.1, 0.3, 0.5, 0.7, 0.9]]
-    num_frames = len(frames)
+        # Use the first position key to determine frame count
+        first_key = position_keys[0]
+        frames = [int(i * len(positions_data[first_key])) for i in [0.1, 0.3, 0.5, 0.7, 0.9]]
 
-    fig, axes = plt.subplots(num_frames, 3, figsize=(18, 6 * num_frames))  # Adjusted figure width for better spacing
+    num_frames = len(frames)
+    num_cols = len(position_keys)
+
+    # Create a figure with the appropriate number of columns
+    fig, axes = plt.subplots(num_frames, num_cols, figsize=(6 * num_cols, 6 * num_frames))
+
+    # Handle case where there's only one frame (axes would be 1D)
+    if num_frames == 1:
+        axes = axes.reshape(1, -1)
+
+    # Define colors for each position type
+    colors = ["blue", "orange", "green", "red", "purple"]
+
+    # Get reference keypoint
+    ref_keypoint = ds.centered_reference_keypoint
+    ref_idx = np.where(keypoints_labels == ref_keypoint)[0][0]
 
     for i, frame in enumerate(frames):
-        # Compute dynamic limits for the original positions
-        x_orig = original_positions[frame, 0, :, 0]
-        y_orig = original_positions[frame, 1, :, 0]
+        for j, (key, label) in enumerate(zip(position_keys, position_labels)):
+            # Get position data for this frame
+            x_pos = positions_data[key][frame, 0, :, 0]
+            y_pos = positions_data[key][frame, 1, :, 0]
 
-        # Identify keypoints that are NaN
-        nan_keypoints = [
-            keypoints_labels[k] for k in range(len(keypoints_labels)) if np.isnan(x_orig[k]) or np.isnan(y_orig[k])
-        ]
+            # Get current axis
+            ax = axes[i, j]
 
-        # Check if original positions contain all NaNs
-        if np.all(np.isnan(x_orig)) or np.all(np.isnan(y_orig)):
-            ax_original = axes[i, 0]
-            ax_original.set_title(f"Original - Frame {frame} (All NaNs)", fontsize=14, color="red")
-            ax_original.axis("off")  # Hide axis since there is no data to plot
-        else:
-            x_min, x_max = np.nanmin(x_orig) - 10, np.nanmax(x_orig) + 10  # Add a margin
-            y_min, y_max = np.nanmin(y_orig) - 10, np.nanmax(y_orig) + 10
+            # Identify keypoints that are NaN
+            nan_keypoints = [
+                keypoints_labels[k] for k in range(len(keypoints_labels))
+                if np.isnan(x_pos[k]) or np.isnan(y_pos[k])
+            ]
 
-            ax_original = axes[i, 0]
-            ax_original.scatter(x_orig, y_orig, c="blue", label="Original")
-            for k, (x, y) in enumerate(zip(x_orig, y_orig)):
-                ax_original.text(x, y, keypoints_labels[k], fontsize=10, color="blue")
-
-            # Include NaN keypoints in the title
-            if nan_keypoints:
-                nan_text = ", ".join(nan_keypoints)
-                title_text = f"Original - Frame {frame}\nNaNs: {nan_text}"
+            # Check if positions contain all NaNs
+            if np.all(np.isnan(x_pos)) or np.all(np.isnan(y_pos)):
+                ax.set_title(f"{label} - Frame {frame} (All NaNs)", fontsize=14, color="red")
+                ax.axis("off")  # Hide axis since there is no data to plot
             else:
-                title_text = f"Original - Frame {frame}"
+                margin = 10
+                if scaled_positions_key and key == scaled_positions_key:
+                    margin = .1
+                x_min, x_max = np.nanmin(x_pos) - margin, np.nanmax(x_pos) + margin  # Add a margin
+                y_min, y_max = np.nanmin(y_pos) - margin, np.nanmax(y_pos) + margin
 
-            ax_original.set_title(title_text, fontsize=14)
+                # Plot scatter points
+                ax.scatter(x_pos, y_pos, c=colors[j % len(colors)], label=label)
 
-            ax_original.set_xlabel("X", fontsize=12)
-            ax_original.set_ylabel("Y", fontsize=12)
-            # Get reference keypoint position for reference lines
-            ref_keypoint = ds.centered_reference_keypoint
-            ref_idx = np.where(keypoints_labels == ref_keypoint)[0][0]
-            ref_x = x_orig[ref_idx]
-            ref_y = y_orig[ref_idx]
+                # Add keypoint labels
+                for k, (x, y) in enumerate(zip(x_pos, y_pos)):
+                    ax.text(x, y, keypoints_labels[k], fontsize=10, color=colors[j % len(colors)])
 
-            # Draw reference lines through the reference keypoint
-            ax_original.axhline(ref_y, color="gray", linestyle="--")
-            ax_original.axvline(ref_x, color="gray", linestyle="--")
-            # Ensure square aspect by making the limits have equal range
-            x_range = x_max - x_min
-            y_range = y_max - y_min
-            max_range = max(x_range, y_range)
-            x_center = (x_max + x_min) / 2
-            y_center = (y_max + y_min) / 2
-            ax_original.set_xlim(x_center - max_range/2, x_center + max_range/2)
-            ax_original.set_ylim(y_center - max_range/2, y_center + max_range/2)
-            ax_original.set_aspect('equal')
+                # Include NaN keypoints in the title
+                if nan_keypoints:
+                    nan_text = ", ".join(nan_keypoints)
+                    title_text = f"{label} - Frame {frame}\nNaNs: {nan_text}"
+                else:
+                    title_text = f"{label} - Frame {frame}"
 
-        # Compute dynamic limits for the cleaned positions
-        x_cleaned = cleaned_positions[frame, 0, :, 0]
-        y_cleaned = cleaned_positions[frame, 1, :, 0]
-        x_min_cleaned, x_max_cleaned = x_cleaned.min() - 10, x_cleaned.max() + 10  # Add a margin
-        y_min_cleaned, y_max_cleaned = y_cleaned.min() - 10, y_cleaned.max() + 10
+                ax.set_title(title_text, fontsize=14)
+                ax.set_xlabel("X", fontsize=12)
+                ax.set_ylabel("Y", fontsize=12)
 
-        # Centralized Cleaned positions
-        ax_cleaned = axes[i, 1]
-        ax_cleaned.scatter(x_cleaned, y_cleaned, c="orange", label="Cleaned Low-Conf")
-        for k, (x, y) in enumerate(zip(x_cleaned, y_cleaned)):
-            ax_cleaned.text(x, y, keypoints_labels[k], fontsize=10, color="orange")
-        ax_cleaned.set_title(f"Cleaned - Frame {frame}", fontsize=14)
-        ax_cleaned.set_xlabel("X", fontsize=12)
-        ax_cleaned.set_ylabel("Y", fontsize=12)
-        # Get reference keypoint position for reference lines
-        ref_keypoint = ds.centered_reference_keypoint
-        ref_idx = np.where(keypoints_labels == ref_keypoint)[0][0]
-        ref_x_cleaned = x_cleaned[ref_idx]
-        ref_y_cleaned = y_cleaned[ref_idx]
+                # Draw reference lines
+                if key == aligned_positions_key:
+                    # For aligned positions, use (0,0) as reference
+                    ax.axhline(0, color="gray", linestyle="--")
+                    ax.axvline(0, color="gray", linestyle="--")
+                else:
+                    # For other positions, use the reference keypoint
+                    ref_x = x_pos[ref_idx]
+                    ref_y = y_pos[ref_idx]
+                    ax.axhline(ref_y, color="gray", linestyle="--")
+                    ax.axvline(ref_x, color="gray", linestyle="--")
 
-        # Draw reference lines through the reference keypoint
-        ax_cleaned.axhline(ref_y_cleaned, color="gray", linestyle="--")
-        ax_cleaned.axvline(ref_x_cleaned, color="gray", linestyle="--")
-        # Ensure square aspect by making the limits have equal range
-        x_range_cleaned = x_max_cleaned - x_min_cleaned
-        y_range_cleaned = y_max_cleaned - y_min_cleaned
-        max_range_cleaned = max(x_range_cleaned, y_range_cleaned)
-        x_center_cleaned = (x_max_cleaned + x_min_cleaned) / 2
-        y_center_cleaned = (y_max_cleaned + y_min_cleaned) / 2
-        ax_cleaned.set_xlim(x_center_cleaned - max_range_cleaned/2, x_center_cleaned + max_range_cleaned/2)
-        ax_cleaned.set_ylim(y_center_cleaned - max_range_cleaned/2, y_center_cleaned + max_range_cleaned/2)
-        ax_cleaned.set_aspect('equal')
-
-        # Compute dynamic limits for the aligned positions
-        x_aligned = aligned_positions[frame, 0, :, 0]
-        y_aligned = aligned_positions[frame, 1, :, 0]
-        x_min_aligned, x_max_aligned = x_aligned.min() - 10, x_aligned.max() + 10  # Add a margin
-        y_min_aligned, y_max_aligned = y_aligned.min() - 10, y_aligned.max() + 10
-
-        # Centralized Aligned positions
-        ax_aligned = axes[i, 2]
-        ax_aligned.scatter(x_aligned, y_aligned, c="green", label="Egocentric Aligned")
-        for k, (x, y) in enumerate(zip(x_aligned, y_aligned)):
-            ax_aligned.text(x, y, keypoints_labels[k], fontsize=10, color="green")
-        ax_aligned.set_title(f"Aligned - Frame {frame}", fontsize=14)
-        ax_aligned.set_xlabel("X", fontsize=12)
-        ax_aligned.set_ylabel("Y", fontsize=12)
-        ax_aligned.axhline(0, color="gray", linestyle="--")
-        ax_aligned.axvline(0, color="gray", linestyle="--")
-        # Ensure square aspect by making the limits have equal range
-        x_range_aligned = x_max_aligned - x_min_aligned
-        y_range_aligned = y_max_aligned - y_min_aligned
-        max_range_aligned = max(x_range_aligned, y_range_aligned)
-        x_center_aligned = (x_max_aligned + x_min_aligned) / 2
-        y_center_aligned = (y_max_aligned + y_min_aligned) / 2
-        ax_aligned.set_xlim(x_center_aligned - max_range_aligned/2, x_center_aligned + max_range_aligned/2)
-        ax_aligned.set_ylim(y_center_aligned - max_range_aligned/2, y_center_aligned + max_range_aligned/2)
-        ax_aligned.set_aspect('equal')
+                # Ensure square aspect by making the limits have equal range
+                x_range = x_max - x_min
+                y_range = y_max - y_min
+                max_range = max(x_range, y_range)
+                x_center = (x_max + x_min) / 2
+                y_center = (y_max + y_min) / 2
+                ax.set_xlim(x_center - max_range/2, x_center + max_range/2)
+                ax.set_ylim(y_center - max_range/2, y_center + max_range/2)
+                ax.set_aspect('equal')
 
     # Adjust spacing between subplots
-    plt.subplots_adjust(wspace=0.2, top=0.9)  # Control spacing and add top margin for title
+    plt.subplots_adjust(wspace=0.3, top=0.9)  # Control spacing and add top margin for title
     plt.tight_layout(pad=1.5)  # Reduced padding for tighter layout
 
     # Add a figure-level title after layout adjustments
