@@ -76,9 +76,15 @@ def visualize_preprocessing_scatter(
             ax_original.set_ylabel("Y", fontsize=12)
             ax_original.axhline(0, color="gray", linestyle="--")
             ax_original.axvline(0, color="gray", linestyle="--")
-            ax_original.axis("equal")
-            ax_original.set_xlim(x_min, x_max)
-            ax_original.set_ylim(y_min, y_max)
+            # Ensure square aspect by making the limits have equal range
+            x_range = x_max - x_min
+            y_range = y_max - y_min
+            max_range = max(x_range, y_range)
+            x_center = (x_max + x_min) / 2
+            y_center = (y_max + y_min) / 2
+            ax_original.set_xlim(x_center - max_range/2, x_center + max_range/2)
+            ax_original.set_ylim(y_center - max_range/2, y_center + max_range/2)
+            ax_original.set_aspect('equal')
 
         # Compute dynamic limits for the cleaned positions
         x_cleaned = cleaned_positions[frame, 0, :, 0]
@@ -96,9 +102,15 @@ def visualize_preprocessing_scatter(
         ax_cleaned.set_ylabel("Y", fontsize=12)
         ax_cleaned.axhline(0, color="gray", linestyle="--")
         ax_cleaned.axvline(0, color="gray", linestyle="--")
-        ax_cleaned.axis("equal")
-        ax_cleaned.set_xlim(x_min_cleaned, x_max_cleaned)
-        ax_cleaned.set_ylim(y_min_cleaned, y_max_cleaned)
+        # Ensure square aspect by making the limits have equal range
+        x_range_cleaned = x_max_cleaned - x_min_cleaned
+        y_range_cleaned = y_max_cleaned - y_min_cleaned
+        max_range_cleaned = max(x_range_cleaned, y_range_cleaned)
+        x_center_cleaned = (x_max_cleaned + x_min_cleaned) / 2
+        y_center_cleaned = (y_max_cleaned + y_min_cleaned) / 2
+        ax_cleaned.set_xlim(x_center_cleaned - max_range_cleaned/2, x_center_cleaned + max_range_cleaned/2)
+        ax_cleaned.set_ylim(y_center_cleaned - max_range_cleaned/2, y_center_cleaned + max_range_cleaned/2)
+        ax_cleaned.set_aspect('equal')
 
         # Compute dynamic limits for the aligned positions
         x_aligned = aligned_positions[frame, 0, :, 0]
@@ -116,9 +128,15 @@ def visualize_preprocessing_scatter(
         ax_aligned.set_ylabel("Y", fontsize=12)
         ax_aligned.axhline(0, color="gray", linestyle="--")
         ax_aligned.axvline(0, color="gray", linestyle="--")
-        ax_aligned.axis("equal")
-        ax_aligned.set_xlim(x_min_aligned, x_max_aligned)
-        ax_aligned.set_ylim(y_min_aligned, y_max_aligned)
+        # Ensure square aspect by making the limits have equal range
+        x_range_aligned = x_max_aligned - x_min_aligned
+        y_range_aligned = y_max_aligned - y_min_aligned
+        max_range_aligned = max(x_range_aligned, y_range_aligned)
+        x_center_aligned = (x_max_aligned + x_min_aligned) / 2
+        y_center_aligned = (y_max_aligned + y_min_aligned) / 2
+        ax_aligned.set_xlim(x_center_aligned - max_range_aligned/2, x_center_aligned + max_range_aligned/2)
+        ax_aligned.set_ylim(y_center_aligned - max_range_aligned/2, y_center_aligned + max_range_aligned/2)
+        ax_aligned.set_aspect('equal')
 
     # Add a figure-level title
     fig.suptitle(
@@ -287,81 +305,3 @@ def visualize_preprocessing_timeseries(
         plt.show()
     else:
         plt.close(fig)
-
-
-# def visualize_timeseries(
-#     config: dict,
-#     session_index: int = 0,
-#     n_samples: int = 1000,
-#     positions_key: str = "position",
-#     keypoints_labels: list[str] | None = None,
-#     save_to_file: bool = False,
-#     show_figure: bool = True,
-# ):
-#     """
-#     Visualize the original positions of the keypoints in a timeseries plot.
-#     """
-#     project_path = config["project_path"]
-#     sessions = config["session_names"]
-#     session = sessions[session_index]
-
-#     # Read session data
-#     file_path = str(Path(project_path) / "data" / "processed" / f"{session}_processed.nc")
-#     _, _, ds = read_pose_estimation_file(file_path=file_path)
-
-#     fig, ax = plt.subplots(2, 1, figsize=(10, 8))
-
-#     individual = "individual_0"
-#     if keypoints_labels is None:
-#         keypoints_labels = ds.keypoints.values
-
-#     # Create a colormap with distinguishable colors
-#     cmap = get_cmap("tab10") if len(keypoints_labels) <= 10 else get_cmap("tab20")
-#     colors = [cmap(i / len(keypoints_labels)) for i in range(len(keypoints_labels))]
-
-#     for i, kp in enumerate(keypoints_labels):
-#         sel_x = dict(
-#             individuals=individual,
-#             keypoints=kp,
-#             space="x",
-#         )
-#         sel_y = dict(
-#             individuals=individual,
-#             keypoints=kp,
-#             space="y",
-#         )
-
-#         # Original positions (first two subplots)
-#         ds[positions_key].sel(**sel_x)[0:n_samples].plot(
-#             linewidth=1.5,
-#             ax=ax[0],
-#             label=kp,
-#             color=colors[i],
-#         )
-#         ds[positions_key].sel(**sel_y)[0:n_samples].plot(
-#             linewidth=1.5,
-#             ax=ax[1],
-#             label=kp,
-#             color=colors[i],
-#         )
-
-#     # Set common labels for Y axes
-#     ax[0].set_ylabel(
-#         "Allocentric X",
-#         fontsize=12,
-#     )
-#     ax[1].set_ylabel(
-#         "Allocentric Y",
-#         fontsize=12,
-#     )
-
-#     # Labels for X axes
-#     for idx, a in enumerate(ax):
-#         a.set_title("")
-#         if idx % 2 == 0:
-#             a.set_xlabel("")
-#         else:
-#             a.set_xlabel(
-#                 "Time",
-#                 fontsize=10,
-#             )
