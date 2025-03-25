@@ -212,15 +212,47 @@ def visualize_preprocessing_timeseries(
     config: dict,
     session_index: int = 0,
     n_samples: int = 1000,
-    original_positions_key: str = "position",
-    aligned_positions_key: str = "position_egocentric_aligned",
-    processed_positions_key: str = "position_processed",
+    sample_offset: int = 0,
+    original_positions_key: str | None = "position",
+    aligned_positions_key: str | None = "position_egocentric_aligned",
+    filtered_positions_key: str | None = "position_processed",
+    scaled_positions_key: str | None = "position_scaled",
+    keypoints: list | None = None,
     save_to_file: bool = False,
     show_figure: bool = True,
 ):
     """
-    Visualize the preprocessing results by plotting the original, aligned, and processed positions
-    of the keypoints in a timeseries plot.
+    Visualize the preprocessing results by plotting position data in a timeseries plot.
+
+    Parameters
+    ----------
+    config : dict
+        Configuration dictionary.
+    session_index : int, optional
+        Index of the session to visualize.
+    n_samples : int, optional
+        Number of samples to plot.
+    sample_offset : int, optional
+        Starting index for the time series data. Default is 0 (start from beginning).
+    original_positions_key : str | None, optional
+        Key for the original positions. If None, this position type will be skipped.
+    aligned_positions_key : str | None, optional
+        Key for the aligned positions. If None, this position type will be skipped.
+    filtered_positions_key : str | None, optional
+        Key for the filtered positions. If None, this position type will be skipped.
+    scaled_positions_key : str | None, optional
+        Key for the scaled positions. If None, this position type will be skipped.
+    keypoints : list | None, optional
+        List of keypoint names to include in the visualization. If None or empty list,
+        all keypoints will be included.
+    save_to_file : bool, optional
+        Whether to save the figure to a file.
+    show_figure : bool, optional
+        Whether to show the figure.
+
+    Returns
+    -------
+    None
     """
     project_path = config["project_path"]
     sessions = config["session_names"]
@@ -230,126 +262,129 @@ def visualize_preprocessing_timeseries(
     file_path = str(Path(project_path) / "data" / "processed" / f"{session}_processed.nc")
     _, _, ds = read_pose_estimation_file(file_path=file_path)
 
-    fig, ax = plt.subplots(6, 1, figsize=(10, 16))  # Adjusted for 6 subplots
+    # Create a list of position keys and labels, filtering out None values
+    position_keys = []
+    position_labels = []
+
+    if original_positions_key is not None:
+        if original_positions_key not in ds.keys():
+            raise KeyError(f"Key '{original_positions_key}' not found in dataset.")
+        position_keys.append(original_positions_key)
+        position_labels.append("Original Allocentric")
+
+    if aligned_positions_key is not None:
+        if aligned_positions_key not in ds.keys():
+            raise KeyError(f"Key '{aligned_positions_key}' not found in dataset.")
+        position_keys.append(aligned_positions_key)
+        position_labels.append("Aligned Egocentric")
+
+    if filtered_positions_key is not None:
+        if filtered_positions_key not in ds.keys():
+            raise KeyError(f"Key '{filtered_positions_key}' not found in dataset.")
+        position_keys.append(filtered_positions_key)
+        position_labels.append("Filtered Egocentric")
+
+    if scaled_positions_key is not None:
+        if scaled_positions_key not in ds.keys():
+            raise KeyError(f"Key '{scaled_positions_key}' not found in dataset.")
+        position_keys.append(scaled_positions_key)
+        position_labels.append("Scaled Egocentric")
+
+    # Count how many position types we have
+    num_positions = len(position_keys)
+
+    if num_positions == 0:
+        raise ValueError("No valid position keys provided.")
+
+    # Create a grid of subplots (or fewer rows if fewer position types)
+    fig, axes = plt.subplots(num_positions, 2, figsize=(18, 4 * num_positions))
+
+    # Handle case where there's only one position type (axes would be 1D)
+    if num_positions == 1:
+        axes = axes.reshape(1, -1)
 
     individual = "individual_0"
-    keypoints_labels = ds.keypoints.values
+    all_keypoints = ds.keypoints.values
+
+    # Filter keypoints if a list is provided
+    if keypoints is not None and len(keypoints) > 0:
+        # Validate that all provided keypoints exist in the dataset
+        invalid_keypoints = [kp for kp in keypoints if kp not in all_keypoints]
+        if invalid_keypoints:
+            raise ValueError(f"Invalid keypoint names: {', '.join(invalid_keypoints)}")
+        keypoints_to_plot = keypoints
+    else:
+        keypoints_to_plot = all_keypoints
 
     # Create a colormap with distinguishable colors
-    cmap = get_cmap("tab10") if len(keypoints_labels) <= 10 else get_cmap("tab20")
-    colors = [cmap(i / len(keypoints_labels)) for i in range(len(keypoints_labels))]
+    cmap = get_cmap("tab10") if len(keypoints_to_plot) <= 10 else get_cmap("tab20")
+    colors = [cmap(i / len(keypoints_to_plot)) for i in range(len(keypoints_to_plot))]
 
-    for i, kp in enumerate(keypoints_labels):
-        sel_x = dict(
-            individuals=individual,
-            keypoints=kp,
-            space="x",
-        )
-        sel_y = dict(
-            individuals=individual,
-            keypoints=kp,
-            space="y",
-        )
-
-        # Original positions (first two subplots)
-        ds[original_positions_key].sel(**sel_x)[0:n_samples].plot(
-            linewidth=1.5,
-            ax=ax[0],
-            label=kp,
-            color=colors[i],
-        )
-        ds[original_positions_key].sel(**sel_y)[0:n_samples].plot(
-            linewidth=1.5,
-            ax=ax[1],
-            label=kp,
-            color=colors[i],
-        )
-
-        # Aligned positions (next two subplots)
-        ds[aligned_positions_key].sel(**sel_x)[0:n_samples].plot(
-            linewidth=1.5,
-            ax=ax[2],
-            label=kp,
-            color=colors[i],
-        )
-        ds[aligned_positions_key].sel(**sel_y)[0:n_samples].plot(
-            linewidth=1.5,
-            ax=ax[3],
-            label=kp,
-            color=colors[i],
-        )
-
-        # Processed positions (last two subplots)
-        ds[processed_positions_key].sel(**sel_x)[0:n_samples].plot(
-            linewidth=1.5,
-            ax=ax[4],
-            label=kp,
-            color=colors[i],
-        )
-        ds[processed_positions_key].sel(**sel_y)[0:n_samples].plot(
-            linewidth=1.5,
-            ax=ax[5],
-            label=kp,
-            color=colors[i],
-        )
-
-    # Set common labels for Y axes
-    ax[0].set_ylabel(
-        "Original Allocentric X",
-        fontsize=12,
-    )
-    ax[1].set_ylabel(
-        "Original Allocentric Y",
-        fontsize=12,
-    )
-    ax[2].set_ylabel(
-        "Aligned Egocentric X",
-        fontsize=12,
-    )
-    ax[3].set_ylabel(
-        "Aligned Egocentric Y",
-        fontsize=12,
-    )
-    ax[4].set_ylabel(
-        "Processed Egocentric X",
-        fontsize=12,
-    )
-    ax[5].set_ylabel(
-        "Processed Egocentric Y",
-        fontsize=12,
-    )
-
-    # Labels for X axes
-    for idx, a in enumerate(ax):
-        a.set_title("")
-        if idx % 2 == 0:
-            a.set_xlabel("")
-        else:
-            a.set_xlabel(
-                "Time",
-                fontsize=10,
+    # Plot each position type
+    for i, (key, label) in enumerate(zip(position_keys, position_labels)):
+        # For each keypoint
+        for j, kp in enumerate(keypoints_to_plot):
+            sel_x = dict(
+                individuals=individual,
+                keypoints=kp,
+                space="x",
+            )
+            sel_y = dict(
+                individuals=individual,
+                keypoints=kp,
+                space="y",
             )
 
-    # Adjust padding
-    fig.subplots_adjust(hspace=0.4)
-    fig.tight_layout(rect=[0, 0, 1, 0.96], h_pad=1.2)
+            # X coordinates in first column
+            ds[key].sel(**sel_x)[sample_offset:sample_offset+n_samples].plot(
+                linewidth=1.5,
+                ax=axes[i, 0],
+                label=kp,
+                color=colors[j],
+            )
+
+            # Y coordinates in second column
+            ds[key].sel(**sel_y)[sample_offset:sample_offset+n_samples].plot(
+                linewidth=1.5,
+                ax=axes[i, 1],
+                label=kp,
+                color=colors[j],
+            )
+
+    # Set titles and labels
+    for i, label in enumerate(position_labels):
+        axes[i, 0].set_title(f"{label} X", fontsize=14)
+        axes[i, 1].set_title(f"{label} Y", fontsize=14)
+        axes[i, 0].set_xlabel("Time", fontsize=12)
+        axes[i, 1].set_xlabel("Time", fontsize=12)
+        axes[i, 0].set_ylabel("Position", fontsize=12)
+        axes[i, 1].set_ylabel("Position", fontsize=12)
+
+    # Adjust spacing between subplots
+    plt.subplots_adjust(wspace=0.3, hspace=0.4, top=0.9)
+
+    # Add a figure-level title
+    fig.suptitle(
+        f"{session} - Timeseries Visualization (Samples {sample_offset}-{sample_offset+n_samples})",
+        fontsize=16,
+        y=0.98,  # Position the title higher
+    )
 
     # Add a single legend for all subplots
-    handles, labels = ax[0].get_legend_handles_labels()
+    handles, labels = axes[0, 0].get_legend_handles_labels()
     fig.legend(
         handles,
         labels,
         loc="upper center",
-        ncol=5,
-        bbox_to_anchor=(0.5, 0.98),
+        ncol=min(5, len(labels)),
+        bbox_to_anchor=(0.5, 0.95),
+        fontsize=10,
     )
 
     if save_to_file:
         save_fig_path = Path(project_path) / "reports" / "figures" / f"{session}_preprocessing_timeseries.png"
         save_fig_path.parent.mkdir(parents=True, exist_ok=True)
-        plt.savefig(
-            str(save_fig_path),
-        )
+        plt.savefig(str(save_fig_path))
 
     if show_figure:
         plt.show()
