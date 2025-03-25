@@ -37,7 +37,7 @@ def visualize_preprocessing_scatter(
         frames = [int(i * len(original_positions)) for i in [0.1, 0.3, 0.5, 0.7, 0.9]]
     num_frames = len(frames)
 
-    fig, axes = plt.subplots(num_frames, 3, figsize=(21, 6 * num_frames))  # Increased figure size and columns
+    fig, axes = plt.subplots(num_frames, 3, figsize=(18, 6 * num_frames))  # Adjusted figure width for better spacing
 
     for i, frame in enumerate(frames):
         # Compute dynamic limits for the original positions
@@ -138,14 +138,16 @@ def visualize_preprocessing_scatter(
         ax_aligned.set_ylim(y_center_aligned - max_range_aligned/2, y_center_aligned + max_range_aligned/2)
         ax_aligned.set_aspect('equal')
 
-    # Add a figure-level title
+    # Adjust spacing between subplots
+    plt.subplots_adjust(wspace=0.2, top=0.9)  # Control spacing and add top margin for title
+    plt.tight_layout(pad=1.5)  # Reduced padding for tighter layout
+
+    # Add a figure-level title after layout adjustments
     fig.suptitle(
         f"{session}, Confidence threshold: {config['pose_confidence']}",
         fontsize=16,
+        y=1.01,  # Position the title higher
     )
-
-    # Add padding to reduce overlap between subplots
-    plt.tight_layout(pad=3.0)
 
     if save_to_file:
         save_fig_path = Path(project_path) / "reports" / "figures" / f"{session}_preprocessing_scatter.png"
