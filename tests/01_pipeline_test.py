@@ -20,6 +20,7 @@ def test_pipeline(setup_pipeline):
     pipeline.visualize_preprocessing(
         show_figure=False,
         save_to_file=True,
+        run_rescaling=True,
     )
     save_fig_path_0 = Path(project_path) / "reports" / "figures" / f"{sessions[0]}_preprocessing_scatter.png"
     save_fig_path_1 = Path(project_path) / "reports" / "figures" / f"{sessions[0]}_preprocessing_timeseries.png"

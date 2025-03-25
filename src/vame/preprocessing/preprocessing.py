@@ -36,6 +36,18 @@ def preprocessing(
         Keypoint to use as centered reference.
     orientation_reference_keypoint : str, optional
         Keypoint to use as orientation reference.
+    run_lowconf_cleaning : bool, optional
+        Whether to run low confidence cleaning.
+    run_egocentric_alignment : bool, optional
+        Whether to run egocentric alignment.
+    run_outlier_cleaning : bool, optional
+        Whether to run outlier cleaning.
+    run_savgol_filtering : bool, optional
+        Whether to run Savitzky-Golay filtering.
+    run_rescaling : bool, optional
+        Whether to run rescaling.
+    save_logs : bool, optional
+        Whether to save logs.
 
     Returns
     -------
