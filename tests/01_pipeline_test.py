@@ -14,13 +14,13 @@ def test_pipeline(setup_pipeline):
     preprocessing_kwargs = {
         "centered_reference_keypoint": "Nose",
         "orientation_reference_keypoint": "Tailroot",
+        "run_rescaling": True,
     }
     pipeline.run_pipeline(preprocessing_kwargs=preprocessing_kwargs)
 
     pipeline.visualize_preprocessing(
         show_figure=False,
         save_to_file=True,
-        run_rescaling=True,
     )
     save_fig_path_0 = Path(project_path) / "reports" / "figures" / f"{sessions[0]}_preprocessing_scatter.png"
     save_fig_path_1 = Path(project_path) / "reports" / "figures" / f"{sessions[0]}_preprocessing_timeseries.png"
