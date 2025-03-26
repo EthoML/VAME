@@ -336,7 +336,7 @@ def visualize_preprocessing_timeseries(
             )
 
             # X coordinates in first column
-            ds[key].sel(**sel_x)[sample_offset : sample_offset + n_samples].plot(
+            ds[key].sel(**sel_x)[sample_offset:sample_offset + n_samples].plot(
                 linewidth=1.5,
                 ax=axes[i, 0],
                 label=kp,
@@ -344,7 +344,7 @@ def visualize_preprocessing_timeseries(
             )
 
             # Y coordinates in second column
-            ds[key].sel(**sel_y)[sample_offset : sample_offset + n_samples].plot(
+            ds[key].sel(**sel_y)[sample_offset:sample_offset + n_samples].plot(
                 linewidth=1.5,
                 ax=axes[i, 1],
                 label=kp,
@@ -497,6 +497,7 @@ def visualize_preprocessing_cloud(
     colors = [cmap(i / len(keypoints_to_plot)) for i in range(len(keypoints_to_plot))]
 
     # Create a figure with a single row of subplots
+    # Add extra height for the legend at the bottom
     fig, axes = plt.subplots(1, num_positions, figsize=(6 * num_positions, 6))
 
     # Handle case where there's only one position type (axes would be 0D)
@@ -646,21 +647,23 @@ def visualize_preprocessing_cloud(
                 labels,
                 loc="upper center",
                 ncol=min(5, len(labels)),
-                bbox_to_anchor=(0.5, -0.05),  # Position below the plots
+                bbox_to_anchor=(0.5, -0.02),
                 fontsize=10,
             )
 
             # Adjust the figure layout to make room for the legend
-            plt.subplots_adjust(bottom=0.15)  # Add space at the bottom for the legend
+            plt.subplots_adjust(bottom=0.02)
 
     # Adjust spacing between subplots
-    plt.subplots_adjust(wspace=0.3, top=0.9)  # Control spacing and add top margin for title
-    plt.tight_layout(pad=1.5)  # Reduced padding for tighter layout
+    plt.subplots_adjust(wspace=0.3, top=0.9)
+
+    # Don't use tight_layout as it can override our manual adjustments for the legend
 
     if save_to_file:
         save_fig_path = Path(project_path) / "reports" / "figures" / f"{session}_preprocessing_cloud.png"
         save_fig_path.parent.mkdir(parents=True, exist_ok=True)
-        plt.savefig(str(save_fig_path))
+        # Save with bbox_inches='tight' to ensure the legend is included
+        plt.savefig(str(save_fig_path), bbox_inches='tight')
 
     if show_figure:
         plt.show()

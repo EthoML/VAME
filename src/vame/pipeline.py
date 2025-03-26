@@ -10,6 +10,7 @@ from vame.visualization.umap import visualize_umap
 from vame.visualization.preprocessing import (
     visualize_preprocessing_scatter,
     visualize_preprocessing_timeseries,
+    visualize_preprocessing_cloud,
 )
 from vame.visualization.model import plot_loss
 from vame.logging.logger import VameLogger
@@ -334,6 +335,7 @@ class VAMEPipeline:
         self,
         scatter: bool = True,
         timeseries: bool = True,
+        cloud: bool = True,
         show_figure: bool = False,
         save_to_file: bool = True,
     ) -> None:
@@ -346,6 +348,8 @@ class VAMEPipeline:
             Visualize scatter plot, by default True.
         timeseries : bool, optional
             Visualize timeseries plot, by default True.
+        cloud : bool, optional
+            Visualize cloud plot, by default True.
         show_figure : bool, optional
             Show the figure, by default False.
         save_to_file : bool, optional
@@ -363,6 +367,12 @@ class VAMEPipeline:
             )
         if timeseries:
             visualize_preprocessing_timeseries(
+                config=self.config,
+                show_figure=show_figure,
+                save_to_file=save_to_file,
+            )
+        if cloud:
+            visualize_preprocessing_cloud(
                 config=self.config,
                 show_figure=show_figure,
                 save_to_file=save_to_file,
