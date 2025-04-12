@@ -134,6 +134,21 @@ class PreprocessingFunctionSchema(BaseStateSchema):
     )
 
 
+class PreprocessingVisualizationFunctionSchema(BaseStateSchema):
+    session_index: int = Field(
+        title="Index of the session to visualize",
+        default=0,
+    )
+    save_to_file: bool = Field(
+        title="Whether to save the figure to file",
+        default=False,
+    )
+    show_figure: bool = Field(
+        title="Whether to show the figure",
+        default=True,
+    )
+
+
 class GenerativeModelFunctionSchema(BaseStateSchema):
     segmentation_algorithm: SegmentationAlgorithms = Field(title="Segmentation algorithm")
     mode: GenerativeModelModeEnum = Field(
@@ -149,6 +164,10 @@ class VAMEPipelineStatesSchema(BaseModel):
     )
     preprocessing: Optional[PreprocessingFunctionSchema | Dict] = Field(
         title="Preprocessing",
+        default={},
+    )
+    preprocessing_visualization: Optional[PreprocessingVisualizationFunctionSchema | Dict] = Field(
+        title="Preprocessing visualization",
         default={},
     )
     pose_to_numpy: Optional[PoseToNumpyFunctionSchema | Dict] = Field(
@@ -205,11 +224,16 @@ def _save_state(model: BaseStateSchema, function_name: str, state: StatesEnum) -
     model.execution_state = state
     setattr(pipeline_states, function_name, model.model_dump())
 
+    # Remove "config" from all pipeline step entries before saving
+    pipeline_states_dict = pipeline_states.model_dump()
+    for step, value in pipeline_states_dict.items():
+        if isinstance(value, dict) and "config" in value:
+            value.pop("config")
     with open(states_file_path, "w") as f:
-        json.dump(pipeline_states.model_dump(), f, indent=4)
+        json.dump(pipeline_states_dict, f, indent=4)
 
 
-def save_state(model: BaseModel):
+def save_state(model: type[BaseStateSchema]):
     """
     Decorator responsible for validating function arguments using pydantic and
     saving the state of the called function to the project states json file.

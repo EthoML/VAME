@@ -1,10 +1,37 @@
 from pathlib import Path
-import matplotlib.pyplot as plt
 from matplotlib.cm import get_cmap
 from matplotlib.lines import Line2D
 import numpy as np
 
 from vame.io.load_poses import read_pose_estimation_file
+from vame.schemas.states import save_state, PreprocessingVisualizationFunctionSchema
+
+
+@save_state(model=PreprocessingVisualizationFunctionSchema)
+def preprocessing_visualization(
+    config: dict,
+    save_to_file: bool = False,
+    show_figure: bool = True,
+) -> None:
+    for session_index in range(len(config["session_names"])):
+        visualize_preprocessing_scatter(
+            config=config,
+            session_index=session_index,
+            save_to_file=save_to_file,
+            show_figure=show_figure,
+        )
+        visualize_preprocessing_timeseries(
+            config=config,
+            session_index=session_index,
+            save_to_file=save_to_file,
+            show_figure=show_figure,
+        )
+        visualize_preprocessing_cloud(
+            config=config,
+            session_index=session_index,
+            save_to_file=save_to_file,
+            show_figure=show_figure,
+        )
 
 
 def visualize_preprocessing_scatter(
@@ -50,6 +77,11 @@ def visualize_preprocessing_scatter(
     -------
     None
     """
+    import matplotlib
+    if not show_figure:
+        matplotlib.use('Agg')
+    import matplotlib.pyplot as plt
+
     project_path = config["project_path"]
     sessions = config["session_names"]
     session = sessions[session_index]
@@ -254,6 +286,11 @@ def visualize_preprocessing_timeseries(
     -------
     None
     """
+    import matplotlib
+    if not show_figure:
+        matplotlib.use('Agg')
+    import matplotlib.pyplot as plt
+
     project_path = config["project_path"]
     sessions = config["session_names"]
     session = sessions[session_index]
@@ -435,6 +472,11 @@ def visualize_preprocessing_cloud(
     -------
     None
     """
+    import matplotlib
+    if not show_figure:
+        matplotlib.use('Agg')
+    import matplotlib.pyplot as plt
+
     project_path = config["project_path"]
     sessions = config["session_names"]
     session = sessions[session_index]
