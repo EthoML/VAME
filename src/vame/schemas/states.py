@@ -29,6 +29,13 @@ class BaseStateSchema(BaseModel):
     )
 
 
+class UpdateConfigFunctionSchema(BaseStateSchema):
+    config_update: dict = Field(
+        title="Configuration update",
+        default={},
+    )
+
+
 class PoseToNumpyFunctionSchema(BaseStateSchema):
     ...
 
@@ -136,6 +143,10 @@ class GenerativeModelFunctionSchema(BaseStateSchema):
 
 
 class VAMEPipelineStatesSchema(BaseModel):
+    update_config: Optional[UpdateConfigFunctionSchema | Dict] = Field(
+        title="Update config",
+        default={},
+    )
     preprocessing: Optional[PreprocessingFunctionSchema | Dict] = Field(
         title="Preprocessing",
         default={},

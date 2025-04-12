@@ -7,6 +7,8 @@ from pathlib import Path
 from typing import Tuple, Any
 from enum import Enum
 
+from vame.schemas.states import save_state, UpdateConfigFunctionSchema
+
 
 def get_version() -> str:
     """
@@ -219,6 +221,17 @@ def write_config(
         for key in config.keys():
             cfg_file[key] = config[key]
         ruamelFile.dump(cfg_file, cf)
+
+
+@save_state(model=UpdateConfigFunctionSchema)
+def update_config(
+    config: dict,
+    config_update: dict,
+) -> dict:
+    config_path = Path(config["project_path"]) / "config.yaml"
+    config.update(config_update)
+    write_config(config_path, config)
+    return config
 
 
 def read_states(config: dict) -> dict:
