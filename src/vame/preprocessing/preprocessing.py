@@ -3,16 +3,18 @@ from vame.preprocessing.cleaning import lowconf_cleaning, outlier_cleaning
 from vame.preprocessing.alignment import egocentrically_align_and_center
 from vame.preprocessing.filter import savgol_filtering
 from vame.preprocessing.scaling import rescaling
+from vame.schemas.states import save_state, PreprocessingFunctionSchema
 
 
 logger_config = VameLogger(__name__)
 logger = logger_config.logger
 
 
+@save_state(model=PreprocessingFunctionSchema)
 def preprocessing(
     config: dict,
-    centered_reference_keypoint: str = "snout",
-    orientation_reference_keypoint: str = "tailbase",
+    centered_reference_keypoint: str,
+    orientation_reference_keypoint: str,
     run_lowconf_cleaning: bool = True,
     run_egocentric_alignment: bool = True,
     run_outlier_cleaning: bool = True,

@@ -29,29 +29,6 @@ class BaseStateSchema(BaseModel):
     )
 
 
-class EgocentricAlignmentFunctionSchema(BaseStateSchema):
-    pose_ref_index: list = Field(
-        title="Pose reference index",
-        default=[0, 5],
-    )
-    crop_size: tuple = Field(
-        title="Crop size",
-        default=(300, 300),
-    )
-    use_video: bool = Field(
-        title="Use video",
-        default=False,
-    )
-    video_format: str = Field(
-        title="Video format",
-        default=".mp4",
-    )
-    check_video: bool = Field(
-        title="Check video",
-        default=False,
-    )
-
-
 class PoseToNumpyFunctionSchema(BaseStateSchema):
     ...
 
@@ -117,6 +94,39 @@ class VisualizeUmapFunctionSchema(BaseStateSchema):
     )
 
 
+class PreprocessingFunctionSchema(BaseStateSchema):
+    centered_reference_keypoint: str = Field(
+        title="Keypoint to use as centered reference",
+    )
+    orientation_reference_keypoint: str = Field(
+        title="Keypoint to use as orientation reference",
+    )
+    run_lowconf_cleaning: bool = Field(
+        title="Whether to run low confidence cleaning",
+        default=True,
+    )
+    run_egocentric_alignment: bool = Field(
+        title="Whether to run egocentric alignment",
+        default=True,
+    )
+    run_outlier_cleaning: bool = Field(
+        title="Whether to run outlier cleaning",
+        default=True,
+    )
+    run_savgol_filtering: bool = Field(
+        title="Whether to run Savitzky-Golay filtering",
+        default=True,
+    )
+    run_rescaling: bool = Field(
+        title="Whether to run rescaling",
+        default=False,
+    )
+    save_logs: bool = Field(
+        title="Whether to save logs",
+        default=False,
+    )
+
+
 class GenerativeModelFunctionSchema(BaseStateSchema):
     segmentation_algorithm: SegmentationAlgorithms = Field(title="Segmentation algorithm")
     mode: GenerativeModelModeEnum = Field(
@@ -126,8 +136,8 @@ class GenerativeModelFunctionSchema(BaseStateSchema):
 
 
 class VAMEPipelineStatesSchema(BaseModel):
-    egocentric_alignment: Optional[EgocentricAlignmentFunctionSchema | Dict] = Field(
-        title="Egocentric alignment",
+    preprocessing: Optional[PreprocessingFunctionSchema | Dict] = Field(
+        title="Preprocessing",
         default={},
     )
     pose_to_numpy: Optional[PoseToNumpyFunctionSchema | Dict] = Field(
