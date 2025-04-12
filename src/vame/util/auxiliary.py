@@ -59,28 +59,26 @@ def create_config_template() -> Tuple[dict, ruamel.yaml.YAML]:
 # Project configurations
     vame_version:
     project_name:
-    model_name:
-    n_clusters:
-    pose_confidence:
-    \n
-# Project path and videos
     project_path:
+    creation_datetime:
     session_names:
     \n
 # Data
     all_data:
+    keypoints:
     \n
-# Creation of train set:
+# Preprocessing:
     egocentric_data:
+    pose_confidence:
     robust:
     iqr_factor:
-    axis:
     savgol_filter:
     savgol_length:
     savgol_order:
     test_fraction:
     \n
 # RNN model general hyperparameter:
+    model_name:
     pretrained_model:
     pretrained_weights:
     num_features:
@@ -106,6 +104,7 @@ def create_config_template() -> Tuple[dict, ruamel.yaml.YAML]:
     softplus:
     \n
 # Segmentation:
+    n_clusters:
     segmentation_algorithms:
     hmm_trained: False
     load_data:
