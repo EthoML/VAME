@@ -105,6 +105,11 @@ class ProjectSchema(BaseModel):
         default=12,
         title="Number of features",
     )
+    keypoints: Optional[List[str]] = Field(
+        default=None,
+        title="Keypoint names",
+        description="Names of keypoints extracted from pose estimation data",
+    )
     batch_size: int = Field(
         default=256,
         title="Batch size",
