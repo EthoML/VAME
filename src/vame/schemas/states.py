@@ -41,10 +41,6 @@ class UpdateConfigFunctionSchema(BaseStateSchema):
     )
 
 
-class PoseToNumpyFunctionSchema(BaseStateSchema):
-    ...
-
-
 class CreateTrainsetFunctionSchema(BaseStateSchema):
     test_fraction: float = Field(
         title="Test fraction",
@@ -180,10 +176,6 @@ class VAMEPipelineStatesSchema(BaseModel):
     )
     preprocessing_visualization: Optional[PreprocessingVisualizationFunctionSchema | Dict] = Field(
         title="Preprocessing visualization",
-        default={},
-    )
-    pose_to_numpy: Optional[PoseToNumpyFunctionSchema | Dict] = Field(
-        title="CSV to numpy",
         default={},
     )
     create_trainset: Optional[CreateTrainsetFunctionSchema | Dict] = Field(
