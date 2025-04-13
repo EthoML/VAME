@@ -14,9 +14,9 @@ from vame.analysis import generative_model
 from vame.analysis import gif
 from vame.util.csv_to_npy import pose_to_numpy
 
-# from vame.preprocessing.align_egocentrical_legacy import egocentric_alignment_legacy
 from vame.util import model_util
 from vame.util import auxiliary
 from vame.util.report import report
 
 from vame.preprocessing import preprocessing
+from vame import visualization
