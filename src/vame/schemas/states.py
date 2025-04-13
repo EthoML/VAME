@@ -21,6 +21,11 @@ class GenerativeModelModeEnum(str, Enum):
     motifs = "motifs"
 
 
+class SplitModeEnum(str, Enum):
+    mode_1 = "mode_1"
+    mode_2 = "mode_2"
+
+
 class BaseStateSchema(BaseModel):
     config: dict = Field(title="Configuration dictionary")
     execution_state: StatesEnum | None = Field(
@@ -41,7 +46,14 @@ class PoseToNumpyFunctionSchema(BaseStateSchema):
 
 
 class CreateTrainsetFunctionSchema(BaseStateSchema):
-    ...
+    test_fraction: float = Field(
+        title="Test fraction",
+        default=0.1,
+    )
+    split_mode: SplitModeEnum = Field(
+        title="Split mode",
+        default=SplitModeEnum.mode_1,
+    )
 
 
 class TrainModelFunctionSchema(BaseStateSchema):
