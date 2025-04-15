@@ -135,7 +135,7 @@ def plot_reconstruction(
 
 
 def plot_loss(
-    cfg: dict,
+    config: dict,
     model_name: str,
     save_to_file: bool = False,
     show_figure: bool = True,
@@ -150,7 +150,7 @@ def plot_loss(
 
     Parameters
     ----------
-    cfg : dict
+    config : dict
         Configuration dictionary.
     model_name : str
         Name of the model.
@@ -163,7 +163,7 @@ def plot_loss(
     -------
     None
     """
-    basepath = os.path.join(cfg["project_path"], "model", "model_losses")
+    basepath = os.path.join(config["project_path"], "model", "model_losses")
     train_loss = np.load(os.path.join(basepath, "train_losses_" + model_name + ".npy"))
     test_loss = np.load(os.path.join(basepath, "test_losses_" + model_name + ".npy"))
     mse_loss_train = np.load(os.path.join(basepath, "mse_train_losses_" + model_name + ".npy"))
@@ -186,7 +186,7 @@ def plot_loss(
     ax1.legend()
 
     if save_to_file:
-        evaluate_path = os.path.join(cfg["project_path"], "model", "evaluate")
+        evaluate_path = os.path.join(config["project_path"], "model", "evaluate")
         fig.savefig(os.path.join(evaluate_path, "MSE-and-KL-Loss" + model_name + ".png"))
 
     if show_figure:

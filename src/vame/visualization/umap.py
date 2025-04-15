@@ -16,7 +16,7 @@ logger = logger_config.logger
 
 
 def umap_embedding(
-    cfg: dict,
+    config: dict,
     session: str,
     model_name: str,
     n_clusters: int,
@@ -27,7 +27,7 @@ def umap_embedding(
 
     Parameters
     ----------
-    cfg : dict
+    config : dict
         Configuration parameters.
     session : str
         Session name.
@@ -45,13 +45,13 @@ def umap_embedding(
     """
     reducer = umap.UMAP(
         n_components=2,
-        min_dist=cfg["min_dist"],
-        n_neighbors=cfg["n_neighbors"],
-        random_state=cfg["random_state"],
+        min_dist=config["min_dist"],
+        n_neighbors=config["n_neighbors"],
+        random_state=config["random_state"],
     )
     logger.info(f"UMAP calculation for session {session}")
     folder = os.path.join(
-        cfg["project_path"],
+        config["project_path"],
         "results",
         session,
         model_name,
@@ -59,7 +59,7 @@ def umap_embedding(
         "",
     )
     latent_vector = np.load(os.path.join(folder, "latent_vector_" + session + ".npy"))
-    num_points = cfg["num_points"]
+    num_points = config["num_points"]
     if num_points > latent_vector.shape[0]:
         num_points = latent_vector.shape[0]
     logger.info(f"Embedding {num_points} data points...")
@@ -71,11 +71,11 @@ def umap_embedding(
     return embed
 
 
-# def umap_vis_community_labels(cfg: dict, embed: np.ndarray, community_labels_all: np.ndarray, save_path: str | None) -> None:
+# def umap_vis_community_labels(config: dict, embed: np.ndarray, community_labels_all: np.ndarray, save_path: str | None) -> None:
 #     """Create plotly visualizaton of UMAP embedding with community labels.
 
 #     Args:
-#         cfg (dict): Configuration parameters.
+#         config (dict): Configuration parameters.
 #         embed (np.ndarray): UMAP embedding.
 #         community_labels_all (np.ndarray): Community labels.
 #         save_path: Path to save the plot. If None it will not save the plot.
@@ -83,7 +83,7 @@ def umap_embedding(
 #     Returns
 #         None
 #     """
-#     num_points = cfg['num_points']
+#     num_points = config['num_points']
 #     community_labels_all = np.asarray(community_labels_all)
 #     if num_points > community_labels_all.shape[0]:
 #         num_points = community_labels_all.shape[0]
@@ -267,7 +267,7 @@ def visualize_umap(
             sessions = config["session_names"]
         else:
             sessions = get_sessions_from_user_input(
-                cfg=config,
+                config=config,
                 action_message="generate visualization",
             )
 

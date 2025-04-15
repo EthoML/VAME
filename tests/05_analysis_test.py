@@ -341,7 +341,7 @@ def test_gif_frames_files_exists(setup_project_and_evaluate_model, label):
     )
     with patch("vame.util.gif_pose_helper.background", side_effect=mock_background):
         vame.gif(
-            config=setup_project_and_evaluate_model["config_path"],
+            config_path=setup_project_and_evaluate_model["config_path"],
             segmentation_algorithm=SEGMENTATION_ALGORITHM,
             pose_ref_index=[0, 5],
             subtract_background=True,

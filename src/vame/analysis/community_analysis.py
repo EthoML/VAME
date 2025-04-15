@@ -552,7 +552,7 @@ def community(
             sessions = config["session_names"]
         else:
             sessions = get_sessions_from_user_input(
-                cfg=config,
+                config=config,
                 action_message="run community analysis",
             )
 
@@ -647,7 +647,7 @@ def community(
         # # Work in Progress - cohort is False
         else:
             raise NotImplementedError("Community analysis for cohort=False is not supported yet.")
-        #     labels = get_labels(cfg, files, model_name, n_clusters, parametrization)
+        #     labels = get_labels(config, files, model_name, n_clusters, parametrization)
         #     transition_matrices = compute_transition_matrices(
         #         files,
         #         labels,
@@ -668,7 +668,7 @@ def community(
 
         #     for idx, file in enumerate(files):
         #         path_to_dir = os.path.join(
-        #             cfg["project_path"],
+        #             config["project_path"],
         #             "results",
         #             file,
         #             model_name,

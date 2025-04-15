@@ -22,7 +22,7 @@ logger = logger_config.logger
 
 
 def embedd_latent_vectors(
-    cfg: dict,
+    config: dict,
     sessions: List[str],
     model: RNN_VAE,
     fixed: bool,
@@ -34,7 +34,7 @@ def embedd_latent_vectors(
 
     Parameters
     ----------
-    cfg : dict
+    config : dict
         Configuration dictionary.
     sessions : List[str]
         List of session names.
@@ -50,9 +50,9 @@ def embedd_latent_vectors(
     List[np.ndarray]
         List of latent vectors for each file.
     """
-    project_path = cfg["project_path"]
-    temp_win = cfg["time_window"]
-    num_features = cfg["num_features"]
+    project_path = config["project_path"]
+    temp_win = config["time_window"]
+    num_features = config["num_features"]
     if not fixed:
         num_features = num_features - 3
 
@@ -99,7 +99,7 @@ def get_latent_vectors(
         project_path: str,
         sessions: list,
         model_name: str,
-        seg, 
+        seg,
         n_clusters: int,
 ) -> List:
     """
@@ -136,7 +136,7 @@ def get_latent_vectors(
         )
         latent_vector = np.load(latent_vector_path)
         latent_vectors.append(latent_vector)
-    return latent_vectors    
+    return latent_vectors
 
 
 def get_motif_usage(
@@ -202,7 +202,7 @@ def save_session_data(
         Number of clusters.
     segmentation_algorithm: str
         Type of segmentation method, either 'kmeans or 'hmm'.
-    
+
     Returns
     -------
     None
@@ -240,10 +240,10 @@ def save_session_data(
 
     logger.info(f"Saved {session} segmentation data")
 
-    
+
 
 def same_segmentation(
-    cfg: dict,
+    config: dict,
     sessions: List[str],
     latent_vectors: List[np.ndarray],
     n_clusters: int,
@@ -254,7 +254,7 @@ def same_segmentation(
 
     Parameters
     ----------
-    cfg : dict
+    config : dict
         Configuration dictionary.
     sessions : List[str]
         List of session names.
@@ -289,7 +289,7 @@ def same_segmentation(
         label = kmeans.predict(latent_vector_cat)
 
     elif segmentation_algorithm == "hmm":
-        if not cfg["hmm_trained"]:
+        if not config["hmm_trained"]:
             logger.info("Using a HMM as segmentation algorithm!")
             hmm_model = hmm.GaussianHMM(
                 n_components=n_clusters,
@@ -298,12 +298,12 @@ def same_segmentation(
             )
             hmm_model.fit(latent_vector_cat)
             label = hmm_model.predict(latent_vector_cat)
-            save_data = os.path.join(cfg["project_path"], "results", "")
+            save_data = os.path.join(config["project_path"], "results", "")
             with open(save_data + "hmm_trained.pkl", "wb") as file:
                 pickle.dump(hmm_model, file)
         else:
             logger.info("Using a pretrained HMM as segmentation algorithm!")
-            save_data = os.path.join(cfg["project_path"], "results", "")
+            save_data = os.path.join(config["project_path"], "results", "")
             with open(save_data + "hmm_trained.pkl", "rb") as file:
                 hmm_model = pickle.load(file)
             label = hmm_model.predict(latent_vector_cat)
@@ -321,29 +321,30 @@ def same_segmentation(
         motif_usages.append(motif_usage)
         idx += file_len  # updating the session start index
 
-        save_session_data(cfg["project_path"], 
-                          session, cfg["model_name"], 
-                          session_labels, 
-                          cluster_center,
-                          latent_vectors[i],
-                          motif_usage,
-                          n_clusters,
-                          segmentation_algorithm)
-
+        save_session_data(
+            config["project_path"],
+            session, config["model_name"],
+            session_labels,
+            cluster_center,
+            latent_vectors[i],
+            motif_usage,
+            n_clusters,
+            segmentation_algorithm,
+        )
 
 
 def individual_segmentation(
-    cfg: dict,
+    config: dict,
     sessions: List[str],
     latent_vectors: List[np.ndarray],
     n_clusters: int,
 ) -> Tuple:
     """
-    Apply individual segmentation to each session. 
+    Apply individual segmentation to each session.
 
     Parameters
     ----------
-    cfg : dict
+    config : dict
         Configuration dictionary.
     sessions : List[str]
         List of session names.
@@ -357,8 +358,8 @@ def individual_segmentation(
     Tuple
         Tuple of labels, cluster centers, and motif usages.
     """
-    random_state = cfg["random_state_kmeans"]
-    n_init = cfg["n_init_kmeans"]
+    random_state = config["random_state_kmeans"]
+    n_init = config["n_init_kmeans"]
     labels = []
     cluster_centers = []
     motif_usages = []
@@ -380,14 +381,15 @@ def individual_segmentation(
         labels.append(label)
         cluster_centers.append(clust_center)
 
-        save_session_data(cfg["project_path"], 
-                          session, cfg["model_name"], 
-                          labels[i], 
-                          cluster_centers[i],
-                          latent_vectors[i],
-                          motif_usages[i],
-                          n_clusters,
-                          'kmeans'
+        save_session_data(
+            config["project_path"],
+            session, config["model_name"],
+            labels[i],
+            cluster_centers[i],
+            latent_vectors[i],
+            motif_usages[i],
+            n_clusters,
+            'kmeans',
         )
     return labels, cluster_centers, motif_usages
 
@@ -462,25 +464,25 @@ def segment_session(
         for seg in segmentation_algorithms:
             logger.info("---------------------------------------------------------------------")
             logger.info(f"Running pose segmentation using {seg} algorithm...")
-            
+
             # Get sessions to analyze
             sessions = []
             if config["all_data"] in ["Yes", "yes"]:
                 sessions = config["session_names"]
             else:
                 sessions = get_sessions_from_user_input(
-                    cfg=config,
+                    config=config,
                     action_message="run segmentation",
                 )
 
             #Check if each session general results path exists
             for session in sessions:
                 session_results_path = os.path.join(
-                                            str(project_path),
-                                            "results",
-                                            session,
-                                            model_name,
-                                        ) 
+                    str(project_path),
+                    "results",
+                    session,
+                    model_name,
+                )
                 if not os.path.exists(session_results_path):
                     os.mkdir(session_results_path)
 
@@ -490,14 +492,14 @@ def segment_session(
                     os.path.join(
                         str(project_path),
                         "results",
-                        sessions[0], 
+                        sessions[0],
                         model_name,
                         seg + "-" + str(n_clusters),
                     )
             ): #Checks if segment session was already processed before
                 new_segmentation = True
                 model = load_model(config, model_name, fixed)
-                latent_vectors = embedd_latent_vectors( 
+                latent_vectors = embedd_latent_vectors(
                     config,
                     sessions,
                     model,
@@ -513,14 +515,14 @@ def segment_session(
                     "Do you want to continue? A new segmentation will be computed! (yes/no) "
                 )
 
-                if flag == "yes": 
-                    new_segmentation = True 
+                if flag == "yes":
+                    new_segmentation = True
                     latent_vectors = get_latent_vectors(
-                        project_path, 
-                        sessions, 
-                        model_name, 
-                        seg, 
-                        n_clusters
+                        project_path,
+                        sessions,
+                        model_name,
+                        seg,
+                        n_clusters,
                     )
 
                 else:
@@ -533,7 +535,7 @@ def segment_session(
                     f"Apply individual segmentation of latent vectors for each session, {n_clusters} clusters"
                 )
                 labels, cluster_center, motif_usages = individual_segmentation(
-                    cfg=config,
+                    config=config,
                     sessions=sessions,
                     latent_vectors=latent_vectors,
                     n_clusters=n_clusters,
@@ -543,7 +545,7 @@ def segment_session(
                     f"Apply the same segmentation of latent vectors for all sessions, {n_clusters} clusters"
                 )
                 same_segmentation(
-                    cfg=config,
+                    config=config,
                     sessions=sessions,
                     latent_vectors=latent_vectors,
                     n_clusters=n_clusters,
@@ -554,7 +556,7 @@ def segment_session(
                     "to get the full picture of the spatiotemporal dynamic. To get an idea of the behavior captured by VAME, "
                     "run vame.motif_videos(). This will leave you with short snippets of certain movements."
                 )
-            
+
     except Exception as e:
         logger.exception(f"An error occurred during pose segmentation: {e}")
     finally:

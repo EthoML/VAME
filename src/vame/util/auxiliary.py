@@ -169,22 +169,22 @@ def read_config(config_file: str) -> dict:
     if os.path.exists(path):
         try:
             with open(path, "r") as f:
-                cfg = ruamelFile.load(f)
+                config = ruamelFile.load(f)
                 curr_dir = os.path.dirname(config_file)
-                if cfg["project_path"] != curr_dir:
-                    cfg["project_path"] = curr_dir
+                if config["project_path"] != curr_dir:
+                    config["project_path"] = curr_dir
                     write_config(
                         config_path=config_file,
-                        config=cfg,
+                        config=config,
                     )
         except Exception as err:
             if len(err.args) > 2:
                 if err.args[2] == "could not determine a constructor for the tag '!!python/tuple'":
                     with open(path, "r") as ymlfile:
-                        cfg = yaml.load(ymlfile, Loader=yaml.SafeLoader)
+                        config = yaml.load(ymlfile, Loader=yaml.SafeLoader)
                         write_config(
                             config_path=config_file,
-                            config=cfg,
+                            config=config,
                         )
                 else:
                     raise
@@ -192,7 +192,7 @@ def read_config(config_file: str) -> dict:
         raise FileNotFoundError(
             "Config file is not found. Please make sure that the file exists and/or that you passed the path of the config file correctly!"
         )
-    return cfg
+    return config
 
 
 def write_config(

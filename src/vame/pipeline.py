@@ -398,7 +398,7 @@ class VAMEPipeline:
         None
         """
         plot_loss(
-            cfg=self.config,
+            config=self.config,
             model_name="VAME",
             save_to_file=save_to_file,
             show_figure=show_figure,
