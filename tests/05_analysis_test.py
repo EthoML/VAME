@@ -353,7 +353,6 @@ def test_gif_frames_files_exists(setup_project_and_evaluate_model, label):
             crop_size=(300, 300),
         )
 
-    # path_to_file=os.path.join(cfg['project_path'],"results",file,model_name,param+'-'+str(n_clusters),"")
     video = setup_project_and_evaluate_model["config_data"]["session_names"][0]
     model_name = setup_project_and_evaluate_model["config_data"]["model_name"]
     n_clusters = setup_project_and_evaluate_model["config_data"]["n_clusters"]
