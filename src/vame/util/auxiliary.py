@@ -1,8 +1,8 @@
+from importlib.metadata import version
 import os
 import json
 import yaml
 import ruamel.yaml
-import tomllib
 from pathlib import Path
 from typing import Tuple, Any
 from enum import Enum
@@ -19,10 +19,7 @@ def get_version() -> str:
     str
         The version string.
     """
-    pyproject_path = Path(__file__).parent.parent.parent.parent / "pyproject.toml"
-    with open(pyproject_path, "rb") as f:
-        pyproject = tomllib.load(f)
-    return pyproject["project"]["version"]
+    return version("vame-py")
 
 
 def _convert_enums_to_values(obj: Any) -> Any:
