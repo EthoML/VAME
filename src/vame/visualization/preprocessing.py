@@ -77,9 +77,10 @@ def visualize_preprocessing_scatter(
     -------
     None
     """
-    import matplotlib
     if not show_figure:
-        matplotlib.use('Agg')
+        import matplotlib
+
+        matplotlib.use("Agg")
     import matplotlib.pyplot as plt
 
     project_path = config["project_path"]
@@ -287,8 +288,9 @@ def visualize_preprocessing_timeseries(
     None
     """
     import matplotlib
+
     if not show_figure:
-        matplotlib.use('Agg')
+        matplotlib.use("Agg")
     import matplotlib.pyplot as plt
 
     project_path = config["project_path"]
@@ -373,7 +375,7 @@ def visualize_preprocessing_timeseries(
             )
 
             # X coordinates in first column
-            ds[key].sel(**sel_x)[sample_offset:sample_offset + n_samples].plot(
+            ds[key].sel(**sel_x)[sample_offset : sample_offset + n_samples].plot(
                 linewidth=1.5,
                 ax=axes[i, 0],
                 label=kp,
@@ -381,7 +383,7 @@ def visualize_preprocessing_timeseries(
             )
 
             # Y coordinates in second column
-            ds[key].sel(**sel_y)[sample_offset:sample_offset + n_samples].plot(
+            ds[key].sel(**sel_y)[sample_offset : sample_offset + n_samples].plot(
                 linewidth=1.5,
                 ax=axes[i, 1],
                 label=kp,
@@ -473,8 +475,9 @@ def visualize_preprocessing_cloud(
     None
     """
     import matplotlib
+
     if not show_figure:
-        matplotlib.use('Agg')
+        matplotlib.use("Agg")
     import matplotlib.pyplot as plt
 
     project_path = config["project_path"]
@@ -705,7 +708,7 @@ def visualize_preprocessing_cloud(
         save_fig_path = Path(project_path) / "reports" / "figures" / f"{session}_preprocessing_cloud.png"
         save_fig_path.parent.mkdir(parents=True, exist_ok=True)
         # Save with bbox_inches='tight' to ensure the legend is included
-        plt.savefig(str(save_fig_path), bbox_inches='tight')
+        plt.savefig(str(save_fig_path), bbox_inches="tight")
 
     if show_figure:
         plt.show()

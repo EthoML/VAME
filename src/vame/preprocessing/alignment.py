@@ -30,12 +30,12 @@ def calculate_geometric_distance(positions, keypoint1_idx, keypoint2_idx):
         kp1 = positions[:, :, keypoint1_idx, :]
         kp2 = positions[:, :, keypoint2_idx, :]
         # Calculate Euclidean distance for each time point and individual
-        distances = np.sqrt(np.sum((kp1 - kp2)**2, axis=1))  # Result: (time, individuals)
+        distances = np.sqrt(np.sum((kp1 - kp2) ** 2, axis=1))  # Result: (time, individuals)
     else:  # (time, space, keypoints)
         kp1 = positions[:, :, keypoint1_idx]
         kp2 = positions[:, :, keypoint2_idx]
         # Calculate Euclidean distance for each time point
-        distances = np.sqrt(np.sum((kp1 - kp2)**2, axis=1))  # Result: (time,)
+        distances = np.sqrt(np.sum((kp1 - kp2) ** 2, axis=1))  # Result: (time,)
 
     return distances
 
@@ -102,7 +102,7 @@ def egocentrically_align_and_center(
             distances = calculate_geometric_distance(
                 position_processed[:, :, :, individual],
                 idx1,
-                idx2
+                idx2,
             )
             # Calculate median distance, excluding NaNs
             individual_scales[individual] = np.nanmedian(distances)

@@ -147,7 +147,9 @@ def outlier_cleaning(
                         iqr_val = iqr(z_series)
                         outlier_mask = np.abs(z_series) > iqr_factor * iqr_val
                         series[outlier_mask] = np.nan
-                        perc_interp_points[space, keypoint, individual] = 100 * np.sum(outlier_mask) / len(outlier_mask)
+                        perc_interp_points[space, keypoint, individual] = (
+                            100 * np.sum(outlier_mask) / len(outlier_mask)
+                        )
 
                         # Interpolate NaN values of the original series
                         if not outlier_mask.all():

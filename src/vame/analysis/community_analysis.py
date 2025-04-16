@@ -97,6 +97,7 @@ def get_transition_matrix(
         transition_matrix = np.nan_to_num(transition_matrix)
     return transition_matrix
 
+
 def get_motif_labels(
     config: dict,
     sessions: List[str],
@@ -142,12 +143,7 @@ def get_motif_labels(
         file_labels = np.load(
             os.path.join(
                 path_to_dir,
-                str(n_clusters)
-                + "_"
-                + segmentation_algorithm
-                + "_label_"
-                + session
-                + ".npy",
+                str(n_clusters) + "_" + segmentation_algorithm + "_label_" + session + ".npy",
             )
         )
         shape = len(file_labels)
@@ -167,19 +163,16 @@ def get_motif_labels(
         file_labels = np.load(
             os.path.join(
                 path_to_dir,
-                str(n_clusters)
-                + "_"
-                + segmentation_algorithm
-                + "_label_"
-                + session
-                + ".npy",
+                str(n_clusters) + "_" + segmentation_algorithm + "_label_" + session + ".npy",
             )
         )
-        cohort_motif_labels.extend(file_labels) #add each element to community_label for example [1,2,3] instead of [1, [2,3]] #RENAME TO MOTIF_LABELS
-    cohort_motif_labels = np.array(cohort_motif_labels) 
+        cohort_motif_labels.extend(
+            file_labels
+        )  # add each element to community_label for example [1,2,3] instead of [1, [2,3]] #RENAME TO MOTIF_LABELS
+    cohort_motif_labels = np.array(cohort_motif_labels)
     cohort_motif_counts = get_motif_usage(cohort_motif_labels, n_clusters)
 
-    return cohort_motif_labels, cohort_motif_counts 
+    return cohort_motif_labels, cohort_motif_counts
 
 
 def compute_transition_matrices(
@@ -469,11 +462,11 @@ def community(
                     segmentation_algorithm + "-" + str(n_clusters),
                 )
             )
-            
+
             if not path_to_dir.exists():
                 path_to_dir.mkdir(parents=True, exist_ok=True)
 
-            #STEP 1
+            # STEP 1
             cohort_motif_labels, cohort_motif_counts = get_motif_labels(
                 config=config,
                 sessions=sessions,
@@ -499,7 +492,7 @@ def community(
             logger.info(f"Cohort motif counts from {segmentation_algorithm} saved")
             logger.info(cohort_motif_counts)
 
-            #STEP 2
+            # STEP 2
             _, trans_mat_full, _ = get_adjacency_matrix(
                 labels=cohort_motif_labels,
                 n_clusters=n_clusters,
@@ -513,7 +506,7 @@ def community(
             )
             logger.info("Cohort transition matrix saved")
 
-            #STEP 3
+            # STEP 3
             cohort_community_bag = create_cohort_community_bag(
                 config=config,
                 motif_labels=cohort_motif_labels,
@@ -533,7 +526,7 @@ def community(
             )
             logger.info("Community bag saved")
 
-            #STEP 4
+            # STEP 4
             community_labels_all = get_cohort_community_labels(
                 motif_labels=cohort_motif_labels,
                 cohort_community_bag=cohort_community_bag,
@@ -546,7 +539,6 @@ def community(
                 community_labels_all,
             )
             logger.info("Community labels saved")
-            
 
             with open(os.path.join(path_to_dir, "hierarchy" + ".pkl"), "wb") as fp:  # Pickling
                 pickle.dump(cohort_community_bag, fp)
