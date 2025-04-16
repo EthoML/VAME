@@ -8,10 +8,7 @@ from vame.schemas.states import EvaluateModelFunctionSchema, save_state
 from vame.model.rnn_vae import RNN_VAE
 from vame.model.dataloader import SEQUENCE_DATASET
 from vame.logging.logger import VameLogger
-from vame.visualization.model import (
-    plot_reconstruction,
-    plot_loss,
-)
+from vame.visualization.model import plot_reconstruction
 
 
 logger_config = VameLogger(__name__)

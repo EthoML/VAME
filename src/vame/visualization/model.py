@@ -146,7 +146,7 @@ def plot_loss(
     - project_name/
         - model/
             - evaluate/
-                - MSE-and-KL-Loss_model_name.png
+                - mse_and_kl_loss_model_name.png
 
     Parameters
     ----------
@@ -187,7 +187,7 @@ def plot_loss(
 
     if save_to_file:
         evaluate_path = os.path.join(config["project_path"], "model", "evaluate")
-        fig.savefig(os.path.join(evaluate_path, "MSE-and-KL-Loss" + model_name + ".png"))
+        fig.savefig(os.path.join(evaluate_path, "mse_and_kl_loss_" + model_name + ".png"))
 
     if show_figure:
         plt.show()
