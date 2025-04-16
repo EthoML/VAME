@@ -5,6 +5,11 @@ import numpy as np
 
 from vame.io.load_poses import read_pose_estimation_file
 from vame.schemas.states import save_state, PreprocessingVisualizationFunctionSchema
+from vame.logging.logger import VameLogger
+
+
+logger_config = VameLogger(__name__)
+logger = logger_config.logger
 
 
 @save_state(model=PreprocessingVisualizationFunctionSchema)
@@ -121,7 +126,7 @@ def visualize_preprocessing_scatter(
 
     if scaled_positions_key is not None:
         if scaled_positions_key not in ds.keys():
-            raise KeyError(f"Key '{scaled_positions_key}' not found in dataset.")
+            logger.info(f"Key '{scaled_positions_key}' not found in dataset.")
         position_keys.append(scaled_positions_key)
         position_labels.append("Scaled")
 
