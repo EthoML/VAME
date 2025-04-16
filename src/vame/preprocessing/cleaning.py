@@ -113,7 +113,7 @@ def outlier_cleaning(
     -------
     None
     """
-    logger.info("Cleaning outliers with Z-score transformation and IQR cutoff.")
+    logger.info("Cleaning outliers with Z-score-based IQR cutoff.")
     project_path = config["project_path"]
     sessions = config["session_names"]
 
@@ -146,24 +146,21 @@ def outlier_cleaning(
                         iqr_factor = config["iqr_factor"]
                         iqr_val = iqr(z_series)
                         outlier_mask = np.abs(z_series) > iqr_factor * iqr_val
-                        z_series[outlier_mask] = np.nan
+                        series[outlier_mask] = np.nan
                         perc_interp_points[space, keypoint, individual] = (
                             100 * np.sum(outlier_mask) / len(outlier_mask)
                         )
 
-                        # Interpolate NaN values
+                        # Interpolate NaN values of the original series
                         if not outlier_mask.all():
-                            z_series[outlier_mask] = np.interp(
+                            series[outlier_mask] = np.interp(
                                 np.flatnonzero(outlier_mask),
                                 np.flatnonzero(~outlier_mask),
-                                z_series[~outlier_mask],
+                                series[~outlier_mask],
                             )
 
-                        # Redo the z-score to remove the bias of the now-removed outliers
-                        z_series = (z_series - np.nanmean(z_series)) / np.nanstd(z_series)
-
                     # Update the processed position array
-                    cleaned_position[:, space, keypoint, individual] = z_series
+                    cleaned_position[:, space, keypoint, individual] = series
 
         # Update the dataset with the cleaned position values
         ds[save_to_variable] = (ds[read_from_variable].dims, cleaned_position)

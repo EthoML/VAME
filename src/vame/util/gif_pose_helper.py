@@ -18,7 +18,7 @@ logger = logger_config.logger
 
 
 def get_animal_frames(
-    cfg: dict,
+    config: dict,
     session: str,
     pose_ref_index: list,
     start: int,
@@ -32,7 +32,7 @@ def get_animal_frames(
 
     Parameters
     ----------
-    cfg : dict
+    config : dict
         Configuration dictionary containing project information.
     session : str
         Name of the session.
@@ -54,8 +54,8 @@ def get_animal_frames(
     list:
         List of extracted frames.
     """
-    project_path = cfg["project_path"]
-    time_window = cfg["time_window"]
+    project_path = config["project_path"]
+    time_window = config["time_window"]
     lag = int(time_window / 2)
 
     video_path = os.path.join(

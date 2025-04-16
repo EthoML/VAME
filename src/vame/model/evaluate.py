@@ -25,7 +25,7 @@ else:
 
 
 def eval_temporal(
-    cfg: dict,
+    config: dict,
     use_gpu: bool,
     model_name: str,
     fixed: bool,
@@ -37,7 +37,7 @@ def eval_temporal(
 
     Parameters
     ----------
-    cfg : dict
+    config : dict
         Configuration dictionary.
     use_gpu : bool
         Flag indicating whether to use GPU for evaluation.
@@ -55,24 +55,24 @@ def eval_temporal(
     None
     """
     SEED = 19
-    ZDIMS = cfg["zdims"]
-    FUTURE_DECODER = cfg["prediction_decoder"]
-    TEMPORAL_WINDOW = cfg["time_window"] * 2
-    FUTURE_STEPS = cfg["prediction_steps"]
-    NUM_FEATURES = cfg["num_features"]
+    ZDIMS = config["zdims"]
+    FUTURE_DECODER = config["prediction_decoder"]
+    TEMPORAL_WINDOW = config["time_window"] * 2
+    FUTURE_STEPS = config["prediction_steps"]
+    NUM_FEATURES = config["num_features"]
     if not fixed:
         NUM_FEATURES = NUM_FEATURES - 3
     TEST_BATCH_SIZE = 64
-    hidden_size_layer_1 = cfg["hidden_size_layer_1"]
-    hidden_size_layer_2 = cfg["hidden_size_layer_2"]
-    hidden_size_rec = cfg["hidden_size_rec"]
-    hidden_size_pred = cfg["hidden_size_pred"]
-    dropout_encoder = cfg["dropout_encoder"]
-    dropout_rec = cfg["dropout_rec"]
-    dropout_pred = cfg["dropout_pred"]
-    softplus = cfg["softplus"]
+    hidden_size_layer_1 = config["hidden_size_layer_1"]
+    hidden_size_layer_2 = config["hidden_size_layer_2"]
+    hidden_size_rec = config["hidden_size_rec"]
+    hidden_size_pred = config["hidden_size_pred"]
+    dropout_encoder = config["dropout_encoder"]
+    dropout_rec = config["dropout_rec"]
+    dropout_pred = config["dropout_pred"]
+    softplus = config["softplus"]
 
-    filepath = os.path.join(cfg["project_path"], "model")
+    filepath = os.path.join(config["project_path"], "model")
 
     seq_len_half = int(TEMPORAL_WINDOW / 2)
     if use_gpu:
@@ -95,10 +95,10 @@ def eval_temporal(
         model.load_state_dict(
             torch.load(
                 os.path.join(
-                    cfg["project_path"],
+                    config["project_path"],
                     "model",
                     "best_model",
-                    model_name + "_" + cfg["project_name"] + ".pkl",
+                    model_name + "_" + config["project_name"] + ".pkl",
                 )
             )
         )
@@ -122,10 +122,10 @@ def eval_temporal(
             model.load_state_dict(
                 torch.load(
                     os.path.join(
-                        cfg["project_path"],
+                        config["project_path"],
                         "model",
                         "best_model",
-                        model_name + "_" + cfg["project_name"] + ".pkl",
+                        model_name + "_" + config["project_name"] + ".pkl",
                     ),
                     map_location=torch.device("cpu"),
                 )
@@ -135,7 +135,7 @@ def eval_temporal(
     model.eval()  # toggle evaluation mode
 
     testset = SEQUENCE_DATASET(
-        os.path.join(cfg["project_path"], "data", "train", ""),
+        os.path.join(config["project_path"], "data", "train", ""),
         data="test_seq.npy",
         train=False,
         temporal_window=TEMPORAL_WINDOW,
@@ -166,14 +166,14 @@ def eval_temporal(
         )  # ,
     # if use_gpu:
     #     plot_loss(
-    #         cfg=cfg,
+    #         config=config,
     #         filepath=filepath,
     #         model_name=model_name,
     #         show_figure=False,
     #     )
     # else:
     #     plot_loss(
-    #         cfg=cfg,
+    #         config=config,
     #         filepath=filepath,
     #         model_name=model_name,
     #         show_figure=False,
@@ -229,7 +229,7 @@ def evaluate_model(
         logger.info(f"Evaluation of model: {model_name}")
         if not use_snapshots:
             eval_temporal(
-                cfg=config,
+                config=config,
                 use_gpu=use_gpu,
                 model_name=model_name,
                 fixed=fixed,
@@ -240,7 +240,7 @@ def evaluate_model(
                 fullpath = os.path.join(str(project_path), "model", "best_model", "snapshots", snap)
                 epoch = snap.split("_")[-1]
                 eval_temporal(
-                    cfg=config,
+                    config=config,
                     use_gpu=use_gpu,
                     model_name=model_name,
                     fixed=fixed,

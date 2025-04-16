@@ -40,7 +40,7 @@ def test_traindata_aligned_split_modes(setup_project_and_align_egocentric, split
     traindata_aligned(
         config=config,
         test_fraction=test_fraction,
-        split_mode=split_mode
+        split_mode=split_mode,
     )
 
     # Load data
@@ -80,7 +80,7 @@ def test_traindata_aligned_proportions(setup_project_and_align_egocentric, test_
         traindata_aligned(
             config=config,
             test_fraction=test_fraction,
-            split_mode=split_mode
+            split_mode=split_mode,
         )
 
         project_path = config["project_path"]
@@ -103,7 +103,7 @@ def test_traindata_aligned_data_continuity(setup_project_and_align_egocentric):
     traindata_aligned(
         config=config,
         test_fraction=test_fraction,
-        split_mode="mode_2"  # type: Literal["mode_1", "mode_2"]
+        split_mode="mode_2",
     )
 
     project_path = config["project_path"]

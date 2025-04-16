@@ -341,7 +341,7 @@ def test_gif_frames_files_exists(setup_project_and_evaluate_model, label):
     )
     with patch("vame.util.gif_pose_helper.background", side_effect=mock_background):
         vame.gif(
-            config=setup_project_and_evaluate_model["config_path"],
+            config_path=setup_project_and_evaluate_model["config_path"],
             segmentation_algorithm=SEGMENTATION_ALGORITHM,
             pose_ref_index=[0, 5],
             subtract_background=True,
@@ -353,7 +353,6 @@ def test_gif_frames_files_exists(setup_project_and_evaluate_model, label):
             crop_size=(300, 300),
         )
 
-    # path_to_file=os.path.join(cfg['project_path'],"results",file,model_name,param+'-'+str(n_clusters),"")
     video = setup_project_and_evaluate_model["config_data"]["session_names"][0]
     model_name = setup_project_and_evaluate_model["config_data"]["model_name"]
     n_clusters = setup_project_and_evaluate_model["config_data"]["n_clusters"]

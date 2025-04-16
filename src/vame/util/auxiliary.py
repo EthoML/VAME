@@ -1,11 +1,13 @@
+from importlib.metadata import version
 import os
 import json
 import yaml
 import ruamel.yaml
-import tomllib
 from pathlib import Path
 from typing import Tuple, Any
 from enum import Enum
+
+from vame.schemas.states import save_state, UpdateConfigFunctionSchema
 
 
 def get_version() -> str:
@@ -17,10 +19,7 @@ def get_version() -> str:
     str
         The version string.
     """
-    pyproject_path = Path(__file__).parent.parent.parent.parent / "pyproject.toml"
-    with open(pyproject_path, "rb") as f:
-        pyproject = tomllib.load(f)
-    return pyproject["project"]["version"]
+    return version("vame-py")
 
 
 def _convert_enums_to_values(obj: Any) -> Any:
@@ -59,28 +58,26 @@ def create_config_template() -> Tuple[dict, ruamel.yaml.YAML]:
 # Project configurations
     vame_version:
     project_name:
-    model_name:
-    n_clusters:
-    pose_confidence:
-    \n
-# Project path and videos
     project_path:
+    creation_datetime:
     session_names:
     \n
 # Data
     all_data:
+    keypoints:
     \n
-# Creation of train set:
+# Preprocessing:
     egocentric_data:
+    pose_confidence:
     robust:
     iqr_factor:
-    axis:
     savgol_filter:
     savgol_length:
     savgol_order:
     test_fraction:
     \n
 # RNN model general hyperparameter:
+    model_name:
     pretrained_model:
     pretrained_weights:
     num_features:
@@ -106,6 +103,7 @@ def create_config_template() -> Tuple[dict, ruamel.yaml.YAML]:
     softplus:
     \n
 # Segmentation:
+    n_clusters:
     segmentation_algorithms:
     hmm_trained: False
     load_data:
@@ -171,22 +169,22 @@ def read_config(config_file: str) -> dict:
     if os.path.exists(path):
         try:
             with open(path, "r") as f:
-                cfg = ruamelFile.load(f)
+                config = ruamelFile.load(f)
                 curr_dir = os.path.dirname(config_file)
-                if cfg["project_path"] != curr_dir:
-                    cfg["project_path"] = curr_dir
+                if config["project_path"] != curr_dir:
+                    config["project_path"] = curr_dir
                     write_config(
                         config_path=config_file,
-                        config=cfg,
+                        config=config,
                     )
         except Exception as err:
             if len(err.args) > 2:
                 if err.args[2] == "could not determine a constructor for the tag '!!python/tuple'":
                     with open(path, "r") as ymlfile:
-                        cfg = yaml.load(ymlfile, Loader=yaml.SafeLoader)
+                        config = yaml.load(ymlfile, Loader=yaml.SafeLoader)
                         write_config(
                             config_path=config_file,
-                            config=cfg,
+                            config=config,
                         )
                 else:
                     raise
@@ -194,7 +192,7 @@ def read_config(config_file: str) -> dict:
         raise FileNotFoundError(
             "Config file is not found. Please make sure that the file exists and/or that you passed the path of the config file correctly!"
         )
-    return cfg
+    return config
 
 
 def write_config(
@@ -220,6 +218,17 @@ def write_config(
         for key in config.keys():
             cfg_file[key] = config[key]
         ruamelFile.dump(cfg_file, cf)
+
+
+@save_state(model=UpdateConfigFunctionSchema)
+def update_config(
+    config: dict,
+    config_update: dict,
+) -> dict:
+    config_path = Path(config["project_path"]) / "config.yaml"
+    config.update(config_update)
+    write_config(config_path, config)
+    return config
 
 
 def read_states(config: dict) -> dict:

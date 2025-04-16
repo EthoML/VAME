@@ -10,6 +10,7 @@ from vame.visualization.umap import visualize_umap
 from vame.visualization.preprocessing import (
     visualize_preprocessing_scatter,
     visualize_preprocessing_timeseries,
+    visualize_preprocessing_cloud,
 )
 from vame.visualization.model import plot_loss
 from vame.logging.logger import VameLogger
@@ -139,6 +140,11 @@ class VAMEPipeline:
         self,
         centered_reference_keypoint: str = "snout",
         orientation_reference_keypoint: str = "tailbase",
+        run_lowconf_cleaning: bool = True,
+        run_egocentric_alignment: bool = True,
+        run_outlier_cleaning: bool = True,
+        run_savgol_filtering: bool = True,
+        run_rescaling: bool = False,
     ) -> None:
         """
         Preprocesses the data.
@@ -149,6 +155,16 @@ class VAMEPipeline:
             Key point to center the data, by default "snout".
         orientation_reference_keypoint : str, optional
             Key point to orient the data, by default "tailbase".
+        run_lowconf_cleaning : bool, optional
+            Whether to run low confidence cleaning, by default True.
+        run_egocentric_alignment : bool, optional
+            Whether to run egocentric alignment, by default True.
+        run_outlier_cleaning : bool, optional
+            Whether to run outlier cleaning, by default True.
+        run_savgol_filtering : bool, optional
+            Whether to run Savitzky-Golay filtering, by default True.
+        run_rescaling : bool, optional
+            Whether to run rescaling, by default False.
 
         Returns
         -------
@@ -160,6 +176,11 @@ class VAMEPipeline:
             config=self.config,
             centered_reference_keypoint=centered_reference_keypoint,
             orientation_reference_keypoint=orientation_reference_keypoint,
+            run_lowconf_cleaning=run_lowconf_cleaning,
+            run_egocentric_alignment=run_egocentric_alignment,
+            run_outlier_cleaning=run_outlier_cleaning,
+            run_savgol_filtering=run_savgol_filtering,
+            run_rescaling=run_rescaling,
         )
 
     def create_training_set(
@@ -314,6 +335,7 @@ class VAMEPipeline:
         self,
         scatter: bool = True,
         timeseries: bool = True,
+        cloud: bool = True,
         show_figure: bool = False,
         save_to_file: bool = True,
     ) -> None:
@@ -326,6 +348,8 @@ class VAMEPipeline:
             Visualize scatter plot, by default True.
         timeseries : bool, optional
             Visualize timeseries plot, by default True.
+        cloud : bool, optional
+            Visualize cloud plot, by default True.
         show_figure : bool, optional
             Show the figure, by default False.
         save_to_file : bool, optional
@@ -343,6 +367,12 @@ class VAMEPipeline:
             )
         if timeseries:
             visualize_preprocessing_timeseries(
+                config=self.config,
+                show_figure=show_figure,
+                save_to_file=save_to_file,
+            )
+        if cloud:
+            visualize_preprocessing_cloud(
                 config=self.config,
                 show_figure=show_figure,
                 save_to_file=save_to_file,
@@ -368,7 +398,7 @@ class VAMEPipeline:
         None
         """
         plot_loss(
-            cfg=self.config,
+            config=self.config,
             model_name="VAME",
             save_to_file=save_to_file,
             show_figure=show_figure,

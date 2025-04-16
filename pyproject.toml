@@ -25,7 +25,7 @@ dependencies = [
     "imageio-ffmpeg==0.5.1",
     "pynwb>=2.8.3",
     "tables>=3.10.0",
-    "movement==0.2.0",
+    "movement==0.5.0",
     "netCDF4==1.7.2",
 ]
 readme = { file = 'README.md', content-type = 'text/markdown' }

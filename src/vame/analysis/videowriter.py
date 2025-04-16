@@ -217,7 +217,7 @@ def motif_videos(
             sessions = config["session_names"]
         else:
             sessions = get_sessions_from_user_input(
-                cfg=config,
+                config=config,
                 action_message="write motif videos",
             )
 
@@ -315,7 +315,7 @@ def community_videos(
             sessions = config["session_names"]
         else:
             sessions = get_sessions_from_user_input(
-                cfg=config,
+                config=config,
                 action_message="write community videos",
             )
 

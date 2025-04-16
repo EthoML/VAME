@@ -79,7 +79,7 @@ def test_evaluate_model_images_exists(setup_project_and_evaluate_model):
     from vame.visualization.model import plot_loss
 
     plot_loss(
-        cfg=setup_project_and_evaluate_model["config_data"],
+        config=setup_project_and_evaluate_model["config_data"],
         model_name=setup_project_and_evaluate_model["config_data"]["model_name"],
         save_to_file=True,
         show_figure=False,

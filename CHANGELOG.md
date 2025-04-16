@@ -3,19 +3,25 @@
 ### Fixes
 
 - Fix movement sets fps to None, which is not accepted by ds.to_netcdf ([Issue #148](https://github.com/EthoML/VAME/issues/148))
-- Add tests for M1 ([Issue #149](https://github.com/EthoML/VAME/issues/149))
+- Re-order dataset dimensions to be in line with movement
 - Fix imports for download sample data
+- Fix get_version ([Issue #164](https://github.com/EthoML/VAME/issues/164))
 - Removed smoothing filter on community labels and save community fig as a .pdf
 - Save pose segmentation data after each session instead of segmentation algorithm method ([Issue #128](https://github.com/EthoML/VAME/issues/128))
-- Improve test/train set split ([Issue #146](https://github.com/EthoML/VAME/issues/146))
-- Re-order dataset dimensions to be in line with movement
-- Update netCDF engine to `netCDF4`
+- Fix IQR filter ([Issue #158](https://github.com/EthoML/VAME/issues/158))
 
 ### Features
 
 - Update torch version to 2.5.1
-- Update movement version to 0.2.0
+- Update `movement==0.5.0`
+- Update netCDF engine to `netCDF4`
 - Add VAME package version to config ([Issue #147](https://github.com/EthoML/VAME/issues/147))
+- Improve test/train set split ([Issue #146](https://github.com/EthoML/VAME/issues/146))
+- re-scaling as an extra preprocessing step, optional with default value False
+- visualization of the raw, threshold-cleaned, egoaligned, and IQR-cleaned (non-z-scored) time series example and X-vs-Y scatter plots that show how the data is being transformed
+- Points cloud scatter plot
+- Add tests for M1 ([Issue #149](https://github.com/EthoML/VAME/issues/149))
+- General improvements to save_state in some functions
 
 
 # v0.8.0
