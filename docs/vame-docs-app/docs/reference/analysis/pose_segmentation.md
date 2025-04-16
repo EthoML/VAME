@@ -11,7 +11,7 @@ title: analysis.pose_segmentation
 
 ```python
 def embedd_latent_vectors(
-        cfg: dict,
+        config: dict,
         sessions: List[str],
         model: RNN_VAE,
         fixed: bool,
@@ -23,7 +23,7 @@ Embed latent vectors for the given files using the VAME model.
 
 **Parameters**
 
-* **cfg** (`dict`): Configuration dictionary.
+* **config** (`dict`): Configuration dictionary.
 * **sessions** (`List[str]`): List of session names.
 * **model** (`RNN_VAE`): VAME model.
 * **fixed** (`bool`): Whether the model is fixed.
@@ -102,7 +102,7 @@ Saves pose segmentation data for given session.
 
 ```python
 def same_segmentation(
-    cfg: dict, sessions: List[str], latent_vectors: List[np.ndarray],
+    config: dict, sessions: List[str], latent_vectors: List[np.ndarray],
     n_clusters: int, segmentation_algorithm: str
 ) -> Tuple[List[np.ndarray], List[np.ndarray], List[np.ndarray]]
 ```
@@ -111,7 +111,7 @@ Apply the same segmentation to all animals.
 
 **Parameters**
 
-* **cfg** (`dict`): Configuration dictionary.
+* **config** (`dict`): Configuration dictionary.
 * **sessions** (`List[str]`): List of session names.
 * **latent_vectors** (`List[np.ndarray]`): List of latent vector arrays.
 * **n_clusters** (`int`): Number of clusters.
@@ -124,16 +124,16 @@ Apply the same segmentation to all animals.
 #### individual\_segmentation
 
 ```python
-def individual_segmentation(cfg: dict, sessions: List[str],
+def individual_segmentation(config: dict, sessions: List[str],
                             latent_vectors: List[np.ndarray],
                             n_clusters: int) -> Tuple
 ```
 
-Apply individual segmentation to each session. 
+Apply individual segmentation to each session.
 
 **Parameters**
 
-* **cfg** (`dict`): Configuration dictionary.
+* **config** (`dict`): Configuration dictionary.
 * **sessions** (`List[str]`): List of session names.
 * **latent_vectors** (`List[np.ndarray]`): List of latent vector arrays.
 * **n_clusters** (`int`): Number of clusters.

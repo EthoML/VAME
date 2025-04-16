@@ -72,6 +72,13 @@ Write structured config file.
 * **config_path** (`str`): Path to the config file.
 * **config** (`dict`): Dictionary containing the config data.
 
+#### update\_config
+
+```python
+@save_state(model=UpdateConfigFunctionSchema)
+def update_config(config: dict, config_update: dict) -> dict
+```
+
 #### read\_states
 
 ```python

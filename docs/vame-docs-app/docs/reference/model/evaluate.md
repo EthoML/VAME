@@ -12,7 +12,7 @@ title: model.evaluate
 #### eval\_temporal
 
 ```python
-def eval_temporal(cfg: dict,
+def eval_temporal(config: dict,
                   use_gpu: bool,
                   model_name: str,
                   fixed: bool,
@@ -24,7 +24,7 @@ Evaluate the temporal aspects of the trained model.
 
 **Parameters**
 
-* **cfg** (`dict`): Configuration dictionary.
+* **config** (`dict`): Configuration dictionary.
 * **use_gpu** (`bool`): Flag indicating whether to use GPU for evaluation.
 * **model_name** (`str`): Name of the model.
 * **fixed** (`bool`): Flag indicating whether the data is fixed or not.

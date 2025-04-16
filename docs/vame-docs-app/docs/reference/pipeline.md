@@ -89,7 +89,12 @@ Returns a xarray dataset which combines all the raw data from the project.
 
 ```python
 def preprocessing(centered_reference_keypoint: str = "snout",
-                  orientation_reference_keypoint: str = "tailbase") -> None
+                  orientation_reference_keypoint: str = "tailbase",
+                  run_lowconf_cleaning: bool = True,
+                  run_egocentric_alignment: bool = True,
+                  run_outlier_cleaning: bool = True,
+                  run_savgol_filtering: bool = True,
+                  run_rescaling: bool = False) -> None
 ```
 
 Preprocesses the data.
@@ -98,6 +103,11 @@ Preprocesses the data.
 
 * **centered_reference_keypoint** (`str, optional`): Key point to center the data, by default &quot;snout&quot;.
 * **orientation_reference_keypoint** (`str, optional`): Key point to orient the data, by default &quot;tailbase&quot;.
+* **run_lowconf_cleaning** (`bool, optional`): Whether to run low confidence cleaning, by default True.
+* **run_egocentric_alignment** (`bool, optional`): Whether to run egocentric alignment, by default True.
+* **run_outlier_cleaning** (`bool, optional`): Whether to run outlier cleaning, by default True.
+* **run_savgol_filtering** (`bool, optional`): Whether to run Savitzky-Golay filtering, by default True.
+* **run_rescaling** (`bool, optional`): Whether to run rescaling, by default False.
 
 **Returns**
 
@@ -232,6 +242,7 @@ Generates motif and community videos.
 ```python
 def visualize_preprocessing(scatter: bool = True,
                             timeseries: bool = True,
+                            cloud: bool = True,
                             show_figure: bool = False,
                             save_to_file: bool = True) -> None
 ```
@@ -242,6 +253,7 @@ Visualizes the preprocessing results.
 
 * **scatter** (`bool, optional`): Visualize scatter plot, by default True.
 * **timeseries** (`bool, optional`): Visualize timeseries plot, by default True.
+* **cloud** (`bool, optional`): Visualize cloud plot, by default True.
 * **show_figure** (`bool, optional`): Show the figure, by default False.
 * **save_to_file** (`bool, optional`): Save the figure to file, by default True.
 
