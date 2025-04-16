@@ -249,7 +249,7 @@ def evaluate_model(
                 )
 
         logger.info(
-            "You can find the results of the evaluation in '/Your-VAME-Project/model/evaluate/' \n"
+            f"You can find the results of the evaluation in '{project_path}/model/evaluate/' \n"
             "OPTIONS:\n"
             "- vame.segment_session() to identify behavioral motifs.\n"
             "- re-run the model for further fine tuning. Check again with vame.evaluate_model()"
