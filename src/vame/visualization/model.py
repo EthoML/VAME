@@ -100,7 +100,7 @@ def plot_reconstruction(
             axs[1, i].plot(fut[i, ...], color="r", linestyle="dashed")
         axs[0, 0].set(xlabel="time steps", ylabel="reconstruction")
         axs[1, 0].set(xlabel="time steps", ylabel="predction")
-        fig.savefig(os.path.join(filepath, "evaluate", "Future_Reconstruction.png"))
+        fig.savefig(os.path.join(filepath, "evaluate", "future_reconstruction.png"))
     else:
         fig, ax1 = plt.subplots(1, 5)
         for i in range(5):
