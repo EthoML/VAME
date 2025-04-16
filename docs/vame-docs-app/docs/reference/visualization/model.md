@@ -56,7 +56,7 @@ Saves the plot to:
 - project_name/
     - model/
         - evaluate/
-            - MSE-and-KL-Loss_model_name.png
+            - mse_and_kl_loss_model_name.png
 
 **Parameters**
 
