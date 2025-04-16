@@ -470,7 +470,7 @@ def segment_session(
 
             # Get sessions to analyze
             sessions = []
-            if config["all_data"] in ["Yes", "yes"]:
+            if config["all_data"] in ["Yes", "yes", "True", "true", True]:
                 sessions = config["session_names"]
             else:
                 sessions = get_sessions_from_user_input(
