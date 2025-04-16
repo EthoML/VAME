@@ -17,6 +17,9 @@
 - Update netCDF engine to `netCDF4`
 - Add VAME package version to config ([Issue #147](https://github.com/EthoML/VAME/issues/147))
 - Improve test/train set split ([Issue #146](https://github.com/EthoML/VAME/issues/146))
+- re-scaling as an extra preprocessing step, optional with default value False
+- visualization of the raw, threshold-cleaned, egoaligned, and IQR-cleaned (non-z-scored) time series example and X-vs-Y scatter plots that show how the data is being transformed
+- Points cloud scatter plot
 - Add tests for M1 ([Issue #149](https://github.com/EthoML/VAME/issues/149))
 - General improvements to save_state in some functions
 
