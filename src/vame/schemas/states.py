@@ -83,8 +83,10 @@ class MotifVideosFunctionSchema(BaseStateSchema):
 
 
 class CommunityFunctionSchema(BaseStateSchema):
-    cohort: bool = Field(title="Cohort", default=True)
-    segmentation_algorithm: SegmentationAlgorithms = Field(title="Segmentation algorithm")
+    segmentation_algorithm: SegmentationAlgorithms = Field(
+        title="Segmentation algorithm",
+        default=SegmentationAlgorithms.hmm,
+    )
     cut_tree: int | None = Field(
         title="Cut tree",
         default=None,
@@ -92,8 +94,6 @@ class CommunityFunctionSchema(BaseStateSchema):
 
 
 class CommunityVideosFunctionSchema(BaseStateSchema):
-    segmentation_algorithm: SegmentationAlgorithms = Field(title="Segmentation algorithm")
-    cohort: bool = Field(title="Cohort", default=True)
     video_type: str = Field(
         title="Type of video",
         default=".mp4",

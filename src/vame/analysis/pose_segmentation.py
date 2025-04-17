@@ -435,9 +435,9 @@ def segment_session(
     config : dict
         Configuration dictionary.
     overwrite : bool, optional
-        Whether to overwrite existing segmentation results, by default False.
+        Whether to overwrite existing segmentation results. Defaults to False.
     save_logs : bool, optional
-        Whether to save logs, by default False.
+        Whether to save logs. Defaults to False.
 
     Returns
     -------
@@ -463,12 +463,10 @@ def segment_session(
         else:
             logger.info("CUDA is not working! Attempting to use the CPU...")
             torch.device("cpu")
+
+        logger.info("---------------------------------------------------------------------")
         logger.info("Pose segmentation for VAME model: %s \n" % model_name)
-        logger.info(f"Segmentation algorithms: {segmentation_algorithms}")
-
         for seg in segmentation_algorithms:
-            logger.info("---------------------------------------------------------------------")
-
             # Get sessions to analyze
             sessions = []
             if config["all_data"] in ["Yes", "yes", "True", "true", True]:
