@@ -87,7 +87,7 @@ def test_evaluate_model_images_exists(setup_project_and_evaluate_model):
     project_path = setup_project_and_evaluate_model["config_data"]["project_path"]
     model_name = setup_project_and_evaluate_model["config_data"]["model_name"]
     reconstruction_image_path = Path(project_path) / "model" / "evaluate" / "future_reconstruction.png"
-    loss_image_path = Path(project_path) / "model" / "evaluate" / f"MSE-and-KL-Loss{model_name}.png"
+    loss_image_path = Path(project_path) / "model" / "evaluate" / f"mse_and_kl_loss_{model_name}.png"
 
     assert reconstruction_image_path.exists()
     assert loss_image_path.exists()
