@@ -76,7 +76,6 @@ def test_motif_videos_avi_files_exists(setup_project_and_train_model, segmentati
     # Check if the files are created
     vame.motif_videos(
         config=setup_project_and_train_model["config_data"],
-        segmentation_algorithm=segmentation_algorithm,
         output_video_type=".avi",
         save_logs=True,
     )
