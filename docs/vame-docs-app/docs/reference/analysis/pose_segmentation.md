@@ -101,10 +101,9 @@ Saves pose segmentation data for given session.
 #### same\_segmentation
 
 ```python
-def same_segmentation(
-    config: dict, sessions: List[str], latent_vectors: List[np.ndarray],
-    n_clusters: int, segmentation_algorithm: str
-) -> Tuple[List[np.ndarray], List[np.ndarray], List[np.ndarray]]
+def same_segmentation(config: dict, sessions: List[str],
+                      latent_vectors: List[np.ndarray], n_clusters: int,
+                      segmentation_algorithm: str) -> None
 ```
 
 Apply the same segmentation to all animals.
@@ -119,7 +118,7 @@ Apply the same segmentation to all animals.
 
 **Returns**
 
-* `Tuple`: Tuple of labels, cluster centers, and motif usages.
+* `None`
 
 #### individual\_segmentation
 
@@ -146,7 +145,9 @@ Apply individual segmentation to each session.
 
 ```python
 @save_state(model=SegmentSessionFunctionSchema)
-def segment_session(config: dict, save_logs: bool = False) -> None
+def segment_session(config: dict,
+                    overwrite: bool = False,
+                    save_logs: bool = False) -> None
 ```
 
 Perform pose segmentation using the VAME model.
@@ -179,6 +180,7 @@ Dimmentions: (n_frames,)
 **Parameters**
 
 * **config** (`dict`): Configuration dictionary.
+* **overwrite** (`bool, optional`): Whether to overwrite existing segmentation results, by default False.
 * **save_logs** (`bool, optional`): Whether to save logs, by default False.
 
 **Returns**
