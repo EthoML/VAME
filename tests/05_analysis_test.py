@@ -50,7 +50,6 @@ def test_pose_segmentation_hmm_files_exists(
 def test_motif_videos_mp4_files_exists(setup_project_and_train_model, segmentation_algorithm):
     vame.motif_videos(
         config=setup_project_and_train_model["config_data"],
-        segmentation_algorithm=segmentation_algorithm,
         output_video_type=".mp4",
         save_logs=True,
     )
