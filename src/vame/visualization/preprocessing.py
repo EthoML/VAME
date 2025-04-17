@@ -127,8 +127,9 @@ def visualize_preprocessing_scatter(
     if scaled_positions_key is not None:
         if scaled_positions_key not in ds.keys():
             logger.info(f"Key '{scaled_positions_key}' not found in dataset.")
-        position_keys.append(scaled_positions_key)
-        position_labels.append("Scaled")
+        else:
+            position_keys.append(scaled_positions_key)
+            position_labels.append("Scaled")
 
     # Load all position data
     positions_data = {}
@@ -330,9 +331,10 @@ def visualize_preprocessing_timeseries(
 
     if scaled_positions_key is not None:
         if scaled_positions_key not in ds.keys():
-            raise KeyError(f"Key '{scaled_positions_key}' not found in dataset.")
-        position_keys.append(scaled_positions_key)
-        position_labels.append("Scaled Egocentric")
+            logger.info(f"Key '{scaled_positions_key}' not found in dataset.")
+        else:
+            position_keys.append(scaled_positions_key)
+            position_labels.append("Scaled Egocentric")
 
     # Count how many position types we have
     num_positions = len(position_keys)
@@ -511,9 +513,11 @@ def visualize_preprocessing_cloud(
 
     if scaled_positions_key is not None:
         if scaled_positions_key not in ds.keys():
-            raise KeyError(f"Key '{scaled_positions_key}' not found in dataset.")
-        position_keys.append(scaled_positions_key)
-        position_labels.append("Scaled")
+            logger.info(f"Key '{scaled_positions_key}' not found in dataset.")
+
+        else:
+            position_keys.append(scaled_positions_key)
+            position_labels.append("Scaled")
 
     # Count how many position types we have
     num_positions = len(position_keys)
