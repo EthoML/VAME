@@ -249,7 +249,7 @@ def same_segmentation(
     latent_vectors: List[np.ndarray],
     n_clusters: int,
     segmentation_algorithm: str,
-) -> Tuple[List[np.ndarray], List[np.ndarray], List[np.ndarray]]:
+) -> None:
     """
     Apply the same segmentation to all animals.
 
@@ -268,8 +268,7 @@ def same_segmentation(
 
     Returns
     -------
-    Tuple
-        Tuple of labels, cluster centers, and motif usages.
+    None
     """
     # List of arrays containing each session's motif labels #[SRM, 10/28/24], recommend rename this and similar variables to allsessions_labels
     labels = []  # List of array containing each session's motif labels
@@ -400,6 +399,7 @@ def individual_segmentation(
 @save_state(model=SegmentSessionFunctionSchema)
 def segment_session(
     config: dict,
+    overwrite: bool = False,
     save_logs: bool = False,
 ) -> None:
     """
@@ -434,6 +434,8 @@ def segment_session(
     ----------
     config : dict
         Configuration dictionary.
+    overwrite : bool, optional
+        Whether to overwrite existing segmentation results, by default False.
     save_logs : bool, optional
         Whether to save logs, by default False.
 
@@ -466,7 +468,6 @@ def segment_session(
 
         for seg in segmentation_algorithms:
             logger.info("---------------------------------------------------------------------")
-            logger.info(f"Running pose segmentation using {seg} algorithm...")
 
             # Get sessions to analyze
             sessions = []
@@ -489,50 +490,33 @@ def segment_session(
                 if not os.path.exists(session_results_path):
                     os.mkdir(session_results_path)
 
-            # PART 1:Determine to embedd or get latent vectors
+            # Checks if segment session was already processed before
             latent_vectors = []
-            if not os.path.exists(
-                os.path.join(
-                    str(project_path),
-                    "results",
-                    sessions[0],
-                    model_name,
-                    seg + "-" + str(n_clusters),
-                )
-            ):  # Checks if segment session was already processed before
-                new_segmentation = True
-                model = load_model(config, model_name, fixed)
-                latent_vectors = embedd_latent_vectors(
-                    config,
-                    sessions,
-                    model,
-                    fixed,
-                    tqdm_stream=tqdm_stream,
-                )
+            seg_results_path = os.path.join(
+                str(project_path),
+                "results",
+                sessions[0],
+                model_name,
+                seg + "-" + str(n_clusters),
+            )
+            if os.path.exists(seg_results_path):
+                if not overwrite:
+                    logger.info(f"Segmentation for {seg} algorithm and cluster size {n_clusters} already exists, skipping...")
+                    return
+                logger.info(f"Segmentation for {seg} algorithm and cluster size {n_clusters} already exists, but will be overwritten.")
+            else:
+                logger.info(f"Starting segmentation for {seg} algorithm and cluster size {n_clusters}...")
 
-            else:  # else results session[0] path exists
-                logger.info(f"\nSegmentation with {n_clusters} k-means clusters already exists for model {model_name}")
+            model = load_model(config, model_name, fixed)
+            latent_vectors = embedd_latent_vectors(
+                config=config,
+                sessions=sessions,
+                model=model,
+                fixed=fixed,
+                tqdm_stream=tqdm_stream,
+            )
 
-                flag = input(
-                    "WARNING: A segmentation for the chosen model and cluster size already exists! \n"
-                    "Do you want to continue? A new segmentation will be computed! (yes/no) "
-                )
-
-                if flag == "yes":
-                    new_segmentation = True
-                    latent_vectors = get_latent_vectors(
-                        project_path,
-                        sessions,
-                        model_name,
-                        seg,
-                        n_clusters,
-                    )
-
-                else:
-                    logger.info("No new segmentation has been calculated.")
-                    new_segmentation = False
-
-            # PART 2: Apply same or indiv segmentation of latent vectors for each session
+            # Apply same or indiv segmentation of latent vectors for each session
             if ind_seg:
                 logger.info(f"Apply individual segmentation of latent vectors for each session, {n_clusters} clusters")
                 labels, cluster_center, motif_usages = individual_segmentation(
@@ -550,11 +534,12 @@ def segment_session(
                     n_clusters=n_clusters,
                     segmentation_algorithm=seg,
                 )
-                logger.info(
-                    "You succesfully extracted motifs with VAME! From here, you can proceed running vame.community() "
-                    "to get the full picture of the spatiotemporal dynamic. To get an idea of the behavior captured by VAME, "
-                    "run vame.motif_videos(). This will leave you with short snippets of certain movements."
-                )
+
+            logger.info(
+                "You succesfully extracted motifs with VAME! From here, you can proceed running vame.community() "
+                "to get the full picture of the spatiotemporal dynamic. To get an idea of the behavior captured by VAME, "
+                "run vame.motif_videos(). This will leave you with short snippets of certain movements."
+            )
 
     except Exception as e:
         logger.exception(f"An error occurred during pose segmentation: {e}")

@@ -3,7 +3,7 @@ from pathlib import Path
 import numpy as np
 import cv2 as cv
 import tqdm
-from typing import Union
+from typing import Union, Optional, List
 import imageio
 
 from vame.util.auxiliary import read_config
@@ -165,7 +165,7 @@ def create_cluster_videos(
 @save_state(model=MotifVideosFunctionSchema)
 def motif_videos(
     config: dict,
-    segmentation_algorithm: SegmentationAlgorithms,
+    segmentation_algorithms: Optional[List[SegmentationAlgorithms]] = None,
     video_type: str = ".mp4",
     output_video_type: str = ".mp4",
     save_logs: bool = False,
@@ -190,6 +190,7 @@ def motif_videos(
         Configuration parameters.
     segmentation_algorithm : SegmentationAlgorithms
         Which segmentation algorithm to use. Options are 'hmm' or 'kmeans'.
+        If None, it will be taken from the config file.
     video_type : str, optional
         Type of video. Default is '.mp4'.
     output_video_type : str, optional
@@ -209,11 +210,18 @@ def motif_videos(
             tqdm_logger_stream = TqdmToLogger(logger=logger)
         model_name = config["model_name"]
         n_clusters = config["n_clusters"]
-
-        logger.info(f"Creating motif videos for algorithm: {segmentation_algorithm}...")
+        segmentation_algorithms_config = config["segmentation_algorithms"]
+        if segmentation_algorithms is None:
+            segmentation_algorithms = segmentation_algorithms_config
+        else:
+            for segmentation_algorithm in segmentation_algorithms:
+                if segmentation_algorithm not in segmentation_algorithms_config:
+                    raise ValueError(
+                        f"Segmentation algorithm {segmentation_algorithm} was not used n project {config['project_name']}."
+                    )
 
         # Get sessions
-        if config["all_data"] in ["Yes", "yes"]:
+        if config["all_data"] in ["Yes", "yes", "True", "true", True]:
             sessions = config["session_names"]
         else:
             sessions = get_sessions_from_user_input(
@@ -221,31 +229,32 @@ def motif_videos(
                 action_message="write motif videos",
             )
 
-        logger.info("Cluster size is: %d " % n_clusters)
         for session in sessions:
-            path_to_file = os.path.join(
-                config["project_path"],
-                "results",
-                session,
-                model_name,
-                segmentation_algorithm + "-" + str(n_clusters),
-                "",
-            )
-            if not os.path.exists(os.path.join(path_to_file, "cluster_videos")):
-                os.mkdir(os.path.join(path_to_file, "cluster_videos"))
+            for segmentation_algorithm in segmentation_algorithms:
+                logger.info(f"Creating motif videos for session {session}, algorithm: {segmentation_algorithm}, n_clusters: {n_clusters}")
+                path_to_file = os.path.join(
+                    config["project_path"],
+                    "results",
+                    session,
+                    model_name,
+                    segmentation_algorithm + "-" + str(n_clusters),
+                    "",
+                )
+                if not os.path.exists(os.path.join(path_to_file, "cluster_videos")):
+                    os.mkdir(os.path.join(path_to_file, "cluster_videos"))
 
-            create_cluster_videos(
-                config=config,
-                path_to_file=path_to_file,
-                session=session,
-                n_clusters=n_clusters,
-                video_type=video_type,
-                flag="motif",
-                segmentation_algorithm=segmentation_algorithm,
-                output_video_type=output_video_type,
-                tqdm_logger_stream=tqdm_logger_stream,
-            )
-        logger.info("All videos have been created!")
+                create_cluster_videos(
+                    config=config,
+                    path_to_file=path_to_file,
+                    session=session,
+                    n_clusters=n_clusters,
+                    video_type=video_type,
+                    flag="motif",
+                    segmentation_algorithm=segmentation_algorithm,
+                    output_video_type=output_video_type,
+                    tqdm_logger_stream=tqdm_logger_stream,
+                )
+            logger.info("All videos have been created!")
     except Exception as e:
         logger.exception(f"Error in motif_videos: {e}")
         raise e
