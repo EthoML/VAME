@@ -18,7 +18,6 @@ def create_cluster_videos(
         video_type: str,
         flag: str,
         segmentation_algorithm: SegmentationAlgorithms,
-        cohort: bool = True,
         output_video_type: str = ".mp4",
         tqdm_logger_stream: Union[TqdmToLogger, None] = None) -> None
 ```
@@ -34,7 +33,6 @@ Generate cluster videos and save them to filesystem on project folder.
 * **video_type** (`str`): Type of input video.
 * **flag** (`str`): Flag indicating the type of video (motif or community).
 * **segmentation_algorithm** (`SegmentationAlgorithms`): Which segmentation algorithm to use. Options are &#x27;hmm&#x27; or &#x27;kmeans&#x27;.
-* **cohort** (`bool, optional`): Flag indicating cohort analysis. Defaults to True.
 * **output_video_type** (`str, optional`): Type of output video. Default is &#x27;.mp4&#x27;.
 * **tqdm_logger_stream** (`TqdmToLogger, optional`): Tqdm logger stream. Default is None.
 
@@ -59,12 +57,12 @@ Fills in the values in the &quot;motif_videos&quot; key of the states.json file.
 Files are saved at:
 - project_name/
     - results/
-        - session/
+        - session_name/
             - model_name/
                 - segmentation_algorithm-n_clusters/
                     - cluster_videos/
-                        - session-motif_0.mp4
-                        - session-motif_1.mp4
+                        - session_name-motif_0.mp4
+                        - session_name-motif_1.mp4
                         - ...
 
 **Parameters**
@@ -85,36 +83,28 @@ If None, it will be taken from the config file.
 ```python
 @save_state(model=CommunityVideosFunctionSchema)
 def community_videos(config: dict,
-                     segmentation_algorithm: SegmentationAlgorithms,
-                     cohort: bool = True,
                      video_type: str = ".mp4",
-                     save_logs: bool = False,
-                     output_video_type: str = ".mp4") -> None
+                     output_video_type: str = ".mp4",
+                     save_logs: bool = False) -> None
 ```
 
 Generate community videos and save them to filesystem on project community_videos folder.
 Fills in the values in the &quot;community_videos&quot; key of the states.json file.
 Files are saved at:
-
-1. If cohort is True:
-TODO: Add cohort analysis
-
-2. If cohort is False:
 - project_name/
     - results/
-        - file_name/
+        - session_name/
             - model_name/
                 - segmentation_algorithm-n_clusters/
                     - community_videos/
-                        - file_name-community_0.mp4
-                        - file_name-community_1.mp4
+                        - session_name-community_0.mp4
+                        - session_name-community_1.mp4
                         - ...
 
 **Parameters**
 
 * **config** (`dict`): Configuration parameters.
 * **segmentation_algorithm** (`SegmentationAlgorithms`): Which segmentation algorithm to use. Options are &#x27;hmm&#x27; or &#x27;kmeans&#x27;.
-* **cohort** (`bool, optional`): Flag indicating cohort analysis. Defaults to True.
 * **video_type** (`str, optional`): Type of video. Default is &#x27;.mp4&#x27;.
 * **save_logs** (`bool, optional`): Save logs to filesystem. Default is False.
 * **output_video_type** (`str, optional`): Type of output video. Default is &#x27;.mp4&#x27;.
