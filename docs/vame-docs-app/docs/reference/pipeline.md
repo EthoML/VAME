@@ -272,14 +272,14 @@ Visualizes the model losses.
 
 * `None`
 
-#### visualize\_motif\_tree
+#### visualize\_hierarchical\_tree
 
 ```python
-def visualize_motif_tree(
+def visualize_hierarchical_tree(
         segmentation_algorithm: Literal["hmm", "kmeans"]) -> None
 ```
 
-Visualizes the motif tree.
+Visualizes the hierarchical tree.
 
 **Parameters**
 

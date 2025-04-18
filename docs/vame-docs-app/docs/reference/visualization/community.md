@@ -57,3 +57,22 @@ Draw a tree.
 
 * `None`
 
+#### visualize\_hierarchical\_tree
+
+```python
+def visualize_hierarchical_tree(
+        config: dict, segmentation_algorithm: Literal["hmm",
+                                                      "kmeans"]) -> None
+```
+
+Visualizes the hierarchical tree.
+
+**Parameters**
+
+* **config** (`dict`): Configuration dictionary.
+* **segmentation_algorithm** (`Literal["hmm", "kmeans"]`): Segmentation algorithm.
+
+**Returns**
+
+* `None`
+
