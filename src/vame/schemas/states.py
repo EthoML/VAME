@@ -97,7 +97,6 @@ class CommunityVideosFunctionSchema(BaseStateSchema):
 
 
 class VisualizeUmapFunctionSchema(BaseStateSchema):
-    segmentation_algorithm: SegmentationAlgorithms = Field(title="Segmentation algorithm")
     label: Optional[str] = Field(
         title="Type of labels to visualize",
         default=None,

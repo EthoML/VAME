@@ -3,6 +3,7 @@ import umap
 import numpy as np
 from pathlib import Path
 import matplotlib.pyplot as plt
+from matplotlib.figure import Figure
 from typing import Optional
 
 from vame.util.cli import get_sessions_from_user_input
@@ -71,50 +72,11 @@ def umap_embedding(
     return embed
 
 
-# def umap_vis_community_labels(config: dict, embed: np.ndarray, community_labels_all: np.ndarray, save_path: str | None) -> None:
-#     """Create plotly visualizaton of UMAP embedding with community labels.
-
-#     Args:
-#         config (dict): Configuration parameters.
-#         embed (np.ndarray): UMAP embedding.
-#         community_labels_all (np.ndarray): Community labels.
-#         save_path: Path to save the plot. If None it will not save the plot.
-
-#     Returns
-#         None
-#     """
-#     num_points = config['num_points']
-#     community_labels_all = np.asarray(community_labels_all)
-#     if num_points > community_labels_all.shape[0]:
-#         num_points = community_labels_all.shape[0]
-#     logger.info("Embedding %d data points.." %num_points)
-
-#     num = np.unique(community_labels_all)
-
-#     fig = plt.figure(1)
-#     plt.scatter(
-#         embed[:,0],
-#         embed[:,1],
-#         c=community_labels_all[:num_points],
-#         cmap='Spectral',
-#         s=2,
-#         alpha=1
-#     )
-#     plt.colorbar(boundaries=np.arange(np.max(num)+2)-0.5).set_ticks(np.arange(np.max(num)+1))
-#     plt.gca().set_aspect('equal', 'datalim')
-#     plt.grid(False)
-
-#     if save_path is not None:
-#         plt.savefig(save_path)
-#         return fig
-#     plt.show()
-#     return fig
-
-
 def umap_vis(
     embed: np.ndarray,
     num_points: int,
-) -> plt.Figure:
+    labels: Optional[np.ndarray] = None,
+) -> Figure:
     """
     Visualize UMAP embedding without labels.
 
@@ -124,92 +86,28 @@ def umap_vis(
         UMAP embedding.
     num_points : int
         Number of data points to visualize.
+    labels : np.ndarray, optional
+        Motif or community labels. Default is None.
 
     Returns
     -------
     plt.Figure
         Plot Visualization of UMAP embedding.
     """
-    # plt.cla()
-    # plt.clf()
+    scatter_kwargs = {
+        "x": embed[:num_points, 0],
+        "y": embed[:num_points, 1],
+        "s": 2,
+        "alpha": 0.5,
+    }
+    if labels is not None:
+        scatter_kwargs["c"] = labels[:num_points]
+        scatter_kwargs["cmap"] = "Spectral"
+        scatter_kwargs["alpha"] = 0.7
+
     plt.close("all")
     fig = plt.figure(1)
-    plt.scatter(embed[:num_points, 0], embed[:num_points, 1], s=2, alpha=0.5)
-    plt.gca().set_aspect("equal", "datalim")
-    plt.grid(False)
-    return fig
-
-
-def umap_label_vis(
-    embed: np.ndarray,
-    label: np.ndarray,
-    num_points: int,
-) -> plt.Figure:
-    """
-    Visualize UMAP embedding with motif labels.
-
-    Parameters
-    ----------
-    embed : np.ndarray
-        UMAP embedding.
-    label : np.ndarray
-        Motif labels.
-    num_points : int
-        Number of data points to visualize.
-
-    Returns
-    -------
-    plt.Figure
-        Plot figure of UMAP visualization embedding with motif labels.
-    """
-    fig = plt.figure(1)
-    plt.scatter(
-        embed[:num_points, 0],
-        embed[:num_points, 1],
-        c=label[:num_points],
-        cmap="Spectral",
-        s=2,
-        alpha=0.7,
-    )
-    # plt.colorbar(boundaries=np.arange(n_clusters+1)-0.5).set_ticks(np.arange(n_clusters))
-    plt.gca().set_aspect("equal", "datalim")
-    plt.grid(False)
-    return fig
-
-
-def umap_vis_comm(
-    embed: np.ndarray,
-    community_label: np.ndarray,
-    num_points: int,
-) -> plt.Figure:
-    """
-    Visualize UMAP embedding with community labels.
-
-    Parameters
-    ----------
-    embed : np.ndarray
-        UMAP embedding.
-    community_label : np.ndarray
-        Community labels.
-    num_points : int
-        Number of data points to visualize.
-
-    Returns
-    -------
-    plt.Figure
-        Plot figure of UMAP visualization embedding with community labels.
-    """
-    num = np.unique(community_label).shape[0]
-    fig = plt.figure(1)
-    plt.scatter(
-        embed[:num_points, 0],
-        embed[:num_points, 1],
-        c=community_label[:num_points],
-        cmap="Spectral",
-        s=2,
-        alpha=0.7,
-    )
-    # plt.colorbar(boundaries=np.arange(num+1)-0.5).set_ticks(np.arange(num))
+    plt.scatter(**scatter_kwargs)
     plt.gca().set_aspect("equal", "datalim")
     plt.grid(False)
     return fig
@@ -218,16 +116,13 @@ def umap_vis_comm(
 @save_state(model=VisualizeUmapFunctionSchema)
 def visualize_umap(
     config: dict,
-    segmentation_algorithm: SegmentationAlgorithms,
     label: Optional[str] = None,
     save_logs: bool = False,
 ) -> None:
     """
     Visualize UMAP embeddings based on configuration settings.
-    Fills in the values in the "visualization" key of the states.json file.
+    Fills in the values in the "visualization_umap" key of the states.json file.
     Saves results files at:
-
-    If label is None (UMAP visualization without labels):
     - project_name/
         - results/
             - file_name/
@@ -243,8 +138,6 @@ def visualize_umap(
     ----------
     config : dict
         Configuration parameters.
-    segmentation_algorithm : SegmentationAlgorithms
-        Which segmentation algorithm to use. Options are 'hmm' or 'kmeans'.
     label : str, optional
         Type of labels to visualize. Options are None, 'motif' or 'community'. Default is None.
     save_logs : bool, optional
@@ -261,6 +154,7 @@ def visualize_umap(
 
         model_name = config["model_name"]
         n_clusters = config["n_clusters"]
+        segmentation_algorithms = config["segmentation_algorithms"]
 
         # Get sessions
         if config["all_data"] in ["Yes", "yes"]:
@@ -271,91 +165,50 @@ def visualize_umap(
                 action_message="generate visualization",
             )
 
-        for idx, session in enumerate(sessions):
-            path_to_file = os.path.join(
-                config["project_path"],
-                "results",
-                session,
-                "",
-                model_name,
-                "",
-                segmentation_algorithm + "-" + str(n_clusters),
-            )
-
-            try:
-                embed = np.load(
-                    os.path.join(
-                        path_to_file,
-                        "",
-                        "community",
-                        "",
-                        "umap_embedding_" + session + ".npy",
+        for session in sessions:
+            for seg in segmentation_algorithms:
+                base_path = Path(config["project_path"]) / "results" / session / model_name / f"{seg}-{n_clusters}"
+                umap_embeddings_path = base_path / "community" / f"umap_embedding_{session}.npy"
+                if umap_embeddings_path.exists():
+                    logger.info(f"UMAP embedding already exists for session {session}")
+                    embed = np.load(str(umap_embeddings_path.resolve()))
+                else:
+                    logger.info(f"Computing UMAP embedding for session {session}")
+                    if not (base_path / "community").exists():
+                        os.mkdir(os.path.join(base_path, "community"))
+                    embed = umap_embedding(
+                        config=config,
+                        session=session,
+                        model_name=model_name,
+                        n_clusters=n_clusters,
+                        segmentation_algorithm=seg,
                     )
-                )
-                num_points = config["num_points"]
-                if num_points > embed.shape[0]:
-                    num_points = embed.shape[0]
-            except Exception:
-                if not os.path.exists(os.path.join(path_to_file, "community")):
-                    os.mkdir(os.path.join(path_to_file, "community"))
-                logger.info(f"Compute embedding for session {session}")
-                embed = umap_embedding(
-                    config,
-                    session,
-                    model_name,
-                    n_clusters,
-                    segmentation_algorithm,
-                )
+
                 num_points = config["num_points"]
                 if num_points > embed.shape[0]:
                     num_points = embed.shape[0]
 
-            if label is None:
-                output_figure = umap_vis(embed, num_points)
-                fig_path = os.path.join(
-                    path_to_file,
-                    "community",
-                    "umap_vis_label_none_" + session + ".png",
-                )
-                output_figure.savefig(fig_path)
+                if label is None:
+                    output_figure_file_name = "umap_vis_label_none_" + session + ".png"
+                    labels = None
+                elif label == "motif":
+                    output_figure_file_name = "umap_vis_motif_" + session + ".png"
+                    labels_file_path = base_path / f"{n_clusters}_{seg}_label_{session}.npy"
+                    labels = np.load(str(labels_file_path.resolve()))
+                elif label == "community":
+                    output_figure_file_name = "umap_vis_community_" + session + ".png"
+                    labels_file_path = base_path / "community" / f"cohort_community_label_{session}.npy"
+                    labels = np.load(str(labels_file_path.resolve()))
 
-            if label == "motif":
-                motif_label = np.load(
-                    os.path.join(
-                        path_to_file,
-                        "",
-                        str(n_clusters) + "_" + segmentation_algorithm + "_label_" + session + ".npy",
-                    )
+                output_figure = umap_vis(
+                    embed=embed,
+                    num_points=num_points,
+                    labels=labels,
                 )
-                output_figure = umap_label_vis(
-                    embed,
-                    motif_label,
-                    num_points,
-                )
-                fig_path = os.path.join(
-                    path_to_file,
-                    "community",
-                    "umap_vis_motif_" + session + ".png",
-                )
+                fig_path = base_path / "community" / output_figure_file_name
                 output_figure.savefig(fig_path)
+                logger.info(f"UMAP figure saved to {fig_path}")
 
-            if label == "community":
-                community_label = np.load(
-                    os.path.join(
-                        path_to_file,
-                        "",
-                        "community",
-                        "",
-                        "cohort_community_label_" + session + ".npy",
-                    )
-                )
-                output_figure = umap_vis_comm(embed, community_label, num_points)
-                fig_path = os.path.join(
-                    path_to_file,
-                    "community",
-                    "umap_vis_community_" + session + ".png",
-                )
-                output_figure.savefig(fig_path)
     except Exception as e:
         logger.exception(str(e))
         raise e
