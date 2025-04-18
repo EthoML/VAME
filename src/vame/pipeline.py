@@ -5,14 +5,15 @@ import xarray as xr
 import vame
 from vame.util.auxiliary import read_states
 from vame.io.load_poses import load_vame_dataset
-from vame.visualization.motif import visualize_motif_tree
-from vame.visualization.umap import visualize_umap
-from vame.visualization.preprocessing import (
+from vame.visualization import (
     visualize_preprocessing_scatter,
     visualize_preprocessing_timeseries,
     visualize_preprocessing_cloud,
+    plot_reconstruction,
+    plot_loss,
+    visualize_hierarchical_tree,
+    visualize_umap,
 )
-from vame.visualization.model import plot_loss
 from vame.logging.logger import VameLogger
 
 
@@ -403,12 +404,12 @@ class VAMEPipeline:
             show_figure=show_figure,
         )
 
-    def visualize_motif_tree(
+    def visualize_hierarchical_tree(
         self,
         segmentation_algorithm: Literal["hmm", "kmeans"],
     ) -> None:
         """
-        Visualizes the motif tree.
+        Visualizes the hierarchical tree.
 
         Parameters
         ----------
@@ -419,7 +420,7 @@ class VAMEPipeline:
         -------
         None
         """
-        visualize_motif_tree(
+        visualize_hierarchical_tree(
             config=self.config,
             segmentation_algorithm=segmentation_algorithm,
         )

@@ -4,7 +4,7 @@ import pytest
 from matplotlib.figure import Figure
 from unittest.mock import patch
 from vame.util.gif_pose_helper import background
-from vame.visualization.umap import visualize_umap
+from vame.visualization import visualize_umap
 
 
 @pytest.mark.parametrize(

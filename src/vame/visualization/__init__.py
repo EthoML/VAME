@@ -8,3 +8,5 @@ from .model import (
     plot_reconstruction,
     plot_loss,
 )
+from .community import visualize_hierarchical_tree
+from .umap import visualize_umap
