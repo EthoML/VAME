@@ -152,7 +152,6 @@ def create_cluster_videos(
 @save_state(model=MotifVideosFunctionSchema)
 def motif_videos(
     config: dict,
-    segmentation_algorithms: Optional[List[SegmentationAlgorithms]] = None,
     video_type: str = ".mp4",
     output_video_type: str = ".mp4",
     save_logs: bool = False,
@@ -195,17 +194,10 @@ def motif_videos(
             log_path = Path(config["project_path"]) / "logs" / "motif_videos.log"
             logger_config.add_file_handler(str(log_path))
             tqdm_logger_stream = TqdmToLogger(logger=logger)
+
         model_name = config["model_name"]
         n_clusters = config["n_clusters"]
-        segmentation_algorithms_config = config["segmentation_algorithms"]
-        if segmentation_algorithms is None:
-            segmentation_algorithms = segmentation_algorithms_config
-        else:
-            for segmentation_algorithm in segmentation_algorithms:
-                if segmentation_algorithm not in segmentation_algorithms_config:
-                    raise ValueError(
-                        f"Segmentation algorithm {segmentation_algorithm} was not used n project {config['project_name']}."
-                    )
+        segmentation_algorithms = config["segmentation_algorithms"]
 
         # Get sessions
         if config["all_data"] in ["Yes", "yes", "True", "true", True]:
@@ -291,7 +283,6 @@ def community_videos(
     """
     try:
         tqdm_logger_stream = None
-
         if save_logs:
             log_path = Path(config["project_path"]) / "logs" / "community_videos.log"
             logger_config.add_file_handler(str(log_path))
@@ -313,7 +304,7 @@ def community_videos(
         for session in sessions:
             for segmentation_algorithm in segmentation_algorithms:
                 logger.info(
-                    f"Creating motif videos for session {session}, algorithm: {segmentation_algorithm}, n_clusters: {n_clusters}"
+                    f"Creating community videos for session {session}, algorithm: {segmentation_algorithm}, n_clusters: {n_clusters}"
                 )
                 path_to_file = os.path.join(
                     config["project_path"],

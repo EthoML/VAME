@@ -72,10 +72,6 @@ class MotifVideosFunctionSchema(BaseStateSchema):
         title="Type of video",
         default=".mp4",
     )
-    segmentation_algorithm: Optional[list[SegmentationAlgorithms]] = Field(
-        title="Segmentation algorithm",
-        default=None,
-    )
     output_video_type: str = Field(
         title="Type of output video",
         default=".mp4",
@@ -83,10 +79,6 @@ class MotifVideosFunctionSchema(BaseStateSchema):
 
 
 class CommunityFunctionSchema(BaseStateSchema):
-    segmentation_algorithm: SegmentationAlgorithms = Field(
-        title="Segmentation algorithm",
-        default=SegmentationAlgorithms.hmm,
-    )
     cut_tree: int | None = Field(
         title="Cut tree",
         default=None,
