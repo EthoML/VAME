@@ -45,8 +45,6 @@ Generate cluster videos and save them to filesystem on project folder.
 ```python
 @save_state(model=MotifVideosFunctionSchema)
 def motif_videos(config: dict,
-                 segmentation_algorithms: Optional[
-                     List[SegmentationAlgorithms]] = None,
                  video_type: str = ".mp4",
                  output_video_type: str = ".mp4",
                  save_logs: bool = False) -> None
