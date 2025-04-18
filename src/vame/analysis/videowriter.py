@@ -218,7 +218,9 @@ def motif_videos(
 
         for session in sessions:
             for segmentation_algorithm in segmentation_algorithms:
-                logger.info(f"Creating motif videos for session {session}, algorithm: {segmentation_algorithm}, n_clusters: {n_clusters}")
+                logger.info(
+                    f"Creating motif videos for session {session}, algorithm: {segmentation_algorithm}, n_clusters: {n_clusters}"
+                )
                 path_to_file = os.path.join(
                     config["project_path"],
                     "results",
@@ -310,7 +312,9 @@ def community_videos(
 
         for session in sessions:
             for segmentation_algorithm in segmentation_algorithms:
-                logger.info(f"Creating motif videos for session {session}, algorithm: {segmentation_algorithm}, n_clusters: {n_clusters}")
+                logger.info(
+                    f"Creating motif videos for session {session}, algorithm: {segmentation_algorithm}, n_clusters: {n_clusters}"
+                )
                 path_to_file = os.path.join(
                     config["project_path"],
                     "results",

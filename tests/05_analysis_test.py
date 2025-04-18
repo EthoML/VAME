@@ -46,8 +46,7 @@ def test_pose_segmentation_hmm_files_exists(
     assert motif_usage_path.exists()
 
 
-@pytest.mark.parametrize("segmentation_algorithm", ["hmm", "kmeans"])
-def test_motif_videos_mp4_files_exists(setup_project_and_train_model, segmentation_algorithm):
+def test_motif_videos_mp4_files_exists(setup_project_and_train_model):
     vame.motif_videos(
         config=setup_project_and_train_model["config_data"],
         output_video_type=".mp4",
@@ -57,22 +56,14 @@ def test_motif_videos_mp4_files_exists(setup_project_and_train_model, segmentati
     file = setup_project_and_train_model["config_data"]["session_names"][0]
     model_name = setup_project_and_train_model["config_data"]["model_name"]
     n_clusters = setup_project_and_train_model["config_data"]["n_clusters"]
-
-    save_base_path = (
-        Path(project_path)
-        / "results"
-        / file
-        / model_name
-        / f"{segmentation_algorithm}-{n_clusters}"
-        / "cluster_videos"
-    )
-
-    assert len(list(save_base_path.glob("*.mp4"))) > 0
-    assert len(list(save_base_path.glob("*.mp4"))) <= n_clusters
+    segmentation_algorithms = ["hmm", "kmeans"]
+    for seg in segmentation_algorithms:
+        save_base_path = Path(project_path) / "results" / file / model_name / f"{seg}-{n_clusters}" / "cluster_videos"
+        assert len(list(save_base_path.glob("*.mp4"))) > 0
+        assert len(list(save_base_path.glob("*.mp4"))) <= n_clusters
 
 
-@pytest.mark.parametrize("segmentation_algorithm", ["hmm", "kmeans"])
-def test_motif_videos_avi_files_exists(setup_project_and_train_model, segmentation_algorithm):
+def test_motif_videos_avi_files_exists(setup_project_and_train_model):
     # Check if the files are created
     vame.motif_videos(
         config=setup_project_and_train_model["config_data"],
@@ -83,133 +74,71 @@ def test_motif_videos_avi_files_exists(setup_project_and_train_model, segmentati
     file = setup_project_and_train_model["config_data"]["session_names"][0]
     model_name = setup_project_and_train_model["config_data"]["model_name"]
     n_clusters = setup_project_and_train_model["config_data"]["n_clusters"]
-
-    save_base_path = (
-        Path(project_path)
-        / "results"
-        / file
-        / model_name
-        / f"{segmentation_algorithm}-{n_clusters}"
-        / "cluster_videos"
-    )
-
-    assert len(list(save_base_path.glob("*.avi"))) > 0
-    assert len(list(save_base_path.glob("*.avi"))) <= n_clusters
+    segmentation_algorithms = ["hmm", "kmeans"]
+    for seg in segmentation_algorithms:
+        save_base_path = Path(project_path) / "results" / file / model_name / f"{seg}-{n_clusters}" / "cluster_videos"
+        assert len(list(save_base_path.glob("*.avi"))) > 0
+        assert len(list(save_base_path.glob("*.avi"))) <= n_clusters
 
 
-# @pytest.mark.parametrize("segmentation_algorithm", ["hmm", "kmeans"])
-# def test_community_files_exists(setup_project_and_train_model, segmentation_algorithm):
-#     # Check if the files are created
-#     vame.community(
-#         config=setup_project_and_train_model["config_data"],
-#         cut_tree=2,
-#         cohort=False,
-#         segmentation_algorithm=segmentation_algorithm,
-#         save_logs=True,
-#     )
-#     project_path = setup_project_and_train_model["config_data"]["project_path"]
-#     file = setup_project_and_train_model["config_data"]["session_names"][0]
-#     model_name = setup_project_and_train_model["config_data"]["model_name"]
-#     n_clusters = setup_project_and_train_model["config_data"]["n_clusters"]
-
-#     save_base_path = (
-#         Path(project_path)
-#         / "results"
-#         / file
-#         / model_name
-#         / f"{segmentation_algorithm}-{n_clusters}"
-#         / "community"
-#     )
-
-#     transition_matrix_path = save_base_path / f"transition_matrix_{file}.npy"
-#     community_label_path = save_base_path / f"community_label_{file}.npy"
-#     hierarchy_path = save_base_path / f"hierarchy{file}.pkl"
-
-#     assert transition_matrix_path.exists()
-#     assert community_label_path.exists()
-#     assert hierarchy_path.exists()
-
-
-@pytest.mark.parametrize("segmentation_algorithm", ["hmm", "kmeans"])
-def test_cohort_community_files_exists(setup_project_and_train_model, segmentation_algorithm):
-    # Check if the files are created
+def test_cohort_community_files_exists(setup_project_and_train_model):
     vame.community(
         config=setup_project_and_train_model["config_data"],
-        segmentation_algorithm=segmentation_algorithm,
         cut_tree=2,
         save_logs=True,
     )
     project_path = setup_project_and_train_model["config_data"]["project_path"]
     n_clusters = setup_project_and_train_model["config_data"]["n_clusters"]
+    segmentation_algorithms = ["hmm", "kmeans"]
+    for seg in segmentation_algorithms:
+        base_path = Path(project_path) / "results" / "community_cohort" / f"{seg}-{n_clusters}"
+        cohort_path = base_path / "cohort_transition_matrix.npy"
+        community_path = base_path / "cohort_community_label.npy"
+        cohort_segmentation_algorithm_path = base_path / f"cohort_{seg}_label.npy"
+        cohort_community_bag_path = base_path / "cohort_community_bag.npy"
 
-    base_path = Path(project_path) / "results" / "community_cohort" / f"{segmentation_algorithm}-{n_clusters}"
-    cohort_path = base_path / "cohort_transition_matrix.npy"
-    community_path = base_path / "cohort_community_label.npy"
-    cohort_segmentation_algorithm_path = base_path / f"cohort_{segmentation_algorithm}_label.npy"
-    cohort_community_bag_path = base_path / "cohort_community_bag.npy"
-
-    assert cohort_path.exists()
-    assert community_path.exists()
-    assert cohort_segmentation_algorithm_path.exists()
-    assert cohort_community_bag_path.exists()
+        assert cohort_path.exists()
+        assert community_path.exists()
+        assert cohort_segmentation_algorithm_path.exists()
+        assert cohort_community_bag_path.exists()
 
 
-@pytest.mark.parametrize("segmentation_algorithm", ["hmm", "kmeans"])
-def test_community_videos_mp4_files_exists(
-    setup_project_and_train_model,
-    segmentation_algorithm,
-):
+def test_community_videos_mp4_files_exists(setup_project_and_train_model):
     vame.community_videos(
         config=setup_project_and_train_model["config_data"],
-        segmentation_algorithm=segmentation_algorithm,
-        save_logs=True,
         output_video_type=".mp4",
+        save_logs=True,
     )
     file = setup_project_and_train_model["config_data"]["session_names"][0]
     model_name = setup_project_and_train_model["config_data"]["model_name"]
     n_clusters = setup_project_and_train_model["config_data"]["n_clusters"]
     project_path = setup_project_and_train_model["config_data"]["project_path"]
-
-    save_base_path = (
-        Path(project_path)
-        / "results"
-        / file
-        / model_name
-        / f"{segmentation_algorithm}-{n_clusters}"
-        / "community_videos"
-    )
-
-    assert len(list(save_base_path.glob("*.mp4"))) > 0
-    assert len(list(save_base_path.glob("*.mp4"))) <= n_clusters
+    segmentation_algorithms = ["hmm", "kmeans"]
+    for seg in segmentation_algorithms:
+        save_base_path = (
+            Path(project_path) / "results" / file / model_name / f"{seg}-{n_clusters}" / "community_videos"
+        )
+        assert len(list(save_base_path.glob("*.mp4"))) > 0
+        assert len(list(save_base_path.glob("*.mp4"))) <= n_clusters
 
 
-@pytest.mark.parametrize("segmentation_algorithm", ["hmm", "kmeans"])
-def test_community_videos_avi_files_exists(
-    setup_project_and_train_model,
-    segmentation_algorithm,
-):
+def test_community_videos_avi_files_exists(setup_project_and_train_model):
     vame.community_videos(
         config=setup_project_and_train_model["config_data"],
-        segmentation_algorithm=segmentation_algorithm,
-        save_logs=True,
         output_video_type=".avi",
+        save_logs=True,
     )
     file = setup_project_and_train_model["config_data"]["session_names"][0]
     model_name = setup_project_and_train_model["config_data"]["model_name"]
     n_clusters = setup_project_and_train_model["config_data"]["n_clusters"]
     project_path = setup_project_and_train_model["config_data"]["project_path"]
-
-    save_base_path = (
-        Path(project_path)
-        / "results"
-        / file
-        / model_name
-        / f"{segmentation_algorithm}-{n_clusters}"
-        / "community_videos"
-    )
-
-    assert len(list(save_base_path.glob("*.avi"))) > 0
-    assert len(list(save_base_path.glob("*.avi"))) <= n_clusters
+    segmentation_algorithms = ["hmm", "kmeans"]
+    for seg in segmentation_algorithms:
+        save_base_path = (
+            Path(project_path) / "results" / file / model_name / f"{seg}-{n_clusters}" / "community_videos"
+        )
+        assert len(list(save_base_path.glob("*.avi"))) > 0
+        assert len(list(save_base_path.glob("*.avi"))) <= n_clusters
 
 
 @pytest.mark.parametrize(
@@ -327,7 +256,6 @@ def test_gif_frames_files_exists(setup_project_and_evaluate_model, label):
         config=setup_project_and_evaluate_model["config_data"],
         cut_tree=2,
         save_logs=False,
-        segmentation_algorithm=SEGMENTATION_ALGORITHM,
     )
     visualize_umap(
         config=setup_project_and_evaluate_model["config_data"],

@@ -499,9 +499,13 @@ def segment_session(
             )
             if os.path.exists(seg_results_path):
                 if not overwrite:
-                    logger.info(f"Segmentation for {seg} algorithm and cluster size {n_clusters} already exists, skipping...")
+                    logger.info(
+                        f"Segmentation for {seg} algorithm and cluster size {n_clusters} already exists, skipping..."
+                    )
                     return
-                logger.info(f"Segmentation for {seg} algorithm and cluster size {n_clusters} already exists, but will be overwritten.")
+                logger.info(
+                    f"Segmentation for {seg} algorithm and cluster size {n_clusters} already exists, but will be overwritten."
+                )
             else:
                 logger.info(f"Starting segmentation for {seg} algorithm and cluster size {n_clusters}...")
 
