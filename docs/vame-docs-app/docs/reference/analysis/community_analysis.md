@@ -132,13 +132,12 @@ Get cohort community labels for given labels, and community bags.
 
 * `List[np.ndarray]`: List of cohort community labels for each file.
 
-#### save\_cohort\_community\_labels\_per\_file
+#### save\_cohort\_community\_labels\_per\_session
 
 ```python
-def save_cohort_community_labels_per_file(config: dict, sessions: List[str],
-                                          model_name: str, n_clusters: int,
-                                          segmentation_algorithm: str,
-                                          cohort_community_bag: list) -> None
+def save_cohort_community_labels_per_session(
+        config: dict, sessions: List[str], model_name: str, n_clusters: int,
+        segmentation_algorithm: str, cohort_community_bag: list) -> None
 ```
 
 #### community
@@ -146,8 +145,6 @@ def save_cohort_community_labels_per_file(config: dict, sessions: List[str],
 ```python
 @save_state(model=CommunityFunctionSchema)
 def community(config: dict,
-              segmentation_algorithm: SegmentationAlgorithms,
-              cohort: bool = True,
               cut_tree: int | None = None,
               save_logs: bool = False) -> None
 ```
@@ -155,8 +152,6 @@ def community(config: dict,
 Perform community analysis.
 Fills in the values in the &quot;community&quot; key of the states.json file.
 Saves results files at:
-
-1. If cohort is True:
 - project_name/
     - results/
         - community_cohort/
@@ -166,30 +161,17 @@ Saves results files at:
                 - cohort_segmentation_algorithm_label.npy
                 - cohort_transition_matrix.npy
                 - hierarchy.pkl
-        - file_name/
+        - session_name/
             - model_name/
                 - segmentation_algorithm-n_clusters/
                     - community/
-                        - cohort_community_label_file_name.npy
-
-2. If cohort is False:
-- project_name/
-    - results/
-        - file_name/
-            - model_name/
-                - segmentation_algorithm-n_clusters/
-                    - community/
-                        - transition_matrix_file_name.npy
-                        - community_label_file_name.npy
-                        - hierarchy_file_name.pkl
+                        - cohort_community_label_session_name.npy
 
 **Parameters**
 
 * **config** (`dict`): Configuration parameters.
-* **segmentation_algorithm** (`SegmentationAlgorithms`): Which segmentation algorithm to use. Options are &#x27;hmm&#x27; or &#x27;kmeans&#x27;.
-* **cohort** (`bool, optional`): Flag indicating cohort analysis. Defaults to True.
 * **cut_tree** (`int, optional`): Cut line for tree. Defaults to None.
-* **save_logs** (`bool, optional`): Flag indicating whether to save logs. Defaults to False.
+* **save_logs** (`bool, optional`): Whether to save logs. Defaults to False.
 
 **Returns**
 

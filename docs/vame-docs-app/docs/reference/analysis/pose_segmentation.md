@@ -180,8 +180,8 @@ Dimmentions: (n_frames,)
 **Parameters**
 
 * **config** (`dict`): Configuration dictionary.
-* **overwrite** (`bool, optional`): Whether to overwrite existing segmentation results, by default False.
-* **save_logs** (`bool, optional`): Whether to save logs, by default False.
+* **overwrite** (`bool, optional`): Whether to overwrite existing segmentation results. Defaults to False.
+* **save_logs** (`bool, optional`): Whether to save logs. Defaults to False.
 
 **Returns**
 
