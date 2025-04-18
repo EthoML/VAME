@@ -136,7 +136,6 @@ def test_cohort_community_files_exists(setup_project_and_train_model, segmentati
     vame.community(
         config=setup_project_and_train_model["config_data"],
         segmentation_algorithm=segmentation_algorithm,
-        cohort=True,
         cut_tree=2,
         save_logs=True,
     )
@@ -327,7 +326,6 @@ def test_gif_frames_files_exists(setup_project_and_evaluate_model, label):
     vame.community(
         config=setup_project_and_evaluate_model["config_data"],
         cut_tree=2,
-        cohort=True,
         save_logs=False,
         segmentation_algorithm=SEGMENTATION_ALGORITHM,
     )
