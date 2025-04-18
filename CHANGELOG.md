@@ -9,6 +9,8 @@
 - Removed smoothing filter on community labels and save community fig as a .pdf
 - Save pose segmentation data after each session instead of segmentation algorithm method ([Issue #128](https://github.com/EthoML/VAME/issues/128))
 - Fix IQR filter ([Issue #158](https://github.com/EthoML/VAME/issues/158))
+- Fix bug with motif usage counts in community function ([PR #156](https://github.com/EthoML/VAME/pull/156))
+- Removed redundant folder in the results folder ([PR #156](https://github.com/EthoML/VAME/pull/156))
 
 ### Features
 
