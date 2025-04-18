@@ -35,6 +35,7 @@ class VAMEPipeline:
         copy_videos: bool = False,
         paths_to_pose_nwb_series_data: Optional[str] = None,
         config_kwargs: Optional[dict] = None,
+        save_logs=True,
     ) -> None:
         """
         Initializes the VAME pipeline.
@@ -61,11 +62,14 @@ class VAMEPipeline:
             Path to pose NWB series data, by default None.
         config_kwargs : Optional[dict], optional
             Additional configuration keyword arguments, by default None.
+        save_logs : bool, optional
+            Flag indicating whether to save logs. Defaults to True.
 
         Returns
         -------
         None
         """
+        self.save_logs = save_logs
         self.config_path, self.config = vame.init_new_project(
             project_name=project_name,
             poses_estimations=poses_estimations,
@@ -181,12 +185,13 @@ class VAMEPipeline:
             run_outlier_cleaning=run_outlier_cleaning,
             run_savgol_filtering=run_savgol_filtering,
             run_rescaling=run_rescaling,
+            save_logs=self.save_logs,
         )
 
     def create_training_set(
         self,
         test_fraction: float = 0.1,
-        split_mode: Literal["mode_1", "mode_2"] = "mode_1",
+        split_mode: Literal["mode_1", "mode_2"] = "mode_2",
     ) -> None:
         """
         Creates the training set.
@@ -196,7 +201,7 @@ class VAMEPipeline:
         test_fraction : float
             Test fraction.
         split_mode : str, optional
-            Split mode, by default "mode_1".
+            Split mode, by default "mode_2".
 
         Returns
         -------
@@ -206,6 +211,7 @@ class VAMEPipeline:
             config=self.config,
             test_fraction=test_fraction,
             split_mode=split_mode,
+            save_logs=self.save_logs,
         )
 
     def train_model(self) -> None:
@@ -216,7 +222,10 @@ class VAMEPipeline:
         -------
         None
         """
-        vame.train_model(config=self.config)
+        vame.train_model(
+            config=self.config,
+            save_logs=self.save_logs,
+        )
 
     def evaluate_model(self) -> None:
         """
@@ -226,7 +235,10 @@ class VAMEPipeline:
         -------
         None
         """
-        vame.evaluate_model(config=self.config)
+        vame.evaluate_model(
+            config=self.config,
+            save_logs=self.save_logs,
+        )
 
     def run_segmentation(self) -> None:
         """
@@ -236,7 +248,10 @@ class VAMEPipeline:
         -------
         None
         """
-        vame.segment_session(config=self.config)
+        vame.segment_session(
+            config=self.config,
+            save_logs=self.save_logs,
+        )
 
     def run_community_clustering(self) -> None:
         """
@@ -248,15 +263,13 @@ class VAMEPipeline:
         """
         vame.community(
             config=self.config,
-            segmentation_algorithm="hmm",
-            cohort=True,
             cut_tree=2,
+            save_logs=self.save_logs,
         )
 
     def generate_motif_videos(
         self,
         video_type: str = ".mp4",
-        segmentation_algorithm: Literal["hmm", "kmeans"] = "hmm",
     ) -> None:
         """
         Generates motif videos.
@@ -265,8 +278,6 @@ class VAMEPipeline:
         ----------
         video_type : str, optional
             Video type, by default ".mp4".
-        segmentation_algorithm : Literal["hmm", "kmeans"], optional
-            Segmentation algorithm, by default "hmm".
 
         Returns
         -------
@@ -275,13 +286,12 @@ class VAMEPipeline:
         vame.motif_videos(
             config=self.config,
             video_type=video_type,
-            segmentation_algorithm=segmentation_algorithm,
+            save_logs=self.save_logs,
         )
 
     def generate_community_videos(
         self,
         video_type: str = ".mp4",
-        segmentation_algorithm: Literal["hmm", "kmeans"] = "hmm",
     ) -> None:
         """
         Generates community videos.
@@ -290,8 +300,6 @@ class VAMEPipeline:
         ----------
         video_type : str, optional
             Video type, by default ".mp4".
-        segmentation_algorithm : Literal["hmm", "kmeans"], optional
-            Segmentation algorithm, by default "hmm".
 
         Returns
         -------
@@ -300,13 +308,12 @@ class VAMEPipeline:
         vame.community_videos(
             config=self.config,
             video_type=video_type,
-            segmentation_algorithm=segmentation_algorithm,
+            save_logs=self.save_logs,
         )
 
     def generate_videos(
         self,
         video_type: str = ".mp4",
-        segmentation_algorithm: Literal["hmm", "kmeans"] = "hmm",
     ) -> None:
         """
         Generates motif and community videos.
@@ -315,21 +322,13 @@ class VAMEPipeline:
         ----------
         video_type : str, optional
             Video type, by default ".mp4".
-        segmentation_algorithm : Literal["hmm", "kmeans"], optional
-            Segmentation algorithm, by default "hmm".
 
         Returns
         -------
         None
         """
-        self.generate_motif_videos(
-            video_type=video_type,
-            segmentation_algorithm=segmentation_algorithm,
-        )
-        self.generate_community_videos(
-            video_type=video_type,
-            segmentation_algorithm=segmentation_algorithm,
-        )
+        self.generate_motif_videos(video_type=video_type)
+        self.generate_community_videos(video_type=video_type)
 
     def visualize_preprocessing(
         self,

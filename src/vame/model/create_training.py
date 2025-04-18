@@ -287,7 +287,7 @@ def create_trainset(
     config: dict,
     test_fraction: float = 0.1,
     read_from_variable: str = "position_processed",
-    split_mode: Literal["mode_1", "mode_2"] = "mode_1",
+    split_mode: Literal["mode_1", "mode_2"] = "mode_2",
     save_logs: bool = False,
 ) -> None:
     """
@@ -327,7 +327,7 @@ def create_trainset(
                  for testing and the rest for training.
         - mode_2: Takes random continuous chunks from each session proportional to test_fraction
                  for testing and uses the remaining parts for training.
-        Defaults to "mode_1".
+        Defaults to "mode_2".
 
     Returns
     -------
