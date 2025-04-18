@@ -24,6 +24,7 @@
 - Points cloud scatter plot
 - Add tests for M1 ([Issue #149](https://github.com/EthoML/VAME/issues/149))
 - General improvements to save_state in some functions
+- Community analysis, motif videos and community videos are now done automatically for all segmentation algorithms
 
 
 # v0.8.0
