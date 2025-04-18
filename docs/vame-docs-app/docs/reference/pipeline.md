@@ -27,7 +27,8 @@ def __init__(project_name: str,
              fps: Optional[float] = None,
              copy_videos: bool = False,
              paths_to_pose_nwb_series_data: Optional[str] = None,
-             config_kwargs: Optional[dict] = None) -> None
+             config_kwargs: Optional[dict] = None,
+             save_logs=True) -> None
 ```
 
 Initializes the VAME pipeline.
@@ -44,6 +45,7 @@ Initializes the VAME pipeline.
 * **copy_videos** (`bool, optional`): Copy videos, by default False.
 * **paths_to_pose_nwb_series_data** (`Optional[str], optional`): Path to pose NWB series data, by default None.
 * **config_kwargs** (`Optional[dict], optional`): Additional configuration keyword arguments, by default None.
+* **save_logs** (`bool, optional`): Flag indicating whether to save logs. Defaults to True.
 
 **Returns**
 
@@ -118,7 +120,7 @@ Preprocesses the data.
 ```python
 def create_training_set(
         test_fraction: float = 0.1,
-        split_mode: Literal["mode_1", "mode_2"] = "mode_1") -> None
+        split_mode: Literal["mode_1", "mode_2"] = "mode_2") -> None
 ```
 
 Creates the training set.
@@ -126,7 +128,7 @@ Creates the training set.
 **Parameters**
 
 * **test_fraction** (`float`): Test fraction.
-* **split_mode** (`str, optional`): Split mode, by default &quot;mode_1&quot;.
+* **split_mode** (`str, optional`): Split mode, by default &quot;mode_2&quot;.
 
 **Returns**
 
@@ -183,9 +185,7 @@ Runs the community clustering.
 #### generate\_motif\_videos
 
 ```python
-def generate_motif_videos(
-        video_type: str = ".mp4",
-        segmentation_algorithm: Literal["hmm", "kmeans"] = "hmm") -> None
+def generate_motif_videos(video_type: str = ".mp4") -> None
 ```
 
 Generates motif videos.
@@ -193,7 +193,6 @@ Generates motif videos.
 **Parameters**
 
 * **video_type** (`str, optional`): Video type, by default &quot;.mp4&quot;.
-* **segmentation_algorithm** (`Literal["hmm", "kmeans"], optional`): Segmentation algorithm, by default &quot;hmm&quot;.
 
 **Returns**
 
@@ -202,9 +201,7 @@ Generates motif videos.
 #### generate\_community\_videos
 
 ```python
-def generate_community_videos(
-        video_type: str = ".mp4",
-        segmentation_algorithm: Literal["hmm", "kmeans"] = "hmm") -> None
+def generate_community_videos(video_type: str = ".mp4") -> None
 ```
 
 Generates community videos.
@@ -212,7 +209,6 @@ Generates community videos.
 **Parameters**
 
 * **video_type** (`str, optional`): Video type, by default &quot;.mp4&quot;.
-* **segmentation_algorithm** (`Literal["hmm", "kmeans"], optional`): Segmentation algorithm, by default &quot;hmm&quot;.
 
 **Returns**
 
@@ -221,9 +217,7 @@ Generates community videos.
 #### generate\_videos
 
 ```python
-def generate_videos(
-        video_type: str = ".mp4",
-        segmentation_algorithm: Literal["hmm", "kmeans"] = "hmm") -> None
+def generate_videos(video_type: str = ".mp4") -> None
 ```
 
 Generates motif and community videos.
@@ -231,7 +225,6 @@ Generates motif and community videos.
 **Parameters**
 
 * **video_type** (`str, optional`): Video type, by default &quot;.mp4&quot;.
-* **segmentation_algorithm** (`Literal["hmm", "kmeans"], optional`): Segmentation algorithm, by default &quot;hmm&quot;.
 
 **Returns**
 
