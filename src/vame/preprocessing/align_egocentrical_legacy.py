@@ -333,23 +333,23 @@
 #     """
 #     try:
 #         config_file = Path(config).resolve()
-#         cfg = read_config(str(config_file))
-#         if cfg["egocentric_data"]:
+#         config = read_config(str(config_file))
+#         if config["egocentric_data"]:
 #             raise ValueError(
 #                 "The config.yaml indicates that the data is egocentric. Please check the parameter 'egocentric_data'."
 #             )
 #         tqdm_stream = None
 
 #         if save_logs:
-#             log_path = Path(cfg["project_path"]) / "logs" / "egocentric_alignment.log"
+#             log_path = Path(config["project_path"]) / "logs" / "egocentric_alignment.log"
 #             logger_config.add_file_handler(str(log_path))
 #             tqdm_stream = TqdmToLogger(logger=logger)
 
 #         logger.info("Starting egocentric alignment")
-#         project_path = cfg["project_path"]
-#         sessions = cfg["session_names"]
-#         confidence = cfg["pose_confidence"]
-#         num_features = cfg["num_features"]
+#         project_path = config["project_path"]
+#         sessions = config["session_names"]
+#         confidence = config["pose_confidence"]
+#         num_features = config["num_features"]
 #         video_format = video_format
 #         crop_size = crop_size
 
@@ -359,7 +359,7 @@
 #         belly_X_ind = (pose_ref_index[0] * 2) + 1
 
 #         # call function and save into your VAME data folder
-#         paths_to_pose_nwb_series_data = cfg["paths_to_pose_nwb_series_data"]
+#         paths_to_pose_nwb_series_data = config["paths_to_pose_nwb_series_data"]
 #         for i, session in enumerate(sessions):
 #             logger.info("Aligning session %s, Pose confidence value: %.2f" % (session, confidence))
 #             egocentric_time_series, frames = alignment_legacy(
@@ -369,7 +369,7 @@
 #                 video_format=video_format,
 #                 crop_size=crop_size,
 #                 confidence=confidence,
-#                 pose_estimation_filetype=cfg["pose_estimation_filetype"],
+#                 pose_estimation_filetype=config["pose_estimation_filetype"],
 #                 path_to_pose_nwb_series_data=(
 #                     paths_to_pose_nwb_series_data
 #                     if not paths_to_pose_nwb_series_data
@@ -445,23 +445,23 @@
 #     """
 #     try:
 #         config_file = Path(config).resolve()
-#         cfg = read_config(str(config_file))
-#         if cfg["egocentric_data"]:
+#         config = read_config(str(config_file))
+#         if config["egocentric_data"]:
 #             raise ValueError(
 #                 "The config.yaml indicates that the data is egocentric. Please check the parameter 'egocentric_data'."
 #             )
 #         tqdm_stream = None
 
 #         if save_logs:
-#             log_path = Path(cfg["project_path"]) / "logs" / "egocentric_alignment.log"
+#             log_path = Path(config["project_path"]) / "logs" / "egocentric_alignment.log"
 #             logger_config.add_file_handler(str(log_path))
 #             tqdm_stream = TqdmToLogger(logger=logger)
 
 #         logger.info("Starting egocentric alignment")
-#         project_path = cfg["project_path"]
-#         sessions = cfg["session_names"]
-#         confidence = cfg["pose_confidence"]
-#         num_features = cfg["num_features"]
+#         project_path = config["project_path"]
+#         sessions = config["session_names"]
+#         confidence = config["pose_confidence"]
+#         num_features = config["num_features"]
 
 #         y_shifted_indices = np.arange(0, num_features, 2)
 #         x_shifted_indices = np.arange(1, num_features, 2)
@@ -528,7 +528,7 @@
 #             )
 #             # save to file
 #             result_file = Path(project_path) / "data" / "processed" / session / f"{session}-aligned.nc"
-#             ds.to_netcdf(result_file, engine="scipy")
+#             ds.to_netcdf(result_file, engine="netcdf4")
 
 #         logger.info("Your data is now in the right format and you can call vame.create_trainset()")
 #     except Exception as e:

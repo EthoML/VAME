@@ -11,7 +11,7 @@ title: analysis.pose_segmentation
 
 ```python
 def embedd_latent_vectors(
-        cfg: dict,
+        config: dict,
         sessions: List[str],
         model: RNN_VAE,
         fixed: bool,
@@ -23,7 +23,7 @@ Embed latent vectors for the given files using the VAME model.
 
 **Parameters**
 
-* **cfg** (`dict`): Configuration dictionary.
+* **config** (`dict`): Configuration dictionary.
 * **sessions** (`List[str]`): List of session names.
 * **model** (`RNN_VAE`): VAME model.
 * **fixed** (`bool`): Whether the model is fixed.
@@ -32,6 +32,27 @@ Embed latent vectors for the given files using the VAME model.
 **Returns**
 
 * `List[np.ndarray]`: List of latent vectors for each file.
+
+#### get\_latent\_vectors
+
+```python
+def get_latent_vectors(project_path: str, sessions: list, model_name: str, seg,
+                       n_clusters: int) -> List
+```
+
+Gets all the latent vectors from each session into one list
+
+**Parameters**
+
+* **project_path: str**: Path to vame project folder
+* **session: list**: List of sessions
+* **model_name: str**: Name of model
+* **seg: str**: Type of segmentation algorithm
+* **n_clusters** (`int`): Number of clusters.
+
+**Returns**
+
+* `List`: List of session latent vectors
 
 #### get\_motif\_usage
 
@@ -50,20 +71,46 @@ Count motif usage from session label array.
 
 * `np.ndarray`: Array of motif usage counts.
 
+#### save\_session\_data
+
+```python
+def save_session_data(project_path: str, session: int, model_name: str,
+                      label: np.ndarray, cluster_center: np.ndarray,
+                      latent_vector: np.ndarray, motif_usage: np.ndarray,
+                      n_clusters: int, segmentation_algorithm: str)
+```
+
+Saves pose segmentation data for given session.
+
+**Parameters**
+
+* **project_path: str**: Path to the vame project folder.
+* **session: int**: Session of interest to segment.
+* **model_name: str**: Name of model
+* **label: np.ndarray**: Array of the session&#x27;s motif labels.
+* **cluster_center: np.ndarray**: Array of the session&#x27;s kmeans cluster centers location in the latent space.
+* **latent_vector: np.ndarray,**: Array of the session&#x27;s latent vectors.
+* **motif_usage: np.ndarray**: Array of the session&#x27;s motif usage counts.
+* **n_clusters** (`int`): Number of clusters.
+* **segmentation_algorithm: str**: Type of segmentation method, either &#x27;kmeans or &#x27;hmm&#x27;.
+
+**Returns**
+
+* `None`
+
 #### same\_segmentation
 
 ```python
-def same_segmentation(
-    cfg: dict, sessions: List[str], latent_vectors: List[np.ndarray],
-    n_clusters: int, segmentation_algorithm: str
-) -> Tuple[List[np.ndarray], List[np.ndarray], List[np.ndarray]]
+def same_segmentation(config: dict, sessions: List[str],
+                      latent_vectors: List[np.ndarray], n_clusters: int,
+                      segmentation_algorithm: str) -> None
 ```
 
 Apply the same segmentation to all animals.
 
 **Parameters**
 
-* **cfg** (`dict`): Configuration dictionary.
+* **config** (`dict`): Configuration dictionary.
 * **sessions** (`List[str]`): List of session names.
 * **latent_vectors** (`List[np.ndarray]`): List of latent vector arrays.
 * **n_clusters** (`int`): Number of clusters.
@@ -71,12 +118,12 @@ Apply the same segmentation to all animals.
 
 **Returns**
 
-* `Tuple`: Tuple of labels, cluster centers, and motif usages.
+* `None`
 
 #### individual\_segmentation
 
 ```python
-def individual_segmentation(cfg: dict, sessions: List[str],
+def individual_segmentation(config: dict, sessions: List[str],
                             latent_vectors: List[np.ndarray],
                             n_clusters: int) -> Tuple
 ```
@@ -85,7 +132,7 @@ Apply individual segmentation to each session.
 
 **Parameters**
 
-* **cfg** (`dict`): Configuration dictionary.
+* **config** (`dict`): Configuration dictionary.
 * **sessions** (`List[str]`): List of session names.
 * **latent_vectors** (`List[np.ndarray]`): List of latent vector arrays.
 * **n_clusters** (`int`): Number of clusters.
@@ -98,7 +145,9 @@ Apply individual segmentation to each session.
 
 ```python
 @save_state(model=SegmentSessionFunctionSchema)
-def segment_session(config: dict, save_logs: bool = False) -> None
+def segment_session(config: dict,
+                    overwrite: bool = False,
+                    save_logs: bool = False) -> None
 ```
 
 Perform pose segmentation using the VAME model.
@@ -131,7 +180,8 @@ Dimmentions: (n_frames,)
 **Parameters**
 
 * **config** (`dict`): Configuration dictionary.
-* **save_logs** (`bool, optional`): Whether to save logs, by default False.
+* **overwrite** (`bool, optional`): Whether to overwrite existing segmentation results. Defaults to False.
+* **save_logs** (`bool, optional`): Whether to save logs. Defaults to False.
 
 **Returns**
 

@@ -7,6 +7,26 @@ title: preprocessing.alignment
 
 #### logger
 
+#### calculate\_geometric\_distance
+
+```python
+def calculate_geometric_distance(positions, keypoint1_idx, keypoint2_idx)
+```
+
+Calculate the geometric distance between two keypoints.
+Parameters
+----------
+positions : np.ndarray
+    Array of positions with shape (time, space, keypoints, individuals) or (time, space, keypoints)
+keypoint1_idx : int
+    Index of the first keypoint
+keypoint2_idx : int
+    Index of the second keypoint
+Returns
+-------
+np.ndarray
+    Array of distances with shape (time, individuals) or (time,)
+
 #### egocentrically\_align\_and\_center
 
 ```python

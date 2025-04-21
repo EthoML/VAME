@@ -1,5 +1,5 @@
 import random
-from typing import Dict, Tuple
+from typing import Dict, Tuple, Literal
 from pathlib import Path
 import networkx as nx
 import matplotlib.pyplot as plt
@@ -156,9 +156,46 @@ def draw_tree(
 
     if save_to_file and results_dir:
         save_fig_path = Path(results_dir) / "tree.png"
+        save_fig_pdf_path = Path(results_dir) / "tree.pdf"
         plt.savefig(save_fig_path, bbox_inches="tight")
+        plt.savefig(save_fig_pdf_path, bbox_inches="tight")
 
     if show_figure:
         plt.show()
     else:
         plt.close(fig)
+
+
+def visualize_hierarchical_tree(
+    config: dict,
+    segmentation_algorithm: Literal["hmm", "kmeans"],
+) -> None:
+    """
+    Visualizes the hierarchical tree.
+
+    Parameters
+    ----------
+    config : dict
+        Configuration dictionary.
+    segmentation_algorithm : Literal["hmm", "kmeans"]
+        Segmentation algorithm.
+
+    Returns
+    -------
+    None
+    """
+    n_clusters = config["n_clusters"]
+    fig_path = (
+        Path(config["project_path"])
+        / "results"
+        / "community_cohort"
+        / f"{segmentation_algorithm}-{n_clusters}"
+        / "tree.png"
+    )
+    if not fig_path.exists():
+        raise FileNotFoundError(f"Tree figure not found at {fig_path}.")
+    img = plt.imread(fig_path)
+    plt.figure(figsize=(n_clusters, n_clusters))
+    plt.imshow(img)
+    plt.axis("off")  # Hide axes
+    plt.show()

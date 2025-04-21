@@ -6,11 +6,11 @@ from torch.optim.lr_scheduler import StepLR, ReduceLROnPlateau
 import os
 import numpy as np
 from pathlib import Path
+from tqdm import tqdm
 from typing import Tuple
-from vame.util.auxiliary import read_config
+
 from vame.model.dataloader import SEQUENCE_DATASET
 from vame.model.rnn_model import RNN_VAE
-from tqdm import tqdm
 from vame.schemas.states import TrainModelFunctionSchema, save_state
 from vame.logging.logger import VameLogger, TqdmToLogger
 
@@ -22,10 +22,10 @@ tqdm_to_logger = TqdmToLogger(logger)
 # make sure torch uses cuda for GPU computing
 use_gpu = torch.cuda.is_available()
 if use_gpu:
-    logger.info("Using CUDA")
-    logger.info(f"GPU active: {torch.cuda.is_available()}")
+    logger.info("GPU detected")
     logger.info(f"GPU used: {torch.cuda.get_device_name(0)}")
 else:
+    logger.info("No GPU found... proceeding with CPU (slow!)")
     torch.device("cpu")
 
 
@@ -509,24 +509,24 @@ def train_model(
     -------
     None
     """
-    cfg = config
+    config = config
     try:
         tqdm_logger_stream = None
         if save_logs:
             tqdm_logger_stream = TqdmToLogger(logger)
-            log_path = Path(cfg["project_path"]) / "logs" / "train_model.log"
+            log_path = Path(config["project_path"]) / "logs" / "train_model.log"
             logger_config.add_file_handler(str(log_path))
 
-        model_name = cfg["model_name"]
-        pretrained_weights = cfg["pretrained_weights"]
-        pretrained_model = cfg["pretrained_model"]
-        fixed = cfg["egocentric_data"]
+        model_name = config["model_name"]
+        pretrained_weights = config["pretrained_weights"]
+        pretrained_model = config["pretrained_model"]
+        fixed = config["egocentric_data"]
 
         logger.info("Train Variational Autoencoder - model name: %s \n" % model_name)
-        if not os.path.exists(os.path.join(cfg["project_path"], "model", "best_model", "")):
-            os.mkdir(os.path.join(cfg["project_path"], "model", "best_model", ""))
-            os.mkdir(os.path.join(cfg["project_path"], "model", "best_model", "snapshots", ""))
-            os.mkdir(os.path.join(cfg["project_path"], "model", "model_losses", ""))
+        if not os.path.exists(os.path.join(config["project_path"], "model", "best_model", "")):
+            os.mkdir(os.path.join(config["project_path"], "model", "best_model", ""))
+            os.mkdir(os.path.join(config["project_path"], "model", "best_model", "snapshots", ""))
+            os.mkdir(os.path.join(config["project_path"], "model", "model_losses", ""))
 
         # make sure torch uses cuda for GPU computing
         use_gpu = torch.cuda.is_available()
@@ -543,47 +543,47 @@ def train_model(
         # General
         CUDA = use_gpu
         SEED = 19
-        TRAIN_BATCH_SIZE = cfg["batch_size"]
-        TEST_BATCH_SIZE = int(cfg["batch_size"] / 4)
-        EPOCHS = cfg["max_epochs"]
-        ZDIMS = cfg["zdims"]
-        BETA = cfg["beta"]
-        SNAPSHOT = cfg["model_snapshot"]
-        LEARNING_RATE = cfg["learning_rate"]
-        NUM_FEATURES = cfg["num_features"]
+        TRAIN_BATCH_SIZE = config["batch_size"]
+        TEST_BATCH_SIZE = int(config["batch_size"] / 4)
+        EPOCHS = config["max_epochs"]
+        ZDIMS = config["zdims"]
+        BETA = config["beta"]
+        SNAPSHOT = config["model_snapshot"]
+        LEARNING_RATE = config["learning_rate"]
+        NUM_FEATURES = config["num_features"]
         if not fixed:
             NUM_FEATURES = NUM_FEATURES - 3
-        TEMPORAL_WINDOW = cfg["time_window"] * 2
-        FUTURE_DECODER = cfg["prediction_decoder"]
-        FUTURE_STEPS = cfg["prediction_steps"]
+        TEMPORAL_WINDOW = config["time_window"] * 2
+        FUTURE_DECODER = config["prediction_decoder"]
+        FUTURE_STEPS = config["prediction_steps"]
 
         # RNN
-        hidden_size_layer_1 = cfg["hidden_size_layer_1"]
-        hidden_size_layer_2 = cfg["hidden_size_layer_2"]
-        hidden_size_rec = cfg["hidden_size_rec"]
-        hidden_size_pred = cfg["hidden_size_pred"]
-        dropout_encoder = cfg["dropout_encoder"]
-        dropout_rec = cfg["dropout_rec"]
-        dropout_pred = cfg["dropout_pred"]
-        noise = cfg["noise"]
-        scheduler_step_size = cfg["scheduler_step_size"]
-        softplus = cfg["softplus"]
+        hidden_size_layer_1 = config["hidden_size_layer_1"]
+        hidden_size_layer_2 = config["hidden_size_layer_2"]
+        hidden_size_rec = config["hidden_size_rec"]
+        hidden_size_pred = config["hidden_size_pred"]
+        dropout_encoder = config["dropout_encoder"]
+        dropout_rec = config["dropout_rec"]
+        dropout_pred = config["dropout_pred"]
+        noise = config["noise"]
+        scheduler_step_size = config["scheduler_step_size"]
+        softplus = config["softplus"]
 
         # Loss
-        MSE_REC_REDUCTION = cfg["mse_reconstruction_reduction"]
-        MSE_PRED_REDUCTION = cfg["mse_prediction_reduction"]
-        KMEANS_LOSS = cfg["kmeans_loss"]
-        KMEANS_LAMBDA = cfg["kmeans_lambda"]
-        KL_START = cfg["kl_start"]
-        ANNEALTIME = cfg["annealtime"]
-        anneal_function = cfg["anneal_function"]
-        optimizer_scheduler = cfg["scheduler"]
+        MSE_REC_REDUCTION = config["mse_reconstruction_reduction"]
+        MSE_PRED_REDUCTION = config["mse_prediction_reduction"]
+        KMEANS_LOSS = config["kmeans_loss"]
+        KMEANS_LAMBDA = config["kmeans_lambda"]
+        KL_START = config["kl_start"]
+        ANNEALTIME = config["annealtime"]
+        anneal_function = config["anneal_function"]
+        optimizer_scheduler = config["scheduler"]
 
         BEST_LOSS = 999999
         convergence = 0
         logger.info(
             "Latent Dimensions: %d, Time window: %d, Batch Size: %d, Beta: %d, lr: %.4f\n"
-            % (ZDIMS, cfg["time_window"], TRAIN_BATCH_SIZE, BETA, LEARNING_RATE)
+            % (ZDIMS, config["time_window"], TRAIN_BATCH_SIZE, BETA, LEARNING_RATE)
         )
 
         # simple logging of diverse losses
@@ -637,19 +637,19 @@ def train_model(
                 logger.info(
                     "Loading pretrained weights from model: %s\n"
                     % os.path.join(
-                        cfg["project_path"],
+                        config["project_path"],
                         "model",
                         "best_model",
-                        pretrained_model + "_" + cfg["project_name"] + ".pkl",
+                        pretrained_model + "_" + config["project_name"] + ".pkl",
                     )
                 )
                 model.load_state_dict(
                     torch.load(
                         os.path.join(
-                            cfg["project_path"],
+                            config["project_path"],
                             "model",
                             "best_model",
-                            pretrained_model + "_" + cfg["project_name"] + ".pkl",
+                            pretrained_model + "_" + config["project_name"] + ".pkl",
                         )
                     )
                 )
@@ -659,10 +659,10 @@ def train_model(
                 logger.info(
                     "No file found at %s\n"
                     % os.path.join(
-                        cfg["project_path"],
+                        config["project_path"],
                         "model",
                         "best_model",
-                        pretrained_model + "_" + cfg["project_name"] + ".pkl",
+                        pretrained_model + "_" + config["project_name"] + ".pkl",
                     )
                 )
                 try:
@@ -675,13 +675,13 @@ def train_model(
 
         """ DATASET """
         trainset = SEQUENCE_DATASET(
-            os.path.join(cfg["project_path"], "data", "train", ""),
+            os.path.join(config["project_path"], "data", "train", ""),
             data="train_seq.npy",
             train=True,
             temporal_window=TEMPORAL_WINDOW,
         )
         testset = SEQUENCE_DATASET(
-            os.path.join(cfg["project_path"], "data", "train", ""),
+            os.path.join(config["project_path"], "data", "train", ""),
             data="test_seq.npy",
             train=False,
             temporal_window=TEMPORAL_WINDOW,
@@ -694,14 +694,14 @@ def train_model(
 
         if optimizer_scheduler:
             logger.info(
-                "Scheduler step size: %d, Scheduler gamma: %.2f\n" % (scheduler_step_size, cfg["scheduler_gamma"])
+                "Scheduler step size: %d, Scheduler gamma: %.2f\n" % (scheduler_step_size, config["scheduler_gamma"])
             )
             # Thanks to @alexcwsmith for the optimized scheduler contribution
             scheduler = ReduceLROnPlateau(
                 optimizer,
                 "min",
-                factor=cfg["scheduler_gamma"],
-                patience=cfg["scheduler_step_size"],
+                factor=config["scheduler_gamma"],
+                patience=config["scheduler_step_size"],
                 threshold=1e-3,
                 threshold_mode="rel",
                 verbose=True,
@@ -766,10 +766,10 @@ def train_model(
                 torch.save(
                     model.state_dict(),
                     os.path.join(
-                        cfg["project_path"],
+                        config["project_path"],
                         "model",
                         "best_model",
-                        model_name + "_" + cfg["project_name"] + ".pkl",
+                        model_name + "_" + config["project_name"] + ".pkl",
                     ),
                 )
                 convergence = 0
@@ -781,15 +781,15 @@ def train_model(
                 torch.save(
                     model.state_dict(),
                     os.path.join(
-                        cfg["project_path"],
+                        config["project_path"],
                         "model",
                         "best_model",
                         "snapshots",
-                        model_name + "_" + cfg["project_name"] + "_epoch_" + str(epoch) + ".pkl",
+                        model_name + "_" + config["project_name"] + "_epoch_" + str(epoch) + ".pkl",
                     ),
                 )
 
-            if convergence > cfg["model_convergence"]:
+            if convergence > config["model_convergence"]:
                 logger.info("Finished training...")
                 logger.info(
                     "Model converged. Please check your model with vame.evaluate_model(). \n"
@@ -806,7 +806,7 @@ def train_model(
             # save logged losses
             np.save(
                 os.path.join(
-                    cfg["project_path"],
+                    config["project_path"],
                     "model",
                     "model_losses",
                     "train_losses_" + model_name,
@@ -815,7 +815,7 @@ def train_model(
             )
             np.save(
                 os.path.join(
-                    cfg["project_path"],
+                    config["project_path"],
                     "model",
                     "model_losses",
                     "test_losses_" + model_name,
@@ -824,7 +824,7 @@ def train_model(
             )
             np.save(
                 os.path.join(
-                    cfg["project_path"],
+                    config["project_path"],
                     "model",
                     "model_losses",
                     "kmeans_losses_" + model_name,
@@ -833,7 +833,7 @@ def train_model(
             )
             np.save(
                 os.path.join(
-                    cfg["project_path"],
+                    config["project_path"],
                     "model",
                     "model_losses",
                     "kl_losses_" + model_name,
@@ -842,7 +842,7 @@ def train_model(
             )
             np.save(
                 os.path.join(
-                    cfg["project_path"],
+                    config["project_path"],
                     "model",
                     "model_losses",
                     "weight_values_" + model_name,
@@ -851,7 +851,7 @@ def train_model(
             )
             np.save(
                 os.path.join(
-                    cfg["project_path"],
+                    config["project_path"],
                     "model",
                     "model_losses",
                     "mse_train_losses_" + model_name,
@@ -860,7 +860,7 @@ def train_model(
             )
             np.save(
                 os.path.join(
-                    cfg["project_path"],
+                    config["project_path"],
                     "model",
                     "model_losses",
                     "mse_test_losses_" + model_name,
@@ -869,7 +869,7 @@ def train_model(
             )
             np.save(
                 os.path.join(
-                    cfg["project_path"],
+                    config["project_path"],
                     "model",
                     "model_losses",
                     "fut_losses_" + model_name,
@@ -878,7 +878,7 @@ def train_model(
             )
             logger.info("\n")
 
-        if convergence < cfg["model_convergence"]:
+        if convergence < config["model_convergence"]:
             logger.info("Finished training...")
             logger.info(
                 "Model seems to have not reached convergence. You may want to check your model \n"

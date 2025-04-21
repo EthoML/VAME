@@ -10,7 +10,6 @@ title: util.csv_to_npy
 #### pose\_to\_numpy
 
 ```python
-@save_state(model=PoseToNumpyFunctionSchema)
 def pose_to_numpy(config: dict, save_logs=False) -> None
 ```
 

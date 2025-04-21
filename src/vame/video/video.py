@@ -55,9 +55,7 @@ def add_videos_to_project(
     video_stems = [Path(video).stem for video in videos]
     for video_stem in video_stems:
         if video_stem not in session_names:
-            raise ValueError(
-                f"Video stem '{video_stem}' does not match any session name in {session_names}"
-            )
+            raise ValueError(f"Video stem '{video_stem}' does not match any session name in {session_names}")
 
     # Copy / link videos to project directory
     project_path = Path(config["project_path"])

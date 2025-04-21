@@ -100,7 +100,7 @@ def plot_reconstruction(
             axs[1, i].plot(fut[i, ...], color="r", linestyle="dashed")
         axs[0, 0].set(xlabel="time steps", ylabel="reconstruction")
         axs[1, 0].set(xlabel="time steps", ylabel="predction")
-        fig.savefig(os.path.join(filepath, "evaluate", "Future_Reconstruction.png"))
+        fig.savefig(os.path.join(filepath, "evaluate", "future_reconstruction.png"))
     else:
         fig, ax1 = plt.subplots(1, 5)
         for i in range(5):
@@ -135,7 +135,7 @@ def plot_reconstruction(
 
 
 def plot_loss(
-    cfg: dict,
+    config: dict,
     model_name: str,
     save_to_file: bool = False,
     show_figure: bool = True,
@@ -146,11 +146,11 @@ def plot_loss(
     - project_name/
         - model/
             - evaluate/
-                - MSE-and-KL-Loss_model_name.png
+                - mse_and_kl_loss_model_name.png
 
     Parameters
     ----------
-    cfg : dict
+    config : dict
         Configuration dictionary.
     model_name : str
         Name of the model.
@@ -163,7 +163,7 @@ def plot_loss(
     -------
     None
     """
-    basepath = os.path.join(cfg["project_path"], "model", "model_losses")
+    basepath = os.path.join(config["project_path"], "model", "model_losses")
     train_loss = np.load(os.path.join(basepath, "train_losses_" + model_name + ".npy"))
     test_loss = np.load(os.path.join(basepath, "test_losses_" + model_name + ".npy"))
     mse_loss_train = np.load(os.path.join(basepath, "mse_train_losses_" + model_name + ".npy"))
@@ -186,8 +186,8 @@ def plot_loss(
     ax1.legend()
 
     if save_to_file:
-        evaluate_path = os.path.join(cfg["project_path"], "model", "evaluate")
-        fig.savefig(os.path.join(evaluate_path, "MSE-and-KL-Loss" + model_name + ".png"))
+        evaluate_path = os.path.join(config["project_path"], "model", "evaluate")
+        fig.savefig(os.path.join(evaluate_path, "mse_and_kl_loss_" + model_name + ".png"))
 
     if show_figure:
         plt.show()

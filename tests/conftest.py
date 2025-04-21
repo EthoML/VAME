@@ -4,6 +4,7 @@ import shutil
 import psutil
 import time
 from typing import List, Optional, Literal
+import numpy as np
 
 import vame
 from vame.pipeline import VAMEPipeline
@@ -221,7 +222,8 @@ def setup_project_and_create_train_aligned_dataset(setup_project_and_align_egoce
     config = setup_project_and_align_egocentric["config_data"]
     vame.create_trainset(
         config=config,
-        save_logs=True,
+        split_mode="mode_2",
+        save_logs=False,
     )
     return setup_project_and_align_egocentric
 

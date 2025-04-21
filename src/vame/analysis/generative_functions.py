@@ -18,7 +18,7 @@ logger = logger_config.logger
 
 
 def random_generative_samples_motif(
-    cfg: dict,
+    config: dict,
     model: torch.nn.Module,
     latent_vector: np.ndarray,
     labels: np.ndarray,
@@ -29,7 +29,7 @@ def random_generative_samples_motif(
 
     Parameters
     ----------
-    cfg : dict
+    config : dict
         Configuration dictionary.
     model : torch.nn.Module
         PyTorch model.
@@ -46,7 +46,7 @@ def random_generative_samples_motif(
         Figure of generated samples.
     """
     logger.info("Generate random generative samples for motifs...")
-    time_window = cfg["time_window"]
+    time_window = config["time_window"]
     for j in range(n_clusters):
         inds = np.where(labels == j)
         motif_latents = latent_vector[inds[0], :]
@@ -77,7 +77,7 @@ def random_generative_samples_motif(
 
 
 def random_generative_samples(
-    cfg: dict,
+    config: dict,
     model: torch.nn.Module,
     latent_vector: np.ndarray,
 ) -> plt.Figure:
@@ -86,7 +86,7 @@ def random_generative_samples(
 
     Parameters
     ----------
-    cfg : dict
+    config : dict
         Configuration dictionary.
     model : torch.nn.Module
         PyTorch model.
@@ -100,7 +100,7 @@ def random_generative_samples(
     """
     logger.info("Generate random generative samples...")
     # Latent sampling and generative model
-    time_window = cfg["time_window"]
+    time_window = config["time_window"]
     gm = GaussianMixture(n_components=10).fit(latent_vector)
 
     # draw sample from GMM
@@ -128,7 +128,7 @@ def random_generative_samples(
 
 
 def random_reconstruction_samples(
-    cfg: dict,
+    config: dict,
     model: torch.nn.Module,
     latent_vector: np.ndarray,
 ) -> plt.Figure:
@@ -137,7 +137,7 @@ def random_reconstruction_samples(
 
     Parameters
     ----------
-    cfg : dict
+    config : dict
         Configuration dictionary.
     model : torch.nn.Module
         PyTorch model to use.
@@ -151,7 +151,7 @@ def random_reconstruction_samples(
     """
     logger.info("Generate random reconstruction samples...")
     # random samples for reconstruction
-    time_window = cfg["time_window"]
+    time_window = config["time_window"]
 
     rnd = np.random.choice(latent_vector.shape[0], 10)
     tensor_sample = torch.from_numpy(latent_vector[rnd]).type("torch.FloatTensor")
@@ -175,7 +175,7 @@ def random_reconstruction_samples(
 
 
 def visualize_cluster_center(
-    cfg: dict,
+    config: dict,
     model: torch.nn.Module,
     cluster_center: np.ndarray,
 ) -> plt.Figure:
@@ -184,7 +184,7 @@ def visualize_cluster_center(
 
     Parameters
     ----------
-    cfg : dict
+    config : dict
         Configuration dictionary.
     model : torch.nn.Module
         PyTorch model.
@@ -198,7 +198,7 @@ def visualize_cluster_center(
     """
     # Cluster Center
     logger.info("Visualize cluster center...")
-    time_window = cfg["time_window"]
+    time_window = config["time_window"]
     animal_centers = cluster_center
 
     tensor_sample = torch.from_numpy(animal_centers).type("torch.FloatTensor")
@@ -260,7 +260,7 @@ def generative_model(
             sessions = config["session_names"]
         else:
             sessions = get_sessions_from_user_input(
-                cfg=config,
+                config=config,
                 action_message="generate samples",
             )
 
@@ -334,7 +334,7 @@ def generative_model(
                     )
                 )
                 return random_generative_samples_motif(
-                    cfg=config,
+                    config=config,
                     model=model,
                     latent_vector=latent_vector,
                     labels=labels,

@@ -14,29 +14,21 @@ class SegmentationAlgorithms(str, Enum):
 
 class ProjectSchema(BaseModel):
     # Project parameters
+    vame_version: str = Field(
+        ...,
+        title="VAME version",
+    )
     project_name: str = Field(
         ...,
         title="Project name",
     )
-    creation_datetime: str = Field(
-        default_factory=lambda: datetime.now(timezone.utc).isoformat(timespec="seconds"),
-        title="Creation datetime",
-    )
-    model_name: str = Field(
-        default="VAME",
-        title="Model name",
-    )
-    n_clusters: int = Field(
-        default=15,
-        title="Number of clusters",
-    )
-    pose_confidence: float = Field(
-        default=0.99,
-        title="Pose confidence",
-    )
     project_path: str = Field(
         ...,
         title="Project path",
+    )
+    creation_datetime: str = Field(
+        default_factory=lambda: datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        title="Creation datetime",
     )
     session_names: List[str] = Field(
         ...,
@@ -49,11 +41,24 @@ class ProjectSchema(BaseModel):
         title="Paths to pose series data in nwb files",
         default=None,
     )
+    n_clusters: int = Field(
+        default=15,
+        title="Number of clusters",
+    )
+    pose_confidence: float = Field(
+        default=0.99,
+        title="Pose confidence",
+    )
 
     # Data
     all_data: str = Field(
         default="yes",
         title="All data",
+    )
+    keypoints: Optional[List[str]] = Field(
+        default=None,
+        title="Keypoint names",
+        description="Names of keypoints extracted from pose estimation data",
     )
     egocentric_data: bool = Field(
         default=False,
@@ -66,10 +71,6 @@ class ProjectSchema(BaseModel):
     iqr_factor: int = Field(
         default=4,
         title="IQR factor",
-    )
-    axis: str = Field(
-        default="None",
-        title="Axis",
     )
     savgol_filter: bool = Field(
         default=True,
@@ -89,6 +90,10 @@ class ProjectSchema(BaseModel):
     )
 
     # RNN model general hyperparameters
+    model_name: str = Field(
+        default="VAME",
+        title="Model name",
+    )
     pretrained_model: str = Field(
         default="None",
         title="Pretrained model",

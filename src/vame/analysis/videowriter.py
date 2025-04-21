@@ -3,7 +3,7 @@ from pathlib import Path
 import numpy as np
 import cv2 as cv
 import tqdm
-from typing import Union
+from typing import Union, Optional, List
 import imageio
 
 from vame.util.auxiliary import read_config
@@ -29,7 +29,6 @@ def create_cluster_videos(
     video_type: str,
     flag: str,
     segmentation_algorithm: SegmentationAlgorithms,
-    cohort: bool = True,
     output_video_type: str = ".mp4",
     tqdm_logger_stream: Union[TqdmToLogger, None] = None,
 ) -> None:
@@ -52,8 +51,6 @@ def create_cluster_videos(
         Flag indicating the type of video (motif or community).
     segmentation_algorithm : SegmentationAlgorithms
         Which segmentation algorithm to use. Options are 'hmm' or 'kmeans'.
-    cohort : bool, optional
-        Flag indicating cohort analysis. Defaults to True.
     output_video_type : str, optional
         Type of output video. Default is '.mp4'.
     tqdm_logger_stream : TqdmToLogger, optional
@@ -75,24 +72,14 @@ def create_cluster_videos(
             )
         )
     if flag == "community":
-        if cohort:
-            logger.info("Cohort community videos getting created for " + session + " ...")
-            labels = np.load(
-                os.path.join(
-                    path_to_file,
-                    "community",
-                    "cohort_community_label_" + session + ".npy",
-                )
+        logger.info("Community videos getting created for " + session + " ...")
+        labels = np.load(
+            os.path.join(
+                path_to_file,
+                "community",
+                "cohort_community_label_" + session + ".npy",
             )
-        else:
-            logger.info("Community videos getting created for " + session + " ...")
-            labels = np.load(
-                os.path.join(
-                    path_to_file,
-                    "community",
-                    "community_label_" + session + ".npy",
-                )
-            )
+        )
 
     video_file_path = os.path.join(
         config["project_path"],
@@ -165,7 +152,6 @@ def create_cluster_videos(
 @save_state(model=MotifVideosFunctionSchema)
 def motif_videos(
     config: dict,
-    segmentation_algorithm: SegmentationAlgorithms,
     video_type: str = ".mp4",
     output_video_type: str = ".mp4",
     save_logs: bool = False,
@@ -176,12 +162,12 @@ def motif_videos(
     Files are saved at:
     - project_name/
         - results/
-            - session/
+            - session_name/
                 - model_name/
                     - segmentation_algorithm-n_clusters/
                         - cluster_videos/
-                            - session-motif_0.mp4
-                            - session-motif_1.mp4
+                            - session_name-motif_0.mp4
+                            - session_name-motif_1.mp4
                             - ...
 
     Parameters
@@ -190,6 +176,7 @@ def motif_videos(
         Configuration parameters.
     segmentation_algorithm : SegmentationAlgorithms
         Which segmentation algorithm to use. Options are 'hmm' or 'kmeans'.
+        If None, it will be taken from the config file.
     video_type : str, optional
         Type of video. Default is '.mp4'.
     output_video_type : str, optional
@@ -207,45 +194,48 @@ def motif_videos(
             log_path = Path(config["project_path"]) / "logs" / "motif_videos.log"
             logger_config.add_file_handler(str(log_path))
             tqdm_logger_stream = TqdmToLogger(logger=logger)
+
         model_name = config["model_name"]
         n_clusters = config["n_clusters"]
-
-        logger.info(f"Creating motif videos for algorithm: {segmentation_algorithm}...")
+        segmentation_algorithms = config["segmentation_algorithms"]
 
         # Get sessions
-        if config["all_data"] in ["Yes", "yes"]:
+        if config["all_data"] in ["Yes", "yes", "True", "true", True]:
             sessions = config["session_names"]
         else:
             sessions = get_sessions_from_user_input(
-                cfg=config,
+                config=config,
                 action_message="write motif videos",
             )
 
-        logger.info("Cluster size is: %d " % n_clusters)
         for session in sessions:
-            path_to_file = os.path.join(
-                config["project_path"],
-                "results",
-                session,
-                model_name,
-                segmentation_algorithm + "-" + str(n_clusters),
-                "",
-            )
-            if not os.path.exists(os.path.join(path_to_file, "cluster_videos")):
-                os.mkdir(os.path.join(path_to_file, "cluster_videos"))
+            for segmentation_algorithm in segmentation_algorithms:
+                logger.info(
+                    f"Creating motif videos for session {session}, algorithm: {segmentation_algorithm}, n_clusters: {n_clusters}"
+                )
+                path_to_file = os.path.join(
+                    config["project_path"],
+                    "results",
+                    session,
+                    model_name,
+                    segmentation_algorithm + "-" + str(n_clusters),
+                    "",
+                )
+                if not os.path.exists(os.path.join(path_to_file, "cluster_videos")):
+                    os.mkdir(os.path.join(path_to_file, "cluster_videos"))
 
-            create_cluster_videos(
-                config=config,
-                path_to_file=path_to_file,
-                session=session,
-                n_clusters=n_clusters,
-                video_type=video_type,
-                flag="motif",
-                segmentation_algorithm=segmentation_algorithm,
-                output_video_type=output_video_type,
-                tqdm_logger_stream=tqdm_logger_stream,
-            )
-        logger.info("All videos have been created!")
+                create_cluster_videos(
+                    config=config,
+                    path_to_file=path_to_file,
+                    session=session,
+                    n_clusters=n_clusters,
+                    video_type=video_type,
+                    flag="motif",
+                    segmentation_algorithm=segmentation_algorithm,
+                    output_video_type=output_video_type,
+                    tqdm_logger_stream=tqdm_logger_stream,
+                )
+            logger.info("All videos have been created!")
     except Exception as e:
         logger.exception(f"Error in motif_videos: {e}")
         raise e
@@ -256,29 +246,22 @@ def motif_videos(
 @save_state(model=CommunityVideosFunctionSchema)
 def community_videos(
     config: dict,
-    segmentation_algorithm: SegmentationAlgorithms,
-    cohort: bool = True,
     video_type: str = ".mp4",
-    save_logs: bool = False,
     output_video_type: str = ".mp4",
+    save_logs: bool = False,
 ) -> None:
     """
     Generate community videos and save them to filesystem on project community_videos folder.
     Fills in the values in the "community_videos" key of the states.json file.
     Files are saved at:
-
-    1. If cohort is True:
-    TODO: Add cohort analysis
-
-    2. If cohort is False:
     - project_name/
         - results/
-            - file_name/
+            - session_name/
                 - model_name/
                     - segmentation_algorithm-n_clusters/
                         - community_videos/
-                            - file_name-community_0.mp4
-                            - file_name-community_1.mp4
+                            - session_name-community_0.mp4
+                            - session_name-community_1.mp4
                             - ...
 
     Parameters
@@ -287,8 +270,6 @@ def community_videos(
         Configuration parameters.
     segmentation_algorithm : SegmentationAlgorithms
         Which segmentation algorithm to use. Options are 'hmm' or 'kmeans'.
-    cohort : bool, optional
-        Flag indicating cohort analysis. Defaults to True.
     video_type : str, optional
         Type of video. Default is '.mp4'.
     save_logs : bool, optional
@@ -302,51 +283,53 @@ def community_videos(
     """
     try:
         tqdm_logger_stream = None
-
         if save_logs:
             log_path = Path(config["project_path"]) / "logs" / "community_videos.log"
             logger_config.add_file_handler(str(log_path))
             tqdm_logger_stream = TqdmToLogger(logger=logger)
+
         model_name = config["model_name"]
         n_clusters = config["n_clusters"]
+        segmentation_algorithms = config["segmentation_algorithms"]
 
         # Get sessions
-        if config["all_data"] in ["Yes", "yes"]:
+        if config["all_data"] in ["Yes", "yes", "True", "true", True]:
             sessions = config["session_names"]
         else:
             sessions = get_sessions_from_user_input(
-                cfg=config,
+                config=config,
                 action_message="write community videos",
             )
 
-        logger.info("Cluster size is: %d " % n_clusters)
         for session in sessions:
-            path_to_file = os.path.join(
-                config["project_path"],
-                "results",
-                session,
-                model_name,
-                segmentation_algorithm + "-" + str(n_clusters),
-                "",
-            )
-            if not os.path.exists(os.path.join(path_to_file, "community_videos")):
-                os.mkdir(os.path.join(path_to_file, "community_videos"))
+            for segmentation_algorithm in segmentation_algorithms:
+                logger.info(
+                    f"Creating community videos for session {session}, algorithm: {segmentation_algorithm}, n_clusters: {n_clusters}"
+                )
+                path_to_file = os.path.join(
+                    config["project_path"],
+                    "results",
+                    session,
+                    model_name,
+                    segmentation_algorithm + "-" + str(n_clusters),
+                    "",
+                )
+                if not os.path.exists(os.path.join(path_to_file, "community_videos")):
+                    os.mkdir(os.path.join(path_to_file, "community_videos"))
 
-            create_cluster_videos(
-                config=config,
-                path_to_file=path_to_file,
-                session=session,
-                n_clusters=n_clusters,
-                video_type=video_type,
-                flag="community",
-                segmentation_algorithm=segmentation_algorithm,
-                cohort=cohort,
-                tqdm_logger_stream=tqdm_logger_stream,
-                output_video_type=output_video_type,
-            )
+                create_cluster_videos(
+                    config=config,
+                    path_to_file=path_to_file,
+                    session=session,
+                    n_clusters=n_clusters,
+                    video_type=video_type,
+                    flag="community",
+                    segmentation_algorithm=segmentation_algorithm,
+                    tqdm_logger_stream=tqdm_logger_stream,
+                    output_video_type=output_video_type,
+                )
 
         logger.info("All videos have been created!")
-
     except Exception as e:
         logger.exception(f"Error in community_videos: {e}")
         raise e
