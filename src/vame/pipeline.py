@@ -13,7 +13,7 @@ from vame.visualization import (
     plot_loss,
     visualize_hierarchical_tree,
     visualize_umap,
-    generate_report,
+    generate_reports,
 )
 from vame.logging.logger import VameLogger
 
@@ -453,10 +453,7 @@ class VAMEPipeline:
             segmentation_algorithm=segmentation_algorithm,
         )
 
-    def report(
-        self,
-        segmentation_algorithm: Literal["hmm", "kmeans"] = "hmm",
-    ) -> None:
+    def report(self) -> None:
         """
         Generates the project report.
 
@@ -469,10 +466,7 @@ class VAMEPipeline:
         -------
         None
         """
-        generate_report(
-            config=self.config,
-            segmentation_algorithm=segmentation_algorithm,
-        )
+        generate_reports(config=self.config)
 
     def run_pipeline(
         self,
