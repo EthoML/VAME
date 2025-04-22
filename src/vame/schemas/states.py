@@ -96,11 +96,8 @@ class CommunityVideosFunctionSchema(BaseStateSchema):
     )
 
 
-class VisualizeUmapFunctionSchema(BaseStateSchema):
-    label: Optional[str] = Field(
-        title="Type of labels to visualize",
-        default=None,
-    )
+class GenerateReportsFunctionSchema(BaseStateSchema):
+    ...
 
 
 class PreprocessingFunctionSchema(BaseStateSchema):
@@ -200,8 +197,8 @@ class VAMEPipelineStatesSchema(BaseModel):
         title="Community videos",
         default={},
     )
-    visualize_umap: Optional[VisualizeUmapFunctionSchema | Dict] = Field(
-        title="Visualization",
+    generate_reports: Optional[GenerateReportsFunctionSchema | Dict] = Field(
+        title="Generate reports",
         default={},
     )
     generative_model: Optional[GenerativeModelFunctionSchema | Dict] = Field(

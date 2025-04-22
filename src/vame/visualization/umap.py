@@ -7,7 +7,6 @@ from matplotlib.figure import Figure
 from typing import Optional
 
 from vame.util.cli import get_sessions_from_user_input
-from vame.schemas.states import VisualizeUmapFunctionSchema, save_state
 from vame.logging.logger import VameLogger
 from vame.schemas.project import SegmentationAlgorithms
 
@@ -76,9 +75,11 @@ def umap_vis(
     embed: np.ndarray,
     num_points: int,
     labels: Optional[np.ndarray] = None,
+    save_to_file: bool = False,
+    show_figure: bool = True,
 ) -> Figure:
     """
-    Visualize UMAP embedding without labels.
+    Visualize UMAP embedding.
 
     Parameters
     ----------
@@ -91,8 +92,8 @@ def umap_vis(
 
     Returns
     -------
-    plt.Figure
-        Plot Visualization of UMAP embedding.
+    Figure
+        Matplotlib figure object.
     """
     scatter_kwargs = {
         "x": embed[:num_points, 0],
@@ -106,18 +107,17 @@ def umap_vis(
         scatter_kwargs["alpha"] = 0.7
 
     plt.close("all")
-    fig = plt.figure(1)
+    fig = plt.figure()
     plt.scatter(**scatter_kwargs)
     plt.gca().set_aspect("equal", "datalim")
     plt.grid(False)
     return fig
 
 
-@save_state(model=VisualizeUmapFunctionSchema)
 def visualize_umap(
     config: dict,
-    label: Optional[str] = None,
-    save_logs: bool = False,
+    save_to_file: bool = True,
+    show_figure: bool = True,
 ) -> None:
     """
     Visualize UMAP embeddings based on configuration settings.
@@ -138,32 +138,32 @@ def visualize_umap(
     ----------
     config : dict
         Configuration parameters.
-    label : str, optional
-        Type of labels to visualize. Options are None, 'motif' or 'community'. Default is None.
-    save_logs : bool, optional
-        Save logs to file. Default is False.
+    save_to_file : bool, optional
+        Save the figure to file. Default is True.
+    show_figure : bool, optional
+        Show the figure. Default is True.
 
     Returns
     -------
     None
     """
     try:
-        if save_logs:
-            logs_path = Path(config["project_path"]) / "logs" / "visualization.log"
-            logger_config.add_file_handler(str(logs_path))
-
         model_name = config["model_name"]
         n_clusters = config["n_clusters"]
         segmentation_algorithms = config["segmentation_algorithms"]
 
         # Get sessions
-        if config["all_data"] in ["Yes", "yes"]:
+        if config["all_data"] in ["Yes", "yes", "True", "true", True]:
             sessions = config["session_names"]
         else:
             sessions = get_sessions_from_user_input(
                 config=config,
                 action_message="generate visualization",
             )
+
+        save_path_base = Path(config["project_path"]) / "reports" / "umap"
+        if not save_path_base.exists():
+            os.makedirs(save_path_base)
 
         for session in sessions:
             for seg in segmentation_algorithms:
@@ -188,26 +188,35 @@ def visualize_umap(
                 if num_points > embed.shape[0]:
                     num_points = embed.shape[0]
 
-                if label is None:
-                    output_figure_file_name = "umap_vis_label_none_" + session + ".png"
-                    labels = None
-                elif label == "motif":
-                    output_figure_file_name = "umap_vis_motif_" + session + ".png"
-                    labels_file_path = base_path / f"{n_clusters}_{seg}_label_{session}.npy"
-                    labels = np.load(str(labels_file_path.resolve()))
-                elif label == "community":
-                    output_figure_file_name = "umap_vis_community_" + session + ".png"
-                    labels_file_path = base_path / "community" / f"cohort_community_label_{session}.npy"
-                    labels = np.load(str(labels_file_path.resolve()))
+                labels_names = ["none", "motif", "community"]
+                for label in labels_names:
+                    if label == "none":
+                        output_figure_file_name = f"umap_{session}_{seg}.png"
+                        labels = None
+                    elif label == "motif":
+                        output_figure_file_name = f"umap_{session}_{seg}_motif.png"
+                        labels_file_path = base_path / f"{n_clusters}_{seg}_label_{session}.npy"
+                        labels = np.load(str(labels_file_path.resolve()))
+                    elif label == "community":
+                        output_figure_file_name = f"umap_{session}_{seg}_community.png"
+                        labels_file_path = base_path / "community" / f"cohort_community_label_{session}.npy"
+                        labels = np.load(str(labels_file_path.resolve()))
 
-                output_figure = umap_vis(
-                    embed=embed,
-                    num_points=num_points,
-                    labels=labels,
-                )
-                fig_path = base_path / "community" / output_figure_file_name
-                output_figure.savefig(fig_path)
-                logger.info(f"UMAP figure saved to {fig_path}")
+                    fig = umap_vis(
+                        embed=embed,
+                        num_points=num_points,
+                        labels=labels,
+                    )
+
+                    if save_to_file:
+                        fig_path = save_path_base / output_figure_file_name
+                        fig.savefig(fig_path)
+                        logger.info(f"UMAP figure saved to {fig_path}")
+
+                    if show_figure:
+                        plt.show()
+                    else:
+                        plt.close(fig)
 
     except Exception as e:
         logger.exception(str(e))

@@ -1,22 +1,53 @@
 import numpy as np
 import json
 from pathlib import Path
-
-# import matplotlib
 import matplotlib.pyplot as plt
 
-from vame.util.auxiliary import read_config
+from .umap import visualize_umap
+from vame.schemas.states import GenerateReportsFunctionSchema, save_state
 from vame.logging.logger import VameLogger
 
 
-# matplotlib.use('Agg')  # For headless rendering
 logger_config = VameLogger(__name__)
 logger = logger_config.logger
+
+
+@save_state(model=GenerateReportsFunctionSchema)
+def generate_reports(config: dict) -> None:
+    """
+    Generate reports and UMAP for all sessions in the project.
+    """
+    project_path = Path(config["project_path"])
+    segmentation_algorithms = config["segmentation_algorithms"]
+
+    # Create a report folder for the project, if it does not exist
+    report_folder = project_path / "reports"
+    report_folder.mkdir(exist_ok=True)
+
+    # Generate reports for each segmentation algorithm
+    for seg in segmentation_algorithms:
+        logger.info(f"Generating report for algorithm {seg}.")
+        report(
+            config=config,
+            segmentation_algorithm=seg,
+            save_to_file=True,
+            show_figure=False,
+        )
+
+    # Generate UMAP
+    logger.info("Generating UMAP for all sessions.")
+    visualize_umap(
+        config=config,
+        save_to_file=True,
+        show_figure=False,
+    )
 
 
 def report(
     config: dict,
     segmentation_algorithm: str = "hmm",
+    save_to_file: bool = True,
+    show_figure: bool = True,
 ) -> None:
     """
     Report for a project.
@@ -29,7 +60,6 @@ def report(
         project_states = json.load(f)
 
     pose_estimation_files = list((project_path / "data" / "raw").glob("*.nc"))
-    video_files = list((project_path / "data" / "raw").glob("*.mp4"))
 
     # Create a report folder for the project, if it does not exist
     report_folder = project_path / "reports"

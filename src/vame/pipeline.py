@@ -13,6 +13,7 @@ from vame.visualization import (
     plot_loss,
     visualize_hierarchical_tree,
     visualize_umap,
+    generate_report,
 )
 from vame.logging.logger import VameLogger
 
@@ -468,7 +469,7 @@ class VAMEPipeline:
         -------
         None
         """
-        vame.report(
+        generate_report(
             config=self.config,
             segmentation_algorithm=segmentation_algorithm,
         )
