@@ -141,40 +141,18 @@ def test_community_videos_avi_files_exists(setup_project_and_train_model):
         assert len(list(save_base_path.glob("*.avi"))) <= n_clusters
 
 
-@pytest.mark.parametrize(
-    "label,segmentation_algorithm",
-    [
-        (None, "hmm"),
-        ("motif", "hmm"),
-        ("community", "hmm"),
-        (None, "kmeans"),
-        ("motif", "kmeans"),
-        ("community", "kmeans"),
-    ],
-)
-def test_visualization_output_files(
-    setup_project_and_train_model,
-    label,
-    segmentation_algorithm,
-):
+def test_visualization_output_files(setup_project_and_train_model):
     visualize_umap(
         config=setup_project_and_train_model["config_data"],
-        segmentation_algorithm=segmentation_algorithm,
-        label=label,
+        save_to_file=True,
+        show_figure=False,
         save_logs=True,
     )
-
     project_path = setup_project_and_train_model["config_data"]["project_path"]
-    file = setup_project_and_train_model["config_data"]["session_names"][0]
-    model_name = setup_project_and_train_model["config_data"]["model_name"]
-    n_clusters = setup_project_and_train_model["config_data"]["n_clusters"]
-
-    project_path = setup_project_and_train_model["config_data"]["project_path"]
-
-    save_base_path = (
-        Path(project_path) / "results" / file / model_name / f"{segmentation_algorithm}-{n_clusters}" / "community"
-    )
-    assert len(list(save_base_path.glob(f"umap_vis*{file}.png"))) > 0
+    session_names = setup_project_and_train_model["config_data"]["session_names"]
+    images_base_path = Path(project_path) / "reports" / "umap"
+    for ses in session_names:
+        assert len(list(images_base_path.glob(f"umap_{ses}*.png"))) > 0
 
 
 @pytest.mark.parametrize(
