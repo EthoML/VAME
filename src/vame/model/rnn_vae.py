@@ -473,7 +473,7 @@ def test(
 @save_state(model=TrainModelFunctionSchema)
 def train_model(
     config: dict,
-    save_logs: bool = False,
+    save_logs: bool = True,
 ) -> None:
     """
     Train Variational Autoencoder using the configuration file values.
@@ -503,7 +503,7 @@ def train_model(
     config : dict
         Configuration dictionary.
     save_logs : bool, optional
-        Whether to save the logs, by default False.
+        Whether to save the logs. Default is True.
 
     Returns
     -------

@@ -97,8 +97,8 @@ def create_config_template() -> Tuple[dict, ruamel.yaml.YAML]:
     scheduler:
     scheduler_step_size:
     scheduler_gamma:
-    #Note the optimal scheduler threshold below can vary greatly (from .1-.0001) between experiments.
-    #You are encouraged to read the torch.optim.ReduceLROnPlateau docs to understand the threshold to use.
+#Note the optimal scheduler threshold below can vary greatly (from .1-.0001) between experiments.
+#You are encouraged to read the torch.optim.ReduceLROnPlateau docs to understand the threshold to use.
     scheduler_threshold:
     softplus:
     \n

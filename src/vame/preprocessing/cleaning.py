@@ -14,6 +14,7 @@ def lowconf_cleaning(
     config: dict,
     read_from_variable: str = "position_processed",
     save_to_variable: str = "position_processed",
+    save_logs: bool = True,
 ) -> None:
     """
     Clean the low confidence data points from the dataset. Processes position data by:
@@ -28,11 +29,17 @@ def lowconf_cleaning(
         Variable to read from the dataset.
     save_to_variable : str, optional
         Variable to save the cleaned data to.
+    save_logs : bool, optional
+        Whether to save logs.
 
     Returns
     -------
     None
     """
+    if save_logs:
+        log_path = Path(config["project_path"]) / "logs" / "preprocessing.log"
+        logger_config.add_file_handler(str(log_path))
+
     project_path = config["project_path"]
     sessions = config["session_names"]
     pose_confidence = config["pose_confidence"]
@@ -94,6 +101,7 @@ def outlier_cleaning(
     config: dict,
     read_from_variable: str = "position_processed",
     save_to_variable: str = "position_processed",
+    save_logs: bool = True,
 ) -> None:
     """
     Clean the outliers from the dataset. Processes position data by:
@@ -108,11 +116,17 @@ def outlier_cleaning(
         Variable to read from the dataset.
     save_to_variable : str, optional
         Variable to save the cleaned data to.
+    save_logs : bool, optional
+        Whether to save logs.
 
     Returns
     -------
     None
     """
+    if save_logs:
+        log_path = Path(config["project_path"]) / "logs" / "preprocessing.log"
+        logger_config.add_file_handler(str(log_path))
+
     logger.info("Cleaning outliers with Z-score-based IQR cutoff.")
     project_path = config["project_path"]
     sessions = config["session_names"]

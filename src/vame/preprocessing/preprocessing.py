@@ -1,3 +1,4 @@
+from pathlib import Path
 from vame.logging.logger import VameLogger
 from vame.preprocessing.cleaning import lowconf_cleaning, outlier_cleaning
 from vame.preprocessing.alignment import egocentrically_align_and_center
@@ -20,7 +21,7 @@ def preprocessing(
     run_outlier_cleaning: bool = True,
     run_savgol_filtering: bool = True,
     run_rescaling: bool = False,
-    save_logs: bool = False,
+    save_logs: bool = True,
 ) -> None:
     """
     Preprocess the data by:
@@ -55,6 +56,10 @@ def preprocessing(
     -------
     None
     """
+    if save_logs:
+        log_path = Path(config["project_path"]) / "logs" / "preprocessing.log"
+        logger_config.add_file_handler(str(log_path))
+
     # Low-confidence cleaning
     if run_lowconf_cleaning:
         logger.info("Cleaning low confidence data points...")
@@ -62,6 +67,7 @@ def preprocessing(
             config=config,
             read_from_variable="position",
             save_to_variable="position_cleaned_lowconf",
+            save_logs=save_logs,
         )
 
     # Egocentric alignment
@@ -73,6 +79,7 @@ def preprocessing(
             orientation_reference_keypoint=orientation_reference_keypoint,
             read_from_variable="position_cleaned_lowconf",
             save_to_variable="position_egocentric_aligned",
+            save_logs=save_logs,
         )
 
     # Outlier cleaning
@@ -82,6 +89,7 @@ def preprocessing(
             config=config,
             read_from_variable="position_egocentric_aligned",
             save_to_variable="position_processed",
+            save_logs=save_logs,
         )
 
     # Savgol filtering
@@ -91,6 +99,7 @@ def preprocessing(
             config=config,
             read_from_variable="position_processed",
             save_to_variable="position_processed",
+            save_logs=save_logs,
         )
 
     # Rescaling
@@ -100,4 +109,5 @@ def preprocessing(
             config=config,
             read_from_variable="position_processed",
             save_to_variable="position_scaled",
+            save_logs=save_logs,
         )
