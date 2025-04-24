@@ -118,6 +118,7 @@ def visualize_umap(
     config: dict,
     save_to_file: bool = True,
     show_figure: bool = True,
+    save_logs: bool = True,
 ) -> None:
     """
     Visualize UMAP embeddings based on configuration settings.
@@ -142,12 +143,18 @@ def visualize_umap(
         Save the figure to file. Default is True.
     show_figure : bool, optional
         Show the figure. Default is True.
+    save_logs : bool, optional
+        Save logs. Default is True.
 
     Returns
     -------
     None
     """
     try:
+        if save_logs:
+            log_path = Path(config["project_path"]) / "logs" / "report.log"
+            logger_config.add_file_handler(str(log_path))
+
         model_name = config["model_name"]
         n_clusters = config["n_clusters"]
         segmentation_algorithms = config["segmentation_algorithms"]

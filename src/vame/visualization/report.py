@@ -13,9 +13,23 @@ logger = logger_config.logger
 
 
 @save_state(model=GenerateReportsFunctionSchema)
-def generate_reports(config: dict) -> None:
+def generate_reports(
+    config: dict,
+    save_logs: bool = True,
+) -> None:
     """
     Generate reports and UMAP for all sessions in the project.
+
+    Parameters
+    ----------
+    config : dict
+        Configuration parameters.
+    save_logs : bool, optional
+        Whether to save logs. Defaults to True.
+
+    Returns
+    -------
+    None
     """
     project_path = Path(config["project_path"])
     segmentation_algorithms = config["segmentation_algorithms"]
@@ -32,6 +46,7 @@ def generate_reports(config: dict) -> None:
             segmentation_algorithm=seg,
             save_to_file=True,
             show_figure=False,
+            save_logs=save_logs,
         )
 
     # Generate UMAP
@@ -40,6 +55,7 @@ def generate_reports(config: dict) -> None:
         config=config,
         save_to_file=True,
         show_figure=False,
+        save_logs=save_logs,
     )
 
 
@@ -48,10 +64,32 @@ def report(
     segmentation_algorithm: str = "hmm",
     save_to_file: bool = True,
     show_figure: bool = True,
+    save_logs: bool = True,
 ) -> None:
     """
     Report for a project.
+
+    Parameters
+    ----------
+    config : dict
+        Configuration parameters.
+    segmentation_algorithm : str, optional
+        Segmentation algorithm to use. Defaults to "hmm".
+    save_to_file : bool, optional
+        Whether to save the report to file. Defaults to True.
+    show_figure : bool, optional
+        Whether to show the figure. Defaults to True.
+    save_logs : bool, optional
+        Whether to save logs. Defaults to True.
+
+    Returns
+    -------
+    None
     """
+    if save_logs:
+        log_path = Path(config["project_path"]) / "logs" / "report.log"
+        logger_config.add_file_handler(str(log_path))
+
     project_path = Path(config["project_path"])
     n_clusters = config["n_clusters"]
     model_name = config["model_name"]
