@@ -4,7 +4,7 @@ import pytest
 from matplotlib.figure import Figure
 from unittest.mock import patch
 from vame.util.gif_pose_helper import background
-from vame.visualization import visualize_umap
+from vame.visualization import visualize_umap, generate_reports
 
 
 @pytest.mark.parametrize(
@@ -181,18 +181,8 @@ def test_generative_model_figures(
     assert isinstance(generative_figure, Figure)
 
 
-@pytest.mark.parametrize(
-    "segmentation_algorithm",
-    ["hmm", "kmeans"],
-)
-def test_report(
-    setup_project_and_train_model,
-    segmentation_algorithm,
-):
-    vame.report(
-        config=setup_project_and_train_model["config_data"],
-        segmentation_algorithm=segmentation_algorithm,
-    )
+def test_report(setup_project_and_train_model):
+    generate_reports(config=setup_project_and_train_model["config_data"])
     reports_path = Path(setup_project_and_train_model["config_data"]["project_path"]) / "reports"
     assert len(list(reports_path.glob("*.png"))) > 0
 
