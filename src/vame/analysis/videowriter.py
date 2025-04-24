@@ -154,7 +154,7 @@ def motif_videos(
     config: dict,
     video_type: str = ".mp4",
     output_video_type: str = ".mp4",
-    save_logs: bool = False,
+    save_logs: bool = True,
 ) -> None:
     """
     Generate motif videos and save them to filesystem.
@@ -182,7 +182,7 @@ def motif_videos(
     output_video_type : str, optional
         Type of output video. Default is '.mp4'.
     save_logs : bool, optional
-        Save logs to filesystem. Default is False.
+        Save logs to filesystem. Default is True.
 
     Returns
     -------
@@ -248,7 +248,7 @@ def community_videos(
     config: dict,
     video_type: str = ".mp4",
     output_video_type: str = ".mp4",
-    save_logs: bool = False,
+    save_logs: bool = True,
 ) -> None:
     """
     Generate community videos and save them to filesystem on project community_videos folder.
@@ -268,14 +268,12 @@ def community_videos(
     ----------
     config : dict
         Configuration parameters.
-    segmentation_algorithm : SegmentationAlgorithms
-        Which segmentation algorithm to use. Options are 'hmm' or 'kmeans'.
     video_type : str, optional
         Type of video. Default is '.mp4'.
-    save_logs : bool, optional
-        Save logs to filesystem. Default is False.
     output_video_type : str, optional
         Type of output video. Default is '.mp4'.
+    save_logs : bool, optional
+        Save logs to filesystem. Default is True.
 
     Returns
     -------

@@ -16,7 +16,6 @@ from vame.util.csv_to_npy import pose_to_numpy
 
 from vame.util import model_util
 from vame.util.auxiliary import *
-from vame.util.report import report
 
 from vame.preprocessing import preprocessing
 from vame import visualization

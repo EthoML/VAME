@@ -47,7 +47,7 @@ Generate cluster videos and save them to filesystem on project folder.
 def motif_videos(config: dict,
                  video_type: str = ".mp4",
                  output_video_type: str = ".mp4",
-                 save_logs: bool = False) -> None
+                 save_logs: bool = True) -> None
 ```
 
 Generate motif videos and save them to filesystem.
@@ -70,7 +70,7 @@ Files are saved at:
 If None, it will be taken from the config file.
 * **video_type** (`str, optional`): Type of video. Default is &#x27;.mp4&#x27;.
 * **output_video_type** (`str, optional`): Type of output video. Default is &#x27;.mp4&#x27;.
-* **save_logs** (`bool, optional`): Save logs to filesystem. Default is False.
+* **save_logs** (`bool, optional`): Save logs to filesystem. Default is True.
 
 **Returns**
 
@@ -83,7 +83,7 @@ If None, it will be taken from the config file.
 def community_videos(config: dict,
                      video_type: str = ".mp4",
                      output_video_type: str = ".mp4",
-                     save_logs: bool = False) -> None
+                     save_logs: bool = True) -> None
 ```
 
 Generate community videos and save them to filesystem on project community_videos folder.
@@ -102,10 +102,9 @@ Files are saved at:
 **Parameters**
 
 * **config** (`dict`): Configuration parameters.
-* **segmentation_algorithm** (`SegmentationAlgorithms`): Which segmentation algorithm to use. Options are &#x27;hmm&#x27; or &#x27;kmeans&#x27;.
 * **video_type** (`str, optional`): Type of video. Default is &#x27;.mp4&#x27;.
-* **save_logs** (`bool, optional`): Save logs to filesystem. Default is False.
 * **output_video_type** (`str, optional`): Type of output video. Default is &#x27;.mp4&#x27;.
+* **save_logs** (`bool, optional`): Save logs to filesystem. Default is True.
 
 **Returns**
 
