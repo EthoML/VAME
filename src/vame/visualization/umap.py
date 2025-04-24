@@ -191,14 +191,14 @@ def visualize_umap(
                 labels_names = ["none", "motif", "community"]
                 for label in labels_names:
                     if label == "none":
-                        output_figure_file_name = f"umap_{session}_{seg}.png"
+                        output_figure_file_name = f"umap_{session}_{model_name}_{seg}-{n_clusters}.png"
                         labels = None
                     elif label == "motif":
-                        output_figure_file_name = f"umap_{session}_{seg}_motif.png"
+                        output_figure_file_name = f"umap_{session}_{model_name}_{seg}-{n_clusters}_motif.png"
                         labels_file_path = base_path / f"{n_clusters}_{seg}_label_{session}.npy"
                         labels = np.load(str(labels_file_path.resolve()))
                     elif label == "community":
-                        output_figure_file_name = f"umap_{session}_{seg}_community.png"
+                        output_figure_file_name = f"umap_{session}_{model_name}_{seg}-{n_clusters}_community.png"
                         labels_file_path = base_path / "community" / f"cohort_community_label_{session}.npy"
                         labels = np.load(str(labels_file_path.resolve()))
 
