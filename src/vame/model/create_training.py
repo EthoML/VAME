@@ -288,7 +288,7 @@ def create_trainset(
     test_fraction: float = 0.1,
     read_from_variable: str = "position_processed",
     split_mode: Literal["mode_1", "mode_2"] = "mode_2",
-    save_logs: bool = False,
+    save_logs: bool = True,
 ) -> None:
     """
     Creates training and test datasets for the VAME model.
@@ -315,8 +315,6 @@ def create_trainset(
     ----------
     config : dict
         Configuration parameters dictionary.
-    save_logs : bool, optional
-        If True, the function will save logs to the project folder. Defaults to False.
     test_fraction : float, optional
         Fraction of data to use as test data. Defaults to 0.1.
     read_from_variable : str, optional
@@ -328,20 +326,22 @@ def create_trainset(
         - mode_2: Takes random continuous chunks from each session proportional to test_fraction
                  for testing and uses the remaining parts for training.
         Defaults to "mode_2".
+    save_logs : bool, optional
+        Whether to save logs. Defaults to True.
 
     Returns
     -------
     None
     """
     try:
-        fixed = config["egocentric_data"]
-
         if save_logs:
             log_path = Path(config["project_path"]) / "logs" / "create_trainset.log"
             logger_config.add_file_handler(str(log_path))
 
         if not os.path.exists(os.path.join(config["project_path"], "data", "train", "")):
             os.mkdir(os.path.join(config["project_path"], "data", "train", ""))
+
+        fixed = config["egocentric_data"]
 
         sessions = []
         if config["all_data"] == "No":

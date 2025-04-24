@@ -14,6 +14,7 @@ def savgol_filtering(
     config: dict,
     read_from_variable: str = "position_processed",
     save_to_variable: str = "position_processed",
+    save_logs: bool = True,
 ) -> None:
     """
     Apply Savitzky-Golay filter to the data.
@@ -26,11 +27,17 @@ def savgol_filtering(
         Variable to read from the dataset.
     save_to_variable : str, optional
         Variable to save the filtered data to.
+    save_logs : bool, optional
+        Whether to save logs.
 
     Returns
     -------
     None
     """
+    if save_logs:
+        log_path = Path(config["project_path"]) / "logs" / "preprocessing.log"
+        logger_config.add_file_handler(str(log_path))
+
     logger.info("Applying Savitzky-Golay filter...")
     project_path = config["project_path"]
     sessions = config["session_names"]
