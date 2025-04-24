@@ -400,7 +400,7 @@ def individual_segmentation(
 def segment_session(
     config: dict,
     overwrite: bool = False,
-    save_logs: bool = False,
+    save_logs: bool = True,
 ) -> None:
     """
     Perform pose segmentation using the VAME model.
@@ -437,7 +437,7 @@ def segment_session(
     overwrite : bool, optional
         Whether to overwrite existing segmentation results. Defaults to False.
     save_logs : bool, optional
-        Whether to save logs. Defaults to False.
+        Whether to save logs. Defaults to True.
 
     Returns
     -------
@@ -450,6 +450,7 @@ def segment_session(
             log_path = project_path / "logs" / "pose_segmentation.log"
             logger_config.add_file_handler(str(log_path))
             tqdm_stream = TqdmToLogger(logger)
+
         model_name = config["model_name"]
         n_clusters = config["n_clusters"]
         fixed = config["egocentric_data"]
