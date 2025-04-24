@@ -1,3 +1,13 @@
+# v0.10.0
+
+### Fixes
+
+
+### Features
+
+- Better organization for Report and UMAP results
+
+
 # v0.9.0
 
 ### Fixes
