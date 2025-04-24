@@ -312,7 +312,7 @@ Visualizes the UMAP plot.
 #### report
 
 ```python
-def report(segmentation_algorithm: Literal["hmm", "kmeans"] = "hmm") -> None
+def report() -> None
 ```
 
 Generates the project report.
