@@ -12,7 +12,8 @@ title: preprocessing.cleaning
 ```python
 def lowconf_cleaning(config: dict,
                      read_from_variable: str = "position_processed",
-                     save_to_variable: str = "position_processed") -> None
+                     save_to_variable: str = "position_processed",
+                     save_logs: bool = True) -> None
 ```
 
 Clean the low confidence data points from the dataset. Processes position data by:
@@ -24,6 +25,7 @@ Clean the low confidence data points from the dataset. Processes position data b
 * **config** (`dict`): Configuration dictionary.
 * **read_from_variable** (`str, optional`): Variable to read from the dataset.
 * **save_to_variable** (`str, optional`): Variable to save the cleaned data to.
+* **save_logs** (`bool, optional`): Whether to save logs.
 
 **Returns**
 
@@ -34,7 +36,8 @@ Clean the low confidence data points from the dataset. Processes position data b
 ```python
 def outlier_cleaning(config: dict,
                      read_from_variable: str = "position_processed",
-                     save_to_variable: str = "position_processed") -> None
+                     save_to_variable: str = "position_processed",
+                     save_logs: bool = True) -> None
 ```
 
 Clean the outliers from the dataset. Processes position data by:
@@ -46,6 +49,7 @@ Clean the outliers from the dataset. Processes position data by:
 * **config** (`dict`): Configuration dictionary.
 * **read_from_variable** (`str, optional`): Variable to read from the dataset.
 * **save_to_variable** (`str, optional`): Variable to save the cleaned data to.
+* **save_logs** (`bool, optional`): Whether to save logs.
 
 **Returns**
 

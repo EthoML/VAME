@@ -12,6 +12,7 @@ def rescaling(
     config: dict,
     read_from_variable: str = "position_processed",
     save_to_variable: str = "position_scaled",
+    save_logs: bool = True,
 ) -> None:
     """
     Rescale the position data by dividing by the individual scale values.
@@ -24,11 +25,17 @@ def rescaling(
         Variable to read from the dataset.
     save_to_variable : str, optional
         Variable to save the rescaled data to.
+    save_logs : bool, optional
+        Whether to save logs.
 
     Returns
     -------
     None
     """
+    if save_logs:
+        log_path = Path(config["project_path"]) / "logs" / "preprocessing.log"
+        logger_config.add_file_handler(str(log_path))
+
     logger.info("Rescaling position data using individual scales...")
     project_path = config["project_path"]
     sessions = config["session_names"]

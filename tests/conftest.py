@@ -73,30 +73,6 @@ def cleanup_directory(directory):
             print(f"Final cleanup failed: {final_error}")
 
 
-# @fixture(scope="session")
-# def setup_project_from_folder():
-#     project_name = "test_project_from_folder"
-#     videos = [str(Path("./tests/tests_project_sample_data").resolve())]
-#     poses_estimations = [str(Path("./tests/tests_project_sample_data").resolve())]
-#     working_directory = str(Path("./tests").resolve())
-
-#     # Initialize project
-#     project_data = init_project(
-#         project_name=project_name,
-#         videos=videos,
-#         poses_estimations=poses_estimations,
-#         source_software="DeepLabCut",
-#         working_directory=working_directory,
-#         egocentric_data=False,
-#     )
-
-#     yield project_data
-
-#     # Clean up
-#     config_path = project_data["config_path"]
-#     cleanup_directory(Path(config_path).parent)
-
-
 @fixture(scope="session")
 def setup_project_not_aligned_data():
     project_name = "test_project_align"
@@ -144,32 +120,6 @@ def setup_project_fixed_data():
     # Clean up
     config_path = project_data["config_path"]
     cleanup_directory(Path(config_path).parent)
-
-
-# @fixture(scope="session")
-# def setup_nwb_data_project():
-#     project_name = "test_project_nwb"
-#     videos = ["./tests/tests_project_sample_data/cropped_video.mp4"]
-#     poses_estimations = ["./tests/test_project_sample_nwb/cropped_video.nwb"]
-#     paths_to_pose_nwb_series_data = [
-#         "processing/behavior/data_interfaces/PoseEstimation/pose_estimation_series"
-#     ]
-#     working_directory = "./tests"
-
-#     # Initialize project
-#     config, project_data = init_project(
-#         project_name=project_name,
-#         videos=videos,
-#         poses_estimations=poses_estimations,
-#         working_directory=working_directory,
-#         egocentric_data=False,
-#         paths_to_pose_nwb_series_data=paths_to_pose_nwb_series_data,
-#     )
-
-#     yield project_data
-
-#     # Clean up
-#     shutil.rmtree(Path(config).parent)
 
 
 @fixture(scope="session")
@@ -226,19 +176,6 @@ def setup_project_and_create_train_aligned_dataset(setup_project_and_align_egoce
         save_logs=False,
     )
     return setup_project_and_align_egocentric
-
-
-# @fixture(scope="session")
-# def setup_project_and_create_train_fixed_dataset(
-#     setup_project_and_convert_pose_to_numpy,
-# ):
-#     # use setup_project_and_align_egocentric fixture or setup_project_and_convert_pose_to_numpy based on value of egocentric_aligned
-#     config = setup_project_and_convert_pose_to_numpy["config_data"]
-#     vame.create_trainset(
-#         config=config,
-#         save_logs=True,
-#     )
-#     return setup_project_and_convert_pose_to_numpy
 
 
 @fixture(scope="session")

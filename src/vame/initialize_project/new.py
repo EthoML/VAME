@@ -210,11 +210,11 @@ def init_new_project(
         paths_to_pose_nwb_series_data=[paths_to_pose_nwb_series_data] if paths_to_pose_nwb_series_data else None,
         **config_kwargs,
     )
-    cfg_data = new_project.model_dump()
+    config_data = new_project.model_dump()
     projconfigfile = os.path.join(str(project_path), "config.yaml")
     write_config(
         config_path=projconfigfile,
-        config=cfg_data,
+        config=config_data,
     )
 
     # Create states.json file
@@ -227,4 +227,4 @@ def init_new_project(
 
     logger.info(f"A VAME project has been created at {project_path}")
 
-    return projconfigfile, cfg_data
+    return projconfigfile, read_config(projconfigfile)

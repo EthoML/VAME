@@ -182,7 +182,7 @@ def eval_temporal(
 def evaluate_model(
     config: dict,
     use_snapshots: bool = False,
-    save_logs: bool = False,
+    save_logs: bool = True,
 ) -> None:
     """
     Evaluate the trained model.
@@ -199,14 +199,14 @@ def evaluate_model(
     use_snapshots : bool, optional
         Whether to plot for all snapshots or only the best model. Defaults to False.
     save_logs : bool, optional
-        Flag indicating whether to save logs. Defaults to False.
+        Whether to save logs. Defaults to True.
 
     Returns
     -------
     None
     """
-    project_path = Path(config["project_path"]).resolve()
     try:
+        project_path = Path(config["project_path"]).resolve()
         if save_logs:
             log_path = project_path / "logs" / "evaluate_model.log"
             logger_config.add_file_handler(str(log_path))

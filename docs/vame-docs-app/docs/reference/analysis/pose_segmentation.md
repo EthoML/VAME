@@ -147,7 +147,7 @@ Apply individual segmentation to each session.
 @save_state(model=SegmentSessionFunctionSchema)
 def segment_session(config: dict,
                     overwrite: bool = False,
-                    save_logs: bool = False) -> None
+                    save_logs: bool = True) -> None
 ```
 
 Perform pose segmentation using the VAME model.
@@ -181,7 +181,7 @@ Dimmentions: (n_frames,)
 
 * **config** (`dict`): Configuration dictionary.
 * **overwrite** (`bool, optional`): Whether to overwrite existing segmentation results. Defaults to False.
-* **save_logs** (`bool, optional`): Whether to save logs. Defaults to False.
+* **save_logs** (`bool, optional`): Whether to save logs. Defaults to True.
 
 **Returns**
 

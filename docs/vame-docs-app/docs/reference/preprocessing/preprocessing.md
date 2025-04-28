@@ -19,7 +19,7 @@ def preprocessing(config: dict,
                   run_outlier_cleaning: bool = True,
                   run_savgol_filtering: bool = True,
                   run_rescaling: bool = False,
-                  save_logs: bool = False) -> None
+                  save_logs: bool = True) -> None
 ```
 
 Preprocess the data by:

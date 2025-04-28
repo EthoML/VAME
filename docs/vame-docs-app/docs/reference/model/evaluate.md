@@ -41,7 +41,7 @@ Evaluate the temporal aspects of the trained model.
 @save_state(model=EvaluateModelFunctionSchema)
 def evaluate_model(config: dict,
                    use_snapshots: bool = False,
-                   save_logs: bool = False) -> None
+                   save_logs: bool = True) -> None
 ```
 
 Evaluate the trained model.
@@ -55,7 +55,7 @@ Saves the evaluation results to:
 
 * **config** (`dict`): Configuration dictionary.
 * **use_snapshots** (`bool, optional`): Whether to plot for all snapshots or only the best model. Defaults to False.
-* **save_logs** (`bool, optional`): Flag indicating whether to save logs. Defaults to False.
+* **save_logs** (`bool, optional`): Whether to save logs. Defaults to True.
 
 **Returns**
 

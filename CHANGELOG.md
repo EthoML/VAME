@@ -1,3 +1,15 @@
+# v0.10.0
+
+### Fixes
+
+- Environment file for fixing GPU not found on Windows
+
+### Features
+
+- Better organization for Report and UMAP results
+- Logs True by default for all functions
+
+
 # v0.9.0
 
 ### Fixes

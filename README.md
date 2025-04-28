@@ -40,7 +40,7 @@ The workflow of VAME consists of 5 steps and we explain them in detail [here](ht
 
 ## Installation
 
-To get started we recommend using [Anaconda](https://www.anaconda.com/distribution/) with Python 3.11 or higher. Here, you can create a [virtual enviroment](https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html) to store all the dependencies necessary for VAME. You can also use the VAME.yaml file supplied here, by simply opening the terminal, running git clone https://github.com/LINCellularNeuroscience/VAME.git, then typ cd VAME then run: conda env create -f VAME.yaml).
+To get started we recommend using [Anaconda](https://www.anaconda.com/distribution/) with Python 3.11 or higher. Here, you can create a [virtual enviroment](https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html) to store all the dependencies necessary for VAME. You can also use the `environment-<os>.yaml` files supplied here, by simply opening the terminal, running git clone https://github.com/LINCellularNeuroscience/VAME.git, then typ cd VAME then run: `conda env create -f environment-<os>.yaml`).
 
 * Go to the locally cloned VAME directory and run python setup.py install in order to install VAME in your active conda environment.
 * Install the current stable Pytorch release using the OS-dependent instructions from the [Pytorch website](https://pytorch.org/get-started/locally/). Currently, VAME is tested on PyTorch 2.2.2. (Note, if you use the conda file we supply, PyTorch is already installed and you don't need to do this step.)

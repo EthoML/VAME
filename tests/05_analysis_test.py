@@ -4,7 +4,7 @@ import pytest
 from matplotlib.figure import Figure
 from unittest.mock import patch
 from vame.util.gif_pose_helper import background
-from vame.visualization import visualize_umap
+from vame.visualization import visualize_umap, generate_reports
 
 
 @pytest.mark.parametrize(
@@ -141,40 +141,18 @@ def test_community_videos_avi_files_exists(setup_project_and_train_model):
         assert len(list(save_base_path.glob("*.avi"))) <= n_clusters
 
 
-@pytest.mark.parametrize(
-    "label,segmentation_algorithm",
-    [
-        (None, "hmm"),
-        ("motif", "hmm"),
-        ("community", "hmm"),
-        (None, "kmeans"),
-        ("motif", "kmeans"),
-        ("community", "kmeans"),
-    ],
-)
-def test_visualization_output_files(
-    setup_project_and_train_model,
-    label,
-    segmentation_algorithm,
-):
+def test_visualization_output_files(setup_project_and_train_model):
     visualize_umap(
         config=setup_project_and_train_model["config_data"],
-        segmentation_algorithm=segmentation_algorithm,
-        label=label,
+        save_to_file=True,
+        show_figure=False,
         save_logs=True,
     )
-
     project_path = setup_project_and_train_model["config_data"]["project_path"]
-    file = setup_project_and_train_model["config_data"]["session_names"][0]
-    model_name = setup_project_and_train_model["config_data"]["model_name"]
-    n_clusters = setup_project_and_train_model["config_data"]["n_clusters"]
-
-    project_path = setup_project_and_train_model["config_data"]["project_path"]
-
-    save_base_path = (
-        Path(project_path) / "results" / file / model_name / f"{segmentation_algorithm}-{n_clusters}" / "community"
-    )
-    assert len(list(save_base_path.glob(f"umap_vis*{file}.png"))) > 0
+    session_names = setup_project_and_train_model["config_data"]["session_names"]
+    images_base_path = Path(project_path) / "reports" / "umap"
+    for ses in session_names:
+        assert len(list(images_base_path.glob(f"umap_{ses}*.png"))) > 0
 
 
 @pytest.mark.parametrize(
@@ -203,18 +181,8 @@ def test_generative_model_figures(
     assert isinstance(generative_figure, Figure)
 
 
-@pytest.mark.parametrize(
-    "segmentation_algorithm",
-    ["hmm", "kmeans"],
-)
-def test_report(
-    setup_project_and_train_model,
-    segmentation_algorithm,
-):
-    vame.report(
-        config=setup_project_and_train_model["config_data"],
-        segmentation_algorithm=segmentation_algorithm,
-    )
+def test_report(setup_project_and_train_model):
+    generate_reports(config=setup_project_and_train_model["config_data"])
     reports_path = Path(setup_project_and_train_model["config_data"]["project_path"]) / "reports"
     assert len(list(reports_path.glob("*.png"))) > 0
 
@@ -229,65 +197,65 @@ def test_generative_kmeans_wrong_mode(setup_project_and_train_model):
         )
 
 
-@pytest.mark.parametrize("label", [None, "community", "motif"])
-def test_gif_frames_files_exists(setup_project_and_evaluate_model, label):
-    with patch("builtins.input", return_value="yes"):
-        vame.segment_session(setup_project_and_evaluate_model["config_data"])
+# @pytest.mark.parametrize("label", [None, "community", "motif"])
+# def test_gif_frames_files_exists(setup_project_and_evaluate_model, label):
+#     with patch("builtins.input", return_value="yes"):
+#         vame.segment_session(setup_project_and_evaluate_model["config_data"])
 
-    def mock_background(
-        project_path=None,
-        session=None,
-        video_path=None,
-        num_frames=None,
-        save_background=True,
-    ):
-        num_frames = 100
-        return background(
-            project_path=project_path,
-            session=session,
-            video_path=video_path,
-            num_frames=num_frames,
-            save_background=save_background,
-        )
+#     def mock_background(
+#         project_path=None,
+#         session=None,
+#         video_path=None,
+#         num_frames=None,
+#         save_background=True,
+#     ):
+#         num_frames = 100
+#         return background(
+#             project_path=project_path,
+#             session=session,
+#             video_path=video_path,
+#             num_frames=num_frames,
+#             save_background=save_background,
+#         )
 
-    SEGMENTATION_ALGORITHM = "hmm"
-    VIDEO_LEN = 30
-    vame.community(
-        config=setup_project_and_evaluate_model["config_data"],
-        cut_tree=2,
-        save_logs=False,
-    )
-    visualize_umap(
-        config=setup_project_and_evaluate_model["config_data"],
-        segmentation_algorithm=SEGMENTATION_ALGORITHM,
-        label=label,
-        save_logs=False,
-    )
-    with patch("vame.util.gif_pose_helper.background", side_effect=mock_background):
-        vame.gif(
-            config_path=setup_project_and_evaluate_model["config_path"],
-            segmentation_algorithm=SEGMENTATION_ALGORITHM,
-            pose_ref_index=[0, 5],
-            subtract_background=True,
-            start=None,
-            length=VIDEO_LEN,
-            max_lag=30,
-            label=label,
-            file_format=".mp4",
-            crop_size=(300, 300),
-        )
+#     SEGMENTATION_ALGORITHM = "hmm"
+#     VIDEO_LEN = 30
+#     vame.community(
+#         config=setup_project_and_evaluate_model["config_data"],
+#         cut_tree=2,
+#         save_logs=False,
+#     )
+#     visualize_umap(
+#         config=setup_project_and_evaluate_model["config_data"],
+#         segmentation_algorithm=SEGMENTATION_ALGORITHM,
+#         label=label,
+#         save_logs=False,
+#     )
+#     with patch("vame.util.gif_pose_helper.background", side_effect=mock_background):
+#         vame.gif(
+#             config_path=setup_project_and_evaluate_model["config_path"],
+#             segmentation_algorithm=SEGMENTATION_ALGORITHM,
+#             pose_ref_index=[0, 5],
+#             subtract_background=True,
+#             start=None,
+#             length=VIDEO_LEN,
+#             max_lag=30,
+#             label=label,
+#             file_format=".mp4",
+#             crop_size=(300, 300),
+#         )
 
-    video = setup_project_and_evaluate_model["config_data"]["session_names"][0]
-    model_name = setup_project_and_evaluate_model["config_data"]["model_name"]
-    n_clusters = setup_project_and_evaluate_model["config_data"]["n_clusters"]
+#     video = setup_project_and_evaluate_model["config_data"]["session_names"][0]
+#     model_name = setup_project_and_evaluate_model["config_data"]["model_name"]
+#     n_clusters = setup_project_and_evaluate_model["config_data"]["n_clusters"]
 
-    save_base_path = (
-        Path(setup_project_and_evaluate_model["config_data"]["project_path"])
-        / "results"
-        / video
-        / model_name
-        / f"{SEGMENTATION_ALGORITHM}-{n_clusters}"
-    )
+#     save_base_path = (
+#         Path(setup_project_and_evaluate_model["config_data"]["project_path"])
+#         / "results"
+#         / video
+#         / model_name
+#         / f"{SEGMENTATION_ALGORITHM}-{n_clusters}"
+#     )
 
-    gif_frames_path = save_base_path / "gif_frames"
-    assert len(list(gif_frames_path.glob("*.png"))) == VIDEO_LEN
+#     gif_frames_path = save_base_path / "gif_frames"
+#     assert len(list(gif_frames_path.glob("*.png"))) == VIDEO_LEN

@@ -381,7 +381,7 @@ def save_cohort_community_labels_per_session(
 def community(
     config: dict,
     cut_tree: int | None = None,
-    save_logs: bool = False,
+    save_logs: bool = True,
 ) -> None:
     """
     Perform community analysis.
@@ -409,7 +409,7 @@ def community(
     cut_tree : int, optional
         Cut line for tree. Defaults to None.
     save_logs : bool, optional
-        Whether to save logs. Defaults to False.
+        Whether to save logs. Defaults to True.
 
     Returns
     -------

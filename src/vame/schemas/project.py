@@ -182,10 +182,7 @@ class ProjectSchema(BaseModel):
     # Segmentation
     segmentation_algorithms: List[SegmentationAlgorithms] = Field(
         title="Segmentation algorithms",
-        default_factory=lambda: [
-            SegmentationAlgorithms.hmm,
-            SegmentationAlgorithms.kmeans,
-        ],
+        default_factory=lambda: ["hmm", "kmeans"],
     )
     hmm_trained: bool = Field(
         default=False,

@@ -10,3 +10,4 @@ from .model import (
 )
 from .community import visualize_hierarchical_tree
 from .umap import visualize_umap
+from .report import generate_reports
