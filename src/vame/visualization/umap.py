@@ -181,8 +181,7 @@ def visualize_umap(
                     embed = np.load(str(umap_embeddings_path.resolve()))
                 else:
                     logger.info(f"Computing UMAP embedding for session {session}")
-                    if not (base_path / "community").exists():
-                        os.mkdir(os.path.join(base_path, "community"))
+                    (base_path / "community").mkdir(parents=True, exist_ok=True)
                     embed = umap_embedding(
                         config=config,
                         session=session,

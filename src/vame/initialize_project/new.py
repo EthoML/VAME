@@ -8,7 +8,7 @@ import os
 from vame.schemas.project import ProjectSchema
 from vame.schemas.states import VAMEPipelineStatesSchema
 from vame.logging.logger import VameLogger
-from vame.util.auxiliary import write_config, read_config, get_version
+from vame.util.auxiliary import write_config, read_config, get_version, _convert_enums_to_values
 from vame.video.video import get_video_frame_rate
 from vame.io.load_poses import load_pose_estimation
 
@@ -211,6 +211,7 @@ def init_new_project(
         **config_kwargs,
     )
     cfg_data = new_project.model_dump()
+    cfg_data = _convert_enums_to_values(cfg_data)
     projconfigfile = os.path.join(str(project_path), "config.yaml")
     write_config(
         config_path=projconfigfile,
@@ -227,4 +228,4 @@ def init_new_project(
 
     logger.info(f"A VAME project has been created at {project_path}")
 
-    return projconfigfile, cfg_data
+    return projconfigfile, read_config(projconfigfile)
