@@ -32,7 +32,7 @@ def get_base_nwbfile(
         subject=subject,
     )
     camera = nwbfile.create_device(
-        name="camera1",
+        name="camera",
         description="camera for recording behavior",
         manufacturer="my manufacturer",
     )
