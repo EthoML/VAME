@@ -25,7 +25,7 @@ dependencies = [
     "imageio-ffmpeg==0.5.1",
     "pynwb==2.8.3",
     "ndx-pose==0.2.1",
-    "ndx-vame==0.1.0",
+    "ndx-vame==0.2.0",
     "tables>=3.10.0",
     "movement==0.5.0",
     "netCDF4==1.7.2",
