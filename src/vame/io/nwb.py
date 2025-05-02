@@ -38,21 +38,25 @@ def get_base_nwbfile(
     )
 
     # Create pose estimation and skeletons objects
+    individuals = ds.individuals.values
+    if len(individuals) > 1:
+        raise ValueError("Multiple individuals are not supported yet.")
     keypoints = ds.keypoints.values
     pose_estimation_series_kwargs = {}
     if getattr(ds, "fps", None):
-        pose_estimation_series_kwargs["fps"] = ds.fps
+        pose_estimation_series_kwargs["rate"] = ds.fps
         pose_estimation_series_kwargs["starting_time"] = 0.
     else:
         pose_estimation_series_kwargs["timestamps"] = ds.sel(keypoints=keypoints[0]).time.values
+    pose_estimation_series_kwargs["reference_frame"] = "(0,0,0) corresponds to ..."
 
     pose_estimation_series_list = []
     for keypoint in keypoints:
         pose_estimation_series_list.append(
             ndx_pose.PoseEstimationSeries(
                 name=keypoint,
-                data=ds.sel(keypoints=keypoint).position.values,
-                confidence=ds.sel(keypoints=keypoint).confidence.values,
+                data=ds.sel(keypoints=keypoint, individuals=individuals[0]).position.values,
+                confidence=ds.sel(keypoints=keypoint, individuals=individuals[0]).confidence.values,
                 unit="pixels",
                 **pose_estimation_series_kwargs,
             )
@@ -63,6 +67,7 @@ def get_base_nwbfile(
         nodes=keypoints,
         subject=subject,
     )
+    skeletons = ndx_pose.Skeletons(skeletons=[skeleton])
 
     source_software = getattr(ds, "source_software", "Unknown Software")
     video_path = getattr(ds, "video_path", None)
@@ -81,6 +86,7 @@ def get_base_nwbfile(
         name="behavior",
         description="processed behavioral data",
     )
+    behavior_pm.add(skeletons)
     behavior_pm.add(pose_estimation)
 
     return nwbfile
@@ -120,7 +126,7 @@ def export_to_nwb(
         keypoints = ds.keypoints.values
         vame_series_kwargs = {}
         if getattr(ds, "fps", None):
-            vame_series_kwargs["fps"] = ds.fps
+            vame_series_kwargs["rate"] = ds.fps
             vame_series_kwargs["starting_time"] = vame_starting_sample_offset / ds.fps
         else:
             vame_series_kwargs["timestamps"] = ds.sel(keypoints=keypoints[0]).time.values
@@ -142,11 +148,6 @@ def export_to_nwb(
             f"latent_vector_{session_name}.npy"
         ).resolve()
         latent_data = np.load(latent_path)
-        latent_space_series = ndx_vame.LatentSpaceSeries(
-            name="LatentSpaceSeries",
-            data=latent_data,
-            **vame_series_kwargs,
-        )
 
         for seg in segmentation_algorithms:
             # Base NWB file
@@ -158,6 +159,13 @@ def export_to_nwb(
             )
             behavior_pm = nwbfile.processing["behavior"]
             pose_estimation = behavior_pm["PoseEstimation"]
+
+            # Latent space data
+            latent_space_series = ndx_vame.LatentSpaceSeries(
+                name="LatentSpaceSeries",
+                data=latent_data,
+                **vame_series_kwargs,
+            )
 
             # Motif data
             motifs_path = (
@@ -202,7 +210,7 @@ def export_to_nwb(
                 latent_space_series=latent_space_series,
                 motif_series=motif_series,
                 community_series=community_series,
-                vame_settings=json.dumps(config),
+                vame_config=json.dumps(config),
             )
 
             behavior_pm.add(vame_project)
