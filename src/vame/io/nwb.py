@@ -1,67 +1,113 @@
-# from pynwb import NWBHDF5IO
-# from pynwb.file import NWBFile
-# from hdmf.utils import LabelledDict
-# import pandas as pd
+from typing import Optional
+from datetime import datetime, timezone
+from pathlib import Path
+import pynwb
+import ndx_pose
+import ndx_vame
+
+from vame.io import load_vame_dataset
 
 
-# def get_pose_data_from_nwb_file(
-#     nwbfile: NWBFile,
-#     path_to_pose_nwb_series_data: str,
-# ) -> LabelledDict:
-#     """
-#     Get pose data from nwb file using a inside path to the nwb data.
+def export_to_nwb(
+    config: dict,
+    nwbfile_kwargs: Optional[dict] = None,
+    subject_kwargs: Optional[list[dict]] = None,
+):
+    """
+    Export VAME project to NWB format.
+    """
+    session_names = config.get("session_names")
+    if not session_names:
+        raise ValueError("No session names provided in the config.")
 
-#     Parameters
-#     ---------
-#     nwbfile : NWBFile)
-#         NWB file object.
-#     path_to_pose_nwb_series_data : str
-#         Path to the pose data inside the nwb file.
+    if nwbfile_kwargs is None:
+        nwbfile_kwargs = {}
+    if subject_kwargs is None:
+        subject_kwargs = [{}] * len(session_names)
 
-#     Returns
-#     -------
-#     LabelledDict
-#         Pose data.
-#     """
-#     if not path_to_pose_nwb_series_data:
-#         raise ValueError("Path to pose nwb series data is required.")
-#     pose_data = nwbfile
-#     for key in path_to_pose_nwb_series_data.split("/"):
-#         if isinstance(pose_data, dict):
-#             pose_data = pose_data.get(key)
-#             continue
-#         pose_data = getattr(pose_data, key)
-#     return pose_data
+    if len(subject_kwargs) != len(session_names):
+        raise ValueError("Number of subject_kwargs must match number of sessions.")
 
+    for session_name, sub in zip(session_names, subject_kwargs):
+        subject_id = sub.pop("subject_id", session_name)
+        subject = pynwb.file.Subject(
+            subject_id=subject_id,
+            **sub,
+        )
+        nwbfile = pynwb.NWBFile(
+            session_description=nwbfile_kwargs.pop("session_description", "session_description"),
+            identifier=nwbfile_kwargs.pop("identifier", session_name),
+            session_start_time=nwbfile_kwargs.pop("session_start_time", datetime.now(timezone.utc)),
+            subject=subject,
+        )
 
-# def get_dataframe_from_pose_nwb_file(
-#     file_path: str,
-#     path_to_pose_nwb_series_data: str,
-# ) -> pd.DataFrame:
-#     """
-#     Get pose data from nwb file and return it as a pandas DataFrame.
+        camera1 = nwbfile.create_device(
+            name="camera1",
+            description="camera for recording behavior",
+            manufacturer="my manufacturer",
+        )
 
-#     Parameters
-#     ---------
-#     file_path : str
-#         Path to the nwb file.
-#     path_to_pose_nwb_series_data : str
-#         Path to the pose data inside the nwb file.
+        # Load session data
+        data_path = (Path(config["project_path"]) / "data" / "processed" / f"{session_name}_processed.nc").resolve()
+        ds = load_vame_dataset(ds_path=data_path)
+        if ds is None:
+            raise ValueError(f"Dataset not found for session: {session_name}")
 
-#     Returns
-#     -------
-#     pd.DataFrame
-#         Pose data as a pandas DataFrame.
-#     """
-#     with NWBHDF5IO(file_path, "r") as io:
-#         nwbfile = io.read()
-#         pose = get_pose_data_from_nwb_file(nwbfile, path_to_pose_nwb_series_data)
-#         dataframes = []
-#         for label, pose_series in pose.items():
-#             data = pose_series.data[:]
-#             confidence = pose_series.confidence[:]
-#             df = pd.DataFrame(data, columns=[f"{label}_x", f"{label}_y"])
-#             df[f"likelihood_{label}"] = confidence
-#             dataframes.append(df)
-#         final_df = pd.concat(dataframes, axis=1)
-#     return final_df
+        # Create pose estimation and skeletons objects
+        keypoints = ds.keypoints.values
+        pose_estimation_series_kwargs = {}
+        if getattr(ds, "fps", None):
+            pose_estimation_series_kwargs["fps"] = ds.fps
+        else:
+            pose_estimation_series_kwargs["timestamps"] = ds.sel(keypoints=keypoint).time.values
+
+        pose_estimation_series_list = []
+        for keypoint in keypoints:
+            pose_estimation_series_list.append(
+                ndx_pose.PoseEstimationSeries(
+                    name=keypoint,
+                    data=ds.sel(keypoints=keypoint).position.values,
+                    confidence=ds.sel(keypoints=keypoint).confidence.values,
+                    unit="pixels",
+                    **pose_estimation_series_kwargs,
+                )
+            )
+
+        skeleton = ndx_pose.Skeleton(
+            name=f"{subject_id}_skeleton",
+            nodes=keypoints,
+            subject=subject,
+        )
+
+        source_software = getattr(ds, "source_software", "Unknown Software")
+        video_path = getattr(ds, "video_path", None)
+        pose_estimation = ndx_pose.PoseEstimation(
+            name="PoseEstimation",
+            pose_estimation_series=pose_estimation_series_list,
+            description=f"Estimated positions using {source_software}.",
+            original_videos=[video_path],
+            devices=[camera1],
+            source_software=source_software,
+            skeleton=skeleton,
+        )
+
+        # Create behavior processing module
+        behavior_pm = nwbfile.create_processing_module(
+            name="behavior",
+            description="processed behavioral data",
+        )
+        behavior_pm.add(pose_estimation)
+
+        # VAME content
+        model_name = config.get("model_name")
+        n_clusters = config.get("n_clusters")
+        segmentation_algorithms = config.get("segmentation_algorithms")
+        for seg in segmentation_algorithms:
+            data_path = (
+                Path(config["project_path"]) /
+                "results" /
+                session_name /
+                model_name /
+                f"{seg}-{n_clusters}" /
+
+            ).resolve()
