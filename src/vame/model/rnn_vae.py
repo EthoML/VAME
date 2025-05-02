@@ -704,7 +704,6 @@ def train_model(
                 patience=config["scheduler_step_size"],
                 threshold=1e-3,
                 threshold_mode="rel",
-                verbose=True,
             )
         else:
             scheduler = StepLR(optimizer, step_size=scheduler_step_size, gamma=1, last_epoch=-1)
