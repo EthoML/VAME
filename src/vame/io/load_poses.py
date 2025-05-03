@@ -55,8 +55,6 @@ def load_vame_dataset(ds_path: Path | str) -> xr.Dataset:
     xr.Dataset
         VAME dataset
     """
-    # Windows will not allow opened files to be overwritten,
-    # so we need to load data into memory, close the file and move on with the operations
     with xr.open_dataset(ds_path, engine="netcdf4") as tmp_ds:
         ds_in_memory = tmp_ds.load()  # read entire file into memory
     return ds_in_memory

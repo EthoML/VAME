@@ -1,6 +1,8 @@
 import xarray as xr
 from pathlib import Path
 
+from vame.io import export_to_nwb
+
 
 def test_pipeline(setup_pipeline):
     pipeline = setup_pipeline["pipeline"]
@@ -28,3 +30,12 @@ def test_pipeline(setup_pipeline):
     assert save_fig_path_0.exists()
     assert save_fig_path_1.exists()
     assert save_fig_path_2.exists()
+
+    # Test export to nwb
+    export_to_nwb(config=pipeline.config)
+    model_name = pipeline.config["model_name"]
+    segmentation_algorithms = pipeline.config["segmentation_algorithms"]
+    n_clusters = pipeline.config["n_clusters"]
+    for session in sessions:
+        nwbfile_path = Path(project_path) / "results" / session / model_name / f"{segmentation_algorithms[0]}-{n_clusters}" / f"{session}.nwb"
+        assert nwbfile_path.exists()

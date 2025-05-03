@@ -1,3 +1,14 @@
+# v0.11.0
+
+### Fixes
+
+- Remove deprecated `verbose` argument for `ReduceLROnPlateau`
+
+### Features
+
+- Export Project results to NWB files ([Issue #171](https://github.com/EthoML/VAME/issues/171))
+
+
 # v0.10.0
 
 ### Fixes

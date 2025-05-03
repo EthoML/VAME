@@ -69,7 +69,7 @@ def embedd_latent_vectors(
         # Read session data
         file_path = str(Path(project_path) / "data" / "processed" / f"{session}_processed.nc")
         _, _, ds = read_pose_estimation_file(file_path=file_path)
-        data = np.copy(ds[read_from_variable].values)
+        # data = np.copy(ds[read_from_variable].values)
 
         # Format the data for the RNN model
         data = format_xarray_for_rnn(

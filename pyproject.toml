@@ -1,6 +1,6 @@
 [project]
 name = "vame-py"
-version = '0.10.0'
+version = '0.11.0'
 description = "Variational Animal Motion Embedding."
 authors = [{ name = "K. Luxem & " }, { name = "P. Bauer" }]
 requires-python = ">=3.11"
@@ -13,8 +13,8 @@ dependencies = [
     "scipy>=1.13.0",
     "matplotlib>=3.9.0",
     "torch==2.2.2; platform_system == 'Darwin' and platform_machine == 'x86_64'", # Intel Macs
-    "torch==2.5.1; platform_system == 'Darwin' and platform_machine == 'arm64'",  # M1/M2 Macs
-    "torch==2.5.1; platform_system != 'Darwin'",                                  # All other systems
+    "torch>=2.3.1; platform_system == 'Darwin' and platform_machine == 'arm64'",  # M1/M2 Macs
+    "torch>=2.3.1; platform_system != 'Darwin'",                                  # All other systems
     "tqdm>=4.66.0",
     "hmmlearn>=0.3.0",
     "opencv-python-headless>=4.9.0.0",
@@ -25,6 +25,7 @@ dependencies = [
     "imageio-ffmpeg==0.5.1",
     "pynwb==2.8.3",
     "ndx-pose==0.2.1",
+    "ndx-vame==0.2.0",
     "tables>=3.10.0",
     "movement==0.5.0",
     "netCDF4==1.7.2",
