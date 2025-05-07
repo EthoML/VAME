@@ -157,14 +157,13 @@ def init_new_project(
             fps = get_video_frame_rate(str(videos_paths[0]))
             logger.info(f"Estimated FPS: {fps}")
     else:
-        if fps is None:
-            raise ValueError("FPS must be provided if no videos are provided.")
         videos_paths = [""] * len(pes_paths)
         logger.info("No videos provided.")
 
     # Copy pose estimation data
     logger.info("Copying pose estimation raw data...\n")
     num_features_list = []
+    keypoints_list = []
     for pes_path, video_path in zip(poses_estimations, videos_paths):
         ds = load_pose_estimation(
             pose_estimation_file=pes_path,
@@ -178,6 +177,7 @@ def init_new_project(
             engine="netcdf4",
         )
         num_features_list.append(ds.space.shape[0] * ds.keypoints.shape[0])
+        keypoints_list.append(list(ds["keypoints"].values))
 
         output_processed_name = data_processed_path / Path(pes_path).stem
         ds.to_netcdf(
@@ -194,6 +194,11 @@ def init_new_project(
         raise ValueError("All pose estimation files must have the same number of features.")
     config_kwargs["num_features"] = unique_num_features[0]
 
+    # Check all keypoints are the same across sessions
+    if not all(keypoints == keypoints_list[0] for keypoints in keypoints_list):
+        raise ValueError("All pose estimation files must have the same keypoint names.")
+    config_kwargs["keypoints"] = keypoints_list[0]
+
     # Create config.yaml file
     new_project = ProjectSchema(
         vame_version=get_version(),
@@ -205,11 +210,11 @@ def init_new_project(
         paths_to_pose_nwb_series_data=[paths_to_pose_nwb_series_data] if paths_to_pose_nwb_series_data else None,
         **config_kwargs,
     )
-    cfg_data = new_project.model_dump()
+    config_data = new_project.model_dump()
     projconfigfile = os.path.join(str(project_path), "config.yaml")
     write_config(
         config_path=projconfigfile,
-        config=cfg_data,
+        config=config_data,
     )
 
     # Create states.json file
@@ -222,4 +227,4 @@ def init_new_project(
 
     logger.info(f"A VAME project has been created at {project_path}")
 
-    return projconfigfile, cfg_data
+    return projconfigfile, read_config(projconfigfile)

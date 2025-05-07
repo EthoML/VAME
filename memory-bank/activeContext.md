@@ -30,6 +30,7 @@
    - Optimized model training process
    - Enhanced data preprocessing pipeline
    - Improved visualization capabilities
+   - Added keypoints array to config.yaml at project initialization
 
 3. **Documentation**
    - Published in Nature journal Cell Reports

@@ -205,7 +205,7 @@ and K-means loss weighted by the kl_weight.
 
 ```python
 @save_state(model=TrainModelFunctionSchema)
-def train_model(config: dict, save_logs: bool = False) -> None
+def train_model(config: dict, save_logs: bool = True) -> None
 ```
 
 Train Variational Autoencoder using the configuration file values.
@@ -232,7 +232,7 @@ Creates files at:
 **Parameters**
 
 * **config** (`dict`): Configuration dictionary.
-* **save_logs** (`bool, optional`): Whether to save the logs, by default False.
+* **save_logs** (`bool, optional`): Whether to save the logs. Default is True.
 
 **Returns**
 

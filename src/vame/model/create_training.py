@@ -130,7 +130,7 @@ def traindata_aligned(
 
 
 # def traindata_fixed(
-#     cfg: dict,
+#     config: dict,
 #     sessions: List[str],
 #     testfraction: float,
 #     num_features: int,
@@ -143,7 +143,7 @@ def traindata_aligned(
 
 #     Parameters
 #     ---------
-#     cfg : dict
+#     config : dict
 #         Configuration parameters.
 #     sessions : List[str]
 #         List of sessions.
@@ -174,7 +174,7 @@ def traindata_aligned(
 #     for session in sessions:
 #         logger.info("z-scoring of file %s" % session)
 #         path_to_file = os.path.join(
-#             cfg["project_path"],
+#             config["project_path"],
 #             "data",
 #             "processed",
 #             session,
@@ -190,15 +190,15 @@ def traindata_aligned(
 #             X_z_copy = X_z.copy()
 #             X_true.append(X_z_copy)
 
-#         if cfg["robust"]:
+#         if config["robust"]:
 #             iqr_val = iqr(X_z)
-#             logger.info("IQR value: %.2f, IQR cutoff: %.2f" % (iqr_val, cfg["iqr_factor"] * iqr_val))
+#             logger.info("IQR value: %.2f, IQR cutoff: %.2f" % (iqr_val, config["iqr_factor"] * iqr_val))
 #             for i in range(X_z.shape[0]):
 #                 for marker in range(X_z.shape[1]):
-#                     if X_z[i, marker] > cfg["iqr_factor"] * iqr_val:
+#                     if X_z[i, marker] > config["iqr_factor"] * iqr_val:
 #                         X_z[i, marker] = np.nan
 
-#                     elif X_z[i, marker] < -cfg["iqr_factor"] * iqr_val:
+#                     elif X_z[i, marker] < -config["iqr_factor"] * iqr_val:
 #                         X_z[i, marker] = np.nan
 
 #                 X_z[i, :] = interpol_all_nans(X_z[i, :])
@@ -211,7 +211,7 @@ def traindata_aligned(
 #     X = np.concatenate(X_train, axis=0).T
 
 #     if savgol_filter:
-#         X_med = scipy.signal.savgol_filter(X, cfg["savgol_length"], cfg["savgol_order"])
+#         X_med = scipy.signal.savgol_filter(X, config["savgol_length"], config["savgol_order"])
 #     else:
 #         X_med = X
 
@@ -223,7 +223,7 @@ def traindata_aligned(
 
 #     if check_parameter:
 #         plot_check_parameter(
-#             cfg,
+#             config,
 #             iqr_val,
 #             num_frames,
 #             X_true,
@@ -236,7 +236,7 @@ def traindata_aligned(
 #         # save numpy arrays the the test/train info:
 #         np.save(
 #             os.path.join(
-#                 cfg["project_path"],
+#                 config["project_path"],
 #                 "data",
 #                 "train",
 #                 "train_seq.npy",
@@ -245,7 +245,7 @@ def traindata_aligned(
 #         )
 #         np.save(
 #             os.path.join(
-#                 cfg["project_path"],
+#                 config["project_path"],
 #                 "data",
 #                 "train",
 #                 "test_seq.npy",
@@ -269,7 +269,7 @@ def traindata_aligned(
 
 #             np.save(
 #                 os.path.join(
-#                     cfg["project_path"],
+#                     config["project_path"],
 #                     "data",
 #                     "processed",
 #                     session,
@@ -287,8 +287,8 @@ def create_trainset(
     config: dict,
     test_fraction: float = 0.1,
     read_from_variable: str = "position_processed",
-    split_mode: Literal["mode_1", "mode_2"] = "mode_1",
-    save_logs: bool = False,
+    split_mode: Literal["mode_1", "mode_2"] = "mode_2",
+    save_logs: bool = True,
 ) -> None:
     """
     Creates training and test datasets for the VAME model.
@@ -315,8 +315,6 @@ def create_trainset(
     ----------
     config : dict
         Configuration parameters dictionary.
-    save_logs : bool, optional
-        If True, the function will save logs to the project folder. Defaults to False.
     test_fraction : float, optional
         Fraction of data to use as test data. Defaults to 0.1.
     read_from_variable : str, optional
@@ -327,21 +325,23 @@ def create_trainset(
                  for testing and the rest for training.
         - mode_2: Takes random continuous chunks from each session proportional to test_fraction
                  for testing and uses the remaining parts for training.
-        Defaults to "mode_1".
+        Defaults to "mode_2".
+    save_logs : bool, optional
+        Whether to save logs. Defaults to True.
 
     Returns
     -------
     None
     """
     try:
-        fixed = config["egocentric_data"]
-
         if save_logs:
             log_path = Path(config["project_path"]) / "logs" / "create_trainset.log"
             logger_config.add_file_handler(str(log_path))
 
         if not os.path.exists(os.path.join(config["project_path"], "data", "train", "")):
             os.mkdir(os.path.join(config["project_path"], "data", "train", ""))
+
+        fixed = config["egocentric_data"]
 
         sessions = []
         if config["all_data"] == "No":
@@ -369,11 +369,11 @@ def create_trainset(
             raise NotImplementedError("Fixed data training is not implemented yet")
             # logger.info("Creating trainset from the vame.pose_to_numpy() output ")
             # traindata_fixed(
-            #     cfg,
+            #     config,
             #     sessions,
-            #     cfg["test_fraction"],
-            #     cfg["num_features"],
-            #     cfg["savgol_filter"],
+            #     config["test_fraction"],
+            #     config["num_features"],
+            #     config["savgol_filter"],
             #     check_parameter,
             #     pose_ref_index,
             # )

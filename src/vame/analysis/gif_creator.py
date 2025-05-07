@@ -106,7 +106,7 @@ def create_video(
 
 
 def gif(
-    config: str,
+    config_path: str,
     pose_ref_index: list,
     segmentation_algorithm: SegmentationAlgorithms,
     subtract_background: bool = True,
@@ -121,7 +121,7 @@ def gif(
 
     Parameters
     ----------
-    config : str
+    config_path : str
         Path to the configuration file.
     pose_ref_index : list
         List of reference coordinate indices for alignment.
@@ -146,26 +146,26 @@ def gif(
     -------
     None
     """
-    config_file = Path(config).resolve()
-    cfg = read_config(str(config_file))
-    model_name = cfg["model_name"]
-    n_clusters = cfg["n_clusters"]
+    config_file = Path(config_path).resolve()
+    config = read_config(str(config_file))
+    model_name = config["model_name"]
+    n_clusters = config["n_clusters"]
 
-    if segmentation_algorithm not in cfg["segmentation_algorithms"]:
+    if segmentation_algorithm not in config["segmentation_algorithms"]:
         raise ValueError("Segmentation algorithm not found in config")
 
     # Get sessions
-    if cfg["all_data"] in ["Yes", "yes"]:
-        sessions = cfg["session_names"]
+    if config["all_data"] in ["Yes", "yes"]:
+        sessions = config["session_names"]
     else:
         sessions = get_sessions_from_user_input(
-            cfg=cfg,
+            config=config,
             action_message="create gifs",
         )
 
     for session in sessions:
         path_to_file = os.path.join(
-            cfg["project_path"],
+            config["project_path"],
             "results",
             session,
             model_name,
@@ -191,21 +191,21 @@ def gif(
                     "umap_embedding_" + session + ".npy",
                 )
             )
-            num_points = cfg["num_points"]
+            num_points = config["num_points"]
             if num_points > embed.shape[0]:
                 num_points = embed.shape[0]
         except Exception:
             logger.info(f"Compute embedding for session {session}")
             reducer = umap.UMAP(
                 n_components=2,
-                min_dist=cfg["min_dist"],
-                n_neighbors=cfg["n_neighbors"],
-                random_state=cfg["random_state"],
+                min_dist=config["min_dist"],
+                n_neighbors=config["n_neighbors"],
+                random_state=config["random_state"],
             )
 
             latent_vector = np.load(os.path.join(path_to_file, "", "latent_vector_" + session + ".npy"))
 
-            num_points = cfg["num_points"]
+            num_points = config["num_points"]
             if num_points > latent_vector.shape[0]:
                 num_points = latent_vector.shape[0]
             logger.info("Embedding %d data points.." % num_points)
@@ -244,7 +244,7 @@ def gif(
             start = start
 
         frames = get_animal_frames(
-            cfg,
+            config,
             session,
             pose_ref_index,
             start,

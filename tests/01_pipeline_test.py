@@ -24,5 +24,7 @@ def test_pipeline(setup_pipeline):
     )
     save_fig_path_0 = Path(project_path) / "reports" / "figures" / f"{sessions[0]}_preprocessing_scatter.png"
     save_fig_path_1 = Path(project_path) / "reports" / "figures" / f"{sessions[0]}_preprocessing_timeseries.png"
+    save_fig_path_2 = Path(project_path) / "reports" / "figures" / f"{sessions[0]}_preprocessing_cloud.png"
     assert save_fig_path_0.exists()
     assert save_fig_path_1.exists()
+    assert save_fig_path_2.exists()

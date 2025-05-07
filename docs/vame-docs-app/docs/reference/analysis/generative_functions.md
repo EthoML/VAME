@@ -10,7 +10,7 @@ title: analysis.generative_functions
 #### random\_generative\_samples\_motif
 
 ```python
-def random_generative_samples_motif(cfg: dict, model: torch.nn.Module,
+def random_generative_samples_motif(config: dict, model: torch.nn.Module,
                                     latent_vector: np.ndarray,
                                     labels: np.ndarray,
                                     n_clusters: int) -> plt.Figure
@@ -20,7 +20,7 @@ Generate random samples for motifs.
 
 **Parameters**
 
-* **cfg** (`dict`): Configuration dictionary.
+* **config** (`dict`): Configuration dictionary.
 * **model** (`torch.nn.Module`): PyTorch model.
 * **latent_vector** (`np.ndarray`): Latent vectors.
 * **labels** (`np.ndarray`): Labels.
@@ -33,7 +33,7 @@ Generate random samples for motifs.
 #### random\_generative\_samples
 
 ```python
-def random_generative_samples(cfg: dict, model: torch.nn.Module,
+def random_generative_samples(config: dict, model: torch.nn.Module,
                               latent_vector: np.ndarray) -> plt.Figure
 ```
 
@@ -41,7 +41,7 @@ Generate random generative samples.
 
 **Parameters**
 
-* **cfg** (`dict`): Configuration dictionary.
+* **config** (`dict`): Configuration dictionary.
 * **model** (`torch.nn.Module`): PyTorch model.
 * **latent_vector** (`np.ndarray`): Latent vectors.
 
@@ -52,7 +52,7 @@ Generate random generative samples.
 #### random\_reconstruction\_samples
 
 ```python
-def random_reconstruction_samples(cfg: dict, model: torch.nn.Module,
+def random_reconstruction_samples(config: dict, model: torch.nn.Module,
                                   latent_vector: np.ndarray) -> plt.Figure
 ```
 
@@ -60,7 +60,7 @@ Generate random reconstruction samples.
 
 **Parameters**
 
-* **cfg** (`dict`): Configuration dictionary.
+* **config** (`dict`): Configuration dictionary.
 * **model** (`torch.nn.Module`): PyTorch model to use.
 * **latent_vector** (`np.ndarray`): Latent vectors.
 
@@ -71,7 +71,7 @@ Generate random reconstruction samples.
 #### visualize\_cluster\_center
 
 ```python
-def visualize_cluster_center(cfg: dict, model: torch.nn.Module,
+def visualize_cluster_center(config: dict, model: torch.nn.Module,
                              cluster_center: np.ndarray) -> plt.Figure
 ```
 
@@ -79,7 +79,7 @@ Visualize cluster centers.
 
 **Parameters**
 
-* **cfg** (`dict`): Configuration dictionary.
+* **config** (`dict`): Configuration dictionary.
 * **model** (`torch.nn.Module`): PyTorch model.
 * **cluster_center** (`np.ndarray`): Cluster centers.
 

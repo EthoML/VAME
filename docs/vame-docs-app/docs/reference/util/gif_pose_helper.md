@@ -11,7 +11,7 @@ title: util.gif_pose_helper
 
 ```python
 def get_animal_frames(
-    cfg: dict,
+    config: dict,
     session: str,
     pose_ref_index: list,
     start: int,
@@ -25,7 +25,7 @@ Extracts frames of an animal from a video file and returns them as a list.
 
 **Parameters**
 
-* **cfg** (`dict`): Configuration dictionary containing project information.
+* **config** (`dict`): Configuration dictionary containing project information.
 * **session** (`str`): Name of the session.
 * **pose_ref_index** (`list`): List of reference coordinate indices for alignment.
 * **start** (`int`): Starting frame index.

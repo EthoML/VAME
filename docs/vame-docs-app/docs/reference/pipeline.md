@@ -27,7 +27,8 @@ def __init__(project_name: str,
              fps: Optional[float] = None,
              copy_videos: bool = False,
              paths_to_pose_nwb_series_data: Optional[str] = None,
-             config_kwargs: Optional[dict] = None) -> None
+             config_kwargs: Optional[dict] = None,
+             save_logs=True) -> None
 ```
 
 Initializes the VAME pipeline.
@@ -44,6 +45,7 @@ Initializes the VAME pipeline.
 * **copy_videos** (`bool, optional`): Copy videos, by default False.
 * **paths_to_pose_nwb_series_data** (`Optional[str], optional`): Path to pose NWB series data, by default None.
 * **config_kwargs** (`Optional[dict], optional`): Additional configuration keyword arguments, by default None.
+* **save_logs** (`bool, optional`): Flag indicating whether to save logs. Defaults to True.
 
 **Returns**
 
@@ -89,7 +91,12 @@ Returns a xarray dataset which combines all the raw data from the project.
 
 ```python
 def preprocessing(centered_reference_keypoint: str = "snout",
-                  orientation_reference_keypoint: str = "tailbase") -> None
+                  orientation_reference_keypoint: str = "tailbase",
+                  run_lowconf_cleaning: bool = True,
+                  run_egocentric_alignment: bool = True,
+                  run_outlier_cleaning: bool = True,
+                  run_savgol_filtering: bool = True,
+                  run_rescaling: bool = False) -> None
 ```
 
 Preprocesses the data.
@@ -98,6 +105,11 @@ Preprocesses the data.
 
 * **centered_reference_keypoint** (`str, optional`): Key point to center the data, by default &quot;snout&quot;.
 * **orientation_reference_keypoint** (`str, optional`): Key point to orient the data, by default &quot;tailbase&quot;.
+* **run_lowconf_cleaning** (`bool, optional`): Whether to run low confidence cleaning, by default True.
+* **run_egocentric_alignment** (`bool, optional`): Whether to run egocentric alignment, by default True.
+* **run_outlier_cleaning** (`bool, optional`): Whether to run outlier cleaning, by default True.
+* **run_savgol_filtering** (`bool, optional`): Whether to run Savitzky-Golay filtering, by default True.
+* **run_rescaling** (`bool, optional`): Whether to run rescaling, by default False.
 
 **Returns**
 
@@ -108,7 +120,7 @@ Preprocesses the data.
 ```python
 def create_training_set(
         test_fraction: float = 0.1,
-        split_mode: Literal["mode_1", "mode_2"] = "mode_1") -> None
+        split_mode: Literal["mode_1", "mode_2"] = "mode_2") -> None
 ```
 
 Creates the training set.
@@ -116,7 +128,7 @@ Creates the training set.
 **Parameters**
 
 * **test_fraction** (`float`): Test fraction.
-* **split_mode** (`str, optional`): Split mode, by default &quot;mode_1&quot;.
+* **split_mode** (`str, optional`): Split mode, by default &quot;mode_2&quot;.
 
 **Returns**
 
@@ -173,9 +185,7 @@ Runs the community clustering.
 #### generate\_motif\_videos
 
 ```python
-def generate_motif_videos(
-        video_type: str = ".mp4",
-        segmentation_algorithm: Literal["hmm", "kmeans"] = "hmm") -> None
+def generate_motif_videos(video_type: str = ".mp4") -> None
 ```
 
 Generates motif videos.
@@ -183,7 +193,6 @@ Generates motif videos.
 **Parameters**
 
 * **video_type** (`str, optional`): Video type, by default &quot;.mp4&quot;.
-* **segmentation_algorithm** (`Literal["hmm", "kmeans"], optional`): Segmentation algorithm, by default &quot;hmm&quot;.
 
 **Returns**
 
@@ -192,9 +201,7 @@ Generates motif videos.
 #### generate\_community\_videos
 
 ```python
-def generate_community_videos(
-        video_type: str = ".mp4",
-        segmentation_algorithm: Literal["hmm", "kmeans"] = "hmm") -> None
+def generate_community_videos(video_type: str = ".mp4") -> None
 ```
 
 Generates community videos.
@@ -202,7 +209,6 @@ Generates community videos.
 **Parameters**
 
 * **video_type** (`str, optional`): Video type, by default &quot;.mp4&quot;.
-* **segmentation_algorithm** (`Literal["hmm", "kmeans"], optional`): Segmentation algorithm, by default &quot;hmm&quot;.
 
 **Returns**
 
@@ -211,9 +217,7 @@ Generates community videos.
 #### generate\_videos
 
 ```python
-def generate_videos(
-        video_type: str = ".mp4",
-        segmentation_algorithm: Literal["hmm", "kmeans"] = "hmm") -> None
+def generate_videos(video_type: str = ".mp4") -> None
 ```
 
 Generates motif and community videos.
@@ -221,7 +225,6 @@ Generates motif and community videos.
 **Parameters**
 
 * **video_type** (`str, optional`): Video type, by default &quot;.mp4&quot;.
-* **segmentation_algorithm** (`Literal["hmm", "kmeans"], optional`): Segmentation algorithm, by default &quot;hmm&quot;.
 
 **Returns**
 
@@ -232,6 +235,7 @@ Generates motif and community videos.
 ```python
 def visualize_preprocessing(scatter: bool = True,
                             timeseries: bool = True,
+                            cloud: bool = True,
                             show_figure: bool = False,
                             save_to_file: bool = True) -> None
 ```
@@ -242,6 +246,7 @@ Visualizes the preprocessing results.
 
 * **scatter** (`bool, optional`): Visualize scatter plot, by default True.
 * **timeseries** (`bool, optional`): Visualize timeseries plot, by default True.
+* **cloud** (`bool, optional`): Visualize cloud plot, by default True.
 * **show_figure** (`bool, optional`): Show the figure, by default False.
 * **save_to_file** (`bool, optional`): Save the figure to file, by default True.
 
@@ -267,14 +272,14 @@ Visualizes the model losses.
 
 * `None`
 
-#### visualize\_motif\_tree
+#### visualize\_hierarchical\_tree
 
 ```python
-def visualize_motif_tree(
+def visualize_hierarchical_tree(
         segmentation_algorithm: Literal["hmm", "kmeans"]) -> None
 ```
 
-Visualizes the motif tree.
+Visualizes the hierarchical tree.
 
 **Parameters**
 
@@ -307,7 +312,7 @@ Visualizes the UMAP plot.
 #### report
 
 ```python
-def report(segmentation_algorithm: Literal["hmm", "kmeans"] = "hmm") -> None
+def report() -> None
 ```
 
 Generates the project report.

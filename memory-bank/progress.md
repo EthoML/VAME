@@ -8,6 +8,7 @@
    - ✅ Data preprocessing and alignment
    - ✅ Format conversion and standardization
    - ✅ Egocentric alignment
+   - ✅ Automatic keypoint extraction for config
 
 2. **Model Implementation**
    - ✅ RNN-VAE architecture
@@ -109,11 +110,11 @@
    - Error message improvements
    - Documentation updates
    - Performance enhancements
+   - Configuration simplification
 
 2. **Under Review**
    - New analysis methods
    - Visualization improvements
-   - Configuration simplification
    - Integration enhancements
 
 3. **Planned Next**

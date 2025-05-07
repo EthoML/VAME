@@ -62,6 +62,32 @@ def load_vame_dataset(ds_path: Path | str) -> xr.Dataset:
     return ds_in_memory
 
 
+# def load_vame_dataset_lock(ds_path: Path | str) -> xr.Dataset:
+#     """
+#     Load VAME dataset with file locking to prevent conflicts.
+
+#     Parameters
+#     ----------
+#     ds_path : Path or str
+#         Path to the netCDF dataset.
+
+#     Returns
+#     -------
+#     xr.Dataset
+#         VAME dataset loaded into memory.
+#     """
+#     import portalocker
+
+#     ds_path = Path(ds_path)
+#     lock_path = ds_path.parent / f"{ds_path.name}.lock"
+
+#     # Use portalocker.Lock which supports the `timeout` keyword.
+#     with portalocker.Lock(str(lock_path), mode="w", flags=portalocker.LOCK_SH) as _:
+#         with xr.open_dataset(ds_path, engine="netcdf4") as tmp_ds:
+#             ds_in_memory = tmp_ds.load()  # Load the dataset into memory.
+#     return ds_in_memory
+
+
 def nc_to_dataframe(nc_data):
     keypoints = nc_data["keypoints"].values
     space = nc_data["space"].values

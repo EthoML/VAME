@@ -1,6 +1,6 @@
 [project]
 name = "vame-py"
-version = '0.9.0'
+version = '0.10.0'
 description = "Variational Animal Motion Embedding."
 authors = [{ name = "K. Luxem & " }, { name = "P. Bauer" }]
 requires-python = ">=3.11"
@@ -23,9 +23,10 @@ dependencies = [
     "pydantic==2.7.4",
     "imageio==2.34.1",
     "imageio-ffmpeg==0.5.1",
-    "pynwb>=2.8.3",
+    "pynwb==2.8.3",
+    "ndx-pose==0.2.1",
     "tables>=3.10.0",
-    "movement==0.2.0",
+    "movement==0.5.0",
     "netCDF4==1.7.2",
 ]
 readme = { file = 'README.md', content-type = 'text/markdown' }

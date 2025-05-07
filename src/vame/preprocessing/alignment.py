@@ -30,12 +30,12 @@ def calculate_geometric_distance(positions, keypoint1_idx, keypoint2_idx):
         kp1 = positions[:, :, keypoint1_idx, :]
         kp2 = positions[:, :, keypoint2_idx, :]
         # Calculate Euclidean distance for each time point and individual
-        distances = np.sqrt(np.sum((kp1 - kp2)**2, axis=1))  # Result: (time, individuals)
+        distances = np.sqrt(np.sum((kp1 - kp2) ** 2, axis=1))  # Result: (time, individuals)
     else:  # (time, space, keypoints)
         kp1 = positions[:, :, keypoint1_idx]
         kp2 = positions[:, :, keypoint2_idx]
         # Calculate Euclidean distance for each time point
-        distances = np.sqrt(np.sum((kp1 - kp2)**2, axis=1))  # Result: (time,)
+        distances = np.sqrt(np.sum((kp1 - kp2) ** 2, axis=1))  # Result: (time,)
 
     return distances
 
@@ -46,6 +46,7 @@ def egocentrically_align_and_center(
     orientation_reference_keypoint: str = "tailbase",
     read_from_variable: str = "position_processed",
     save_to_variable: str = "position_egocentric_aligned",
+    save_logs: bool = True,
 ) -> None:
     """
     Aligns the time series by first centralizing all positions around the first keypoint
@@ -59,11 +60,21 @@ def egocentrically_align_and_center(
         Name of the keypoint to use as centered reference.
     orientation_reference_keypoint : str
         Name of the keypoint to use as orientation reference.
+    read_from_variable : str
+        Variable to read from the dataset.
+    save_to_variable : str
+        Variable to save the aligned data to.
+    save_logs : bool, optional
+        Whether to save logs.
 
     Returns
     -------
     None
     """
+    if save_logs:
+        log_path = Path(config["project_path"]) / "logs" / "preprocessing.log"
+        logger_config.add_file_handler(str(log_path))
+
     logger.info(
         f"Egocentric alignment with references: {centered_reference_keypoint} and {orientation_reference_keypoint}"
     )
@@ -102,7 +113,7 @@ def egocentrically_align_and_center(
             distances = calculate_geometric_distance(
                 position_processed[:, :, :, individual],
                 idx1,
-                idx2
+                idx2,
             )
             # Calculate median distance, excluding NaNs
             individual_scales[individual] = np.nanmedian(distances)

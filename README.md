@@ -12,9 +12,10 @@
 🌟 Welcome to EthoML/VAME (Variational Animal Motion Encoding), an open-source machine learning tool for behavioral action segmentation and analyses.
 
 VAME [documentation](https://ethoml.github.io/VAME/). <br/> <br/>
-❗ <b>[Clear here to read the NEW peer-reviewed neuroscience article published open-access in the Nature journal <i>Cell Reports</i>.</b>](https://www.cell.com/cms/10.1016/j.celrep.2024.114870/attachment/df29fd8e-66e4-474e-8fdd-8adf5b1e110a/mmc11.pdf)  ❗
+❗ <b>[Clear here to read the NEW peer-reviewed and open-access neuroscience article in <i>Cell Reports</i>.</b>](https://www.cell.com/cms/10.1016/j.celrep.2024.114870/attachment/df29fd8e-66e4-474e-8fdd-8adf5b1e110a/mmc11.pdf) ❗ <br/>
 
-We are a group of behavioral enthusiasts, comprising the original VAME developers Kevin Luxem and Pavol Bauer, behavioral neuroscientists Stephanie R. Miller and Jorge J. Palop, and computer scientists and statisticians Alex Pico, Reuben Thomas, and Katie Ly). Our aim is to provide scalable, unbiased and sensitive approaches for assessing mouse behavior using computer vision and machine learning approaches.
+
+We are a group of behavioral enthusiasts, comprising the original VAME developers Kevin Luxem and Pavol Bauer, behavioral neuroscientists Stephanie R. Miller and Jorge J. Palop, and computer scientists and statisticians Alex Pico, Reuben Thomas, and Katie Ly. Our aim is to provide scalable, unbiased and sensitive approaches for assessing mouse behavior using computer vision and machine learning approaches.
 
 We are focused on the expanding the analytical capabilities of VAME segmentation by providing curated scripts for VAME implementation and tools for data processing, visualization, and statistical analyses.
 
@@ -24,13 +25,8 @@ We are focused on the expanding the analytical capabilities of VAME segmentation
 * Addition of compatability with [movement](https://github.com/neuroinformatics-unit/movement) for data ingestion
 * Addition of a new cost function for community dendrogram generation
 * Addition of a new egocentric alignment method
-* Addition of mouse behavioral videos for practicing VAME and for benchmarking purposes
 * Refined output filename structure
   
-
-
-(full PDF with supplemental figures [here](https://www.cell.com/cms/10.1016/j.celrep.2024.114870/attachment/df29fd8e-66e4-474e-8fdd-8adf5b1e110a/mmc11.pdf)).
-
 
 ## Authors and Code Contributors
 VAME was developed by Kevin Luxem and Pavol Bauer (Luxem et. al., 2022). The original VAME repository was deprecated, forked, and is now being maintained here at https://github.com/EthoML/VAME.
@@ -44,7 +40,7 @@ The workflow of VAME consists of 5 steps and we explain them in detail [here](ht
 
 ## Installation
 
-To get started we recommend using [Anaconda](https://www.anaconda.com/distribution/) with Python 3.11 or higher. Here, you can create a [virtual enviroment](https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html) to store all the dependencies necessary for VAME. You can also use the VAME.yaml file supplied here, by simply opening the terminal, running git clone https://github.com/LINCellularNeuroscience/VAME.git, then typ cd VAME then run: conda env create -f VAME.yaml).
+To get started we recommend using [Anaconda](https://www.anaconda.com/distribution/) with Python 3.11 or higher. Here, you can create a [virtual enviroment](https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html) to store all the dependencies necessary for VAME. You can also use the `environment-<os>.yaml` files supplied here, by simply opening the terminal, running git clone https://github.com/LINCellularNeuroscience/VAME.git, then typ cd VAME then run: `conda env create -f environment-<os>.yaml`).
 
 * Go to the locally cloned VAME directory and run python setup.py install in order to install VAME in your active conda environment.
 * Install the current stable Pytorch release using the OS-dependent instructions from the [Pytorch website](https://pytorch.org/get-started/locally/). Currently, VAME is tested on PyTorch 2.2.2. (Note, if you use the conda file we supply, PyTorch is already installed and you don't need to do this step.)
@@ -55,8 +51,10 @@ First, you should make sure that you have a GPU powerful enough to train deep le
 Once you have VAME installed, you can try VAME out on a set of mouse behavioral videos and .csv files publicly available in the [examples folder](https://github.com/LINCellularNeuroscience/VAME/tree/master/examples).
 
 ## References
-New 2024 VAME publication: [Machine learning reveals prominent spontaneous behavioral changes and treatment efficacy in humanized and transgenic Alzheimer's disease models](https://www.cell.com/cell-reports/fulltext/S2211-1247(24)01221-X) <br/>
-Original 2022 VAME publication: [Identifying Behavioral Structure from Deep Variational Embeddings of Animal Motion](https://www.biorxiv.org/content/10.1101/2020.05.14.095430v2) <br/>
+New 2024 Miller <i>et al</i>.: [Machine learning reveals prominent spontaneous behavioral changes and treatment efficacy in humanized and transgenic Alzheimer's disease models](https://www.cell.com/cell-reports/fulltext/S2211-1247(24)01221-X) <br/>
+Original 2022 Luxem <i>et al</i>.: [Identifying Behavioral Structure from Deep Variational Embeddings of Animal Motion](https://www.biorxiv.org/content/10.1101/2020.05.14.095430v2) <br/>
+See also: <br/>
+Mocellin <i>et al</i>.: [A septal-ventral tegmental area circuit drives exploratory behavior](https://www.cell.com/neuron/fulltext/S0896-6273(23)00975-3) <br/>
 Kingma & Welling: [Auto-Encoding Variational Bayes](https://arxiv.org/abs/1312.6114) <br/>
 Pereira & Silveira: [Learning Representations from Healthcare Time Series Data for Unsupervised Anomaly Detection](https://www.joao-pereira.pt/publications/accepted_version_BigComp19.pdf)
 
