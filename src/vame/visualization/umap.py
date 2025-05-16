@@ -73,10 +73,8 @@ def umap_embedding(
 
 def umap_vis(
     embed: np.ndarray,
-    num_points: int,
+    num_points: int = 30_000,
     labels: Optional[np.ndarray] = None,
-    save_to_file: bool = False,
-    show_figure: bool = True,
 ) -> Figure:
     """
     Visualize UMAP embedding.
@@ -86,7 +84,7 @@ def umap_vis(
     embed : np.ndarray
         UMAP embedding.
     num_points : int
-        Number of data points to visualize.
+        Number of data points to visualize. Default is 30,000.
     labels : np.ndarray, optional
         Motif or community labels. Default is None.
 
@@ -95,14 +93,21 @@ def umap_vis(
     Figure
         Matplotlib figure object.
     """
+    # Randomly sample up to num_points rows without replacement
+    n_samples = min(num_points, embed.shape[0])
+    if embed.shape[0] > n_samples:
+        indices = np.random.choice(embed.shape[0], size=n_samples, replace=False)
+    else:
+        indices = np.arange(n_samples)
     scatter_kwargs = {
-        "x": embed[:num_points, 0],
-        "y": embed[:num_points, 1],
+        "x": embed[indices, 0],
+        "y": embed[indices, 1],
         "s": 2,
         "alpha": 0.5,
     }
     if labels is not None:
-        scatter_kwargs["c"] = labels[:num_points]
+        labels = np.array(labels)
+        scatter_kwargs["c"] = labels[indices]
         scatter_kwargs["cmap"] = "Spectral"
         scatter_kwargs["alpha"] = 0.7
 
@@ -116,6 +121,7 @@ def umap_vis(
 
 def visualize_umap(
     config: dict,
+    num_points: int = 30_000,
     save_to_file: bool = True,
     show_figure: bool = True,
     save_logs: bool = True,
@@ -139,6 +145,8 @@ def visualize_umap(
     ----------
     config : dict
         Configuration parameters.
+    num_points : int, optional
+        Number of data points to visualize. Default is 30,000.
     save_to_file : bool, optional
         Save the figure to file. Default is True.
     show_figure : bool, optional
@@ -190,10 +198,6 @@ def visualize_umap(
                         segmentation_algorithm=seg,
                     )
 
-                num_points = config["num_points"]
-                if num_points > embed.shape[0]:
-                    num_points = embed.shape[0]
-
                 labels_names = ["none", "motif", "community"]
                 for label in labels_names:
                     if label == "none":
@@ -202,11 +206,19 @@ def visualize_umap(
                     elif label == "motif":
                         output_figure_file_name = f"umap_{session}_{model_name}_{seg}-{n_clusters}_motif.png"
                         labels_file_path = base_path / f"{n_clusters}_{seg}_label_{session}.npy"
-                        labels = np.load(str(labels_file_path.resolve()))
+                        if labels_file_path.exists():
+                            labels = np.load(str(labels_file_path.resolve()))
+                        else:
+                            logger.warning(f"Motif labels not found for session {session}. Skipping visualization.")
+                            continue
                     elif label == "community":
                         output_figure_file_name = f"umap_{session}_{model_name}_{seg}-{n_clusters}_community.png"
                         labels_file_path = base_path / "community" / f"cohort_community_label_{session}.npy"
-                        labels = np.load(str(labels_file_path.resolve()))
+                        if labels_file_path.exists():
+                            labels = np.load(str(labels_file_path.resolve()))
+                        else:
+                            logger.warning(f"Community labels not found for session {session}. Skipping visualization.")
+                            continue
 
                     fig = umap_vis(
                         embed=embed,
