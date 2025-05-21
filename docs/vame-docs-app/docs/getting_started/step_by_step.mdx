@@ -150,7 +150,11 @@ Behavioral segmentation in VAME is done in two steps:
 2. Clustering motifs in communities
 
 ```python
-vame.segment_session(config=config_data)
+vame.segment_session(
+    config=config_data,
+    overwrite_segmentation=False,
+    overwrite_embeddings=False,
+)
 ```
 
 This will perfomr the segmentation using two different algorithms: HMM and K-means. The results will be saved in the project folder.
@@ -162,7 +166,6 @@ Community detection is done by grouping similar motifs into communities using hi
 ```python
 vame.community(
     config=config_data,
-    segmentation_algorithm="hmm",
     cut_tree=2,
 )
 ```
@@ -170,17 +173,29 @@ vame.community(
 ## Step 5: Vizualization and analysis
 
 ```python
-from vame.visualization.motif import visualize_motif_tree
-from vame.visualization.umap import visualize_umap
-from vame.visualization.preprocessing import (
+from vame.visualization import (
     visualize_preprocessing_scatter,
     visualize_preprocessing_timeseries,
+    visualize_preprocessing_cloud,
+    plot_loss,
+    visualize_hierarchical_tree,
+    visualize_umap,
 )
-from vame.visualization.model import plot_loss
 ```
 
 ```python
 visualize_preprocessing_scatter(config=config_data)
+visualize_preprocessing_timeseries(config=config_data)
+visualize_preprocessing_cloud(config=config_data)
+plot_loss(config=config_data, model_name="VAME")
+visualize_hierarchical_tree(
+    config=config_data,
+    segmentation_algorithm="hmm",
+)
+visualize_umap(
+    config=config_data,
+    show_figure=True,
+)
 ```
 
 ```python
@@ -219,17 +234,11 @@ add_videos_to_project(config=config_data, videos=videos)
 Create motif videos to get insights about the fine grained poses:
 
 ```python
-vame.motif_videos(
-    config=config_data,
-    segmentation_algorithm='hmm',
-)
+vame.motif_videos(config=config_data)
 ```
 
 Create community videos to get insights about behavior on a hierarchical scale:
 
 ```python
-vame.community_videos(
-    config=config_data,
-    segmentation_algorithm='hmm',
-)
+vame.community_videos(config=config_data)
 ```
