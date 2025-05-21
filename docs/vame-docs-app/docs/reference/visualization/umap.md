@@ -33,10 +33,8 @@ Perform UMAP embedding for given file and parameters.
 
 ```python
 def umap_vis(embed: np.ndarray,
-             num_points: int,
-             labels: Optional[np.ndarray] = None,
-             save_to_file: bool = False,
-             show_figure: bool = True) -> Figure
+             num_points: int = 30_000,
+             labels: Optional[np.ndarray] = None) -> Figure
 ```
 
 Visualize UMAP embedding.
@@ -44,7 +42,7 @@ Visualize UMAP embedding.
 **Parameters**
 
 * **embed** (`np.ndarray`): UMAP embedding.
-* **num_points** (`int`): Number of data points to visualize.
+* **num_points** (`int`): Number of data points to visualize. Default is 30,000.
 * **labels** (`np.ndarray, optional`): Motif or community labels. Default is None.
 
 **Returns**
@@ -55,6 +53,7 @@ Visualize UMAP embedding.
 
 ```python
 def visualize_umap(config: dict,
+                   num_points: int = 30_000,
                    save_to_file: bool = True,
                    show_figure: bool = True,
                    save_logs: bool = True) -> None
@@ -77,6 +76,7 @@ Saves results files at:
 **Parameters**
 
 * **config** (`dict`): Configuration parameters.
+* **num_points** (`int, optional`): Number of data points to visualize. Default is 30,000.
 * **save_to_file** (`bool, optional`): Save the figure to file. Default is True.
 * **show_figure** (`bool, optional`): Show the figure. Default is True.
 * **save_logs** (`bool, optional`): Save logs. Default is True.
