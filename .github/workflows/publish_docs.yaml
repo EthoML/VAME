@@ -6,7 +6,7 @@ on:
       - main
       - dev
     paths:
-      - '.github/workflows/publush_docs.yaml'
+      - '.github/workflows/publish_docs.yaml'
       - 'docs/**'
       - 'examples/**'
       - 'src/**'
