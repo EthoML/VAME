@@ -147,8 +147,8 @@ Apply individual segmentation to each session.
 ```python
 @save_state(model=SegmentSessionFunctionSchema)
 def segment_session(config: dict,
-                    overwrite: bool = False,
-                    run_embedding: bool = False,
+                    overwrite_segmentation: bool = False,
+                    overwrite_embeddings: bool = False,
                     save_logs: bool = True) -> None
 ```
 
@@ -182,8 +182,8 @@ Dimmentions: (n_frames,)
 **Parameters**
 
 * **config** (`dict`): Configuration dictionary.
-* **overwrite** (`bool, optional`): Whether to overwrite existing segmentation results. Defaults to False.
-* **run_embedding** (`bool, optional`): If True, runs embedding function and re-creates embeddings files, even if they already exist.
+* **overwrite_segmentation** (`bool, optional`): Whether to overwrite existing segmentation results. Defaults to False.
+* **overwrite_embeddings** (`bool, optional`): If True, runs embedding function and re-creates embeddings files, even if they already exist.
 Defaults to False.
 * **save_logs** (`bool, optional`): Whether to save logs. Defaults to True.
 
