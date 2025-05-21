@@ -418,8 +418,8 @@ def individual_segmentation(
 @save_state(model=SegmentSessionFunctionSchema)
 def segment_session(
     config: dict,
-    overwrite: bool = False,
-    run_embedding: bool = False,
+    overwrite_segmentation: bool = False,
+    overwrite_embeddings: bool = False,
     save_logs: bool = True,
 ) -> None:
     """
@@ -454,9 +454,9 @@ def segment_session(
     ----------
     config : dict
         Configuration dictionary.
-    overwrite : bool, optional
+    overwrite_segmentation : bool, optional
         Whether to overwrite existing segmentation results. Defaults to False.
-    run_embedding : bool, optional
+    overwrite_embeddings : bool, optional
         If True, runs embedding function and re-creates embeddings files, even if they already exist.
         Defaults to False.
     save_logs : bool, optional
@@ -506,7 +506,7 @@ def segment_session(
             config=config,
             sessions=sessions,
             fixed=fixed,
-            overwrite=run_embedding,
+            overwrite=overwrite_embeddings,
             tqdm_stream=tqdm_stream,
         )
 
@@ -522,7 +522,7 @@ def segment_session(
                 seg + "-" + str(n_clusters),
             )
             if os.path.exists(seg_results_path):
-                if not overwrite:
+                if not overwrite_segmentation:
                     logger.info(
                         f"Segmentation for {seg} algorithm and cluster size {n_clusters} already exists, skipping..."
                     )
