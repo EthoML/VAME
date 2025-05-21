@@ -7,15 +7,15 @@ title: analysis.pose_segmentation
 
 #### logger
 
-#### embedd\_latent\_vectors
+#### embed\_latent\_vectors
 
 ```python
-def embedd_latent_vectors(
+def embed_latent_vectors(
         config: dict,
         sessions: List[str],
-        model: RNN_VAE,
         fixed: bool,
         read_from_variable: str = "position_processed",
+        overwrite: bool = False,
         tqdm_stream: Union[TqdmToLogger, None] = None) -> List[np.ndarray]
 ```
 
@@ -25,8 +25,9 @@ Embed latent vectors for the given files using the VAME model.
 
 * **config** (`dict`): Configuration dictionary.
 * **sessions** (`List[str]`): List of session names.
-* **model** (`RNN_VAE`): VAME model.
 * **fixed** (`bool`): Whether the model is fixed.
+* **read_from_variable** (`str, optional`): Variable to read from the dataset. Defaults to &quot;position_processed&quot;.
+* **overwrite** (`bool, optional`): Whether to overwrite existing latent vector files. Defaults to False.
 * **tqdm_stream** (`TqdmToLogger, optional`): TQDM Stream to redirect the tqdm output to logger.
 
 **Returns**
@@ -147,6 +148,7 @@ Apply individual segmentation to each session.
 @save_state(model=SegmentSessionFunctionSchema)
 def segment_session(config: dict,
                     overwrite: bool = False,
+                    run_embedding: bool = False,
                     save_logs: bool = True) -> None
 ```
 
@@ -181,6 +183,8 @@ Dimmentions: (n_frames,)
 
 * **config** (`dict`): Configuration dictionary.
 * **overwrite** (`bool, optional`): Whether to overwrite existing segmentation results. Defaults to False.
+* **run_embedding** (`bool, optional`): If True, runs embedding function and re-creates embeddings files, even if they already exist.
+Defaults to False.
 * **save_logs** (`bool, optional`): Whether to save logs. Defaults to True.
 
 **Returns**
