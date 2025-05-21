@@ -7312,7 +7312,6 @@ a.anchor-link {
                     processEnvironments: true
                 },
                 displayAlign: 'center',
-                messageStyle: 'none',
                 CommonHTML: {
                     linebreaks: {
                     automatic: true
@@ -7511,43 +7510,12 @@ a.anchor-link {
 <!-- End of mermaid configuration --></head>
 <body class="jp-Notebook" data-jp-theme-light="true" data-jp-theme-name="JupyterLab Light">
 <main>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=cdfb5249-3464-4172-a212-cd84c4cd0723">
-<div class="jp-Cell-inputWrapper" tabindex="0">
-<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
-</div>
-<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<p>The VAME workflow consists of four main steps, plus optional analysis:</p>
-<ol>
-<li><strong>Initialize project</strong>: In this step we will start the project and get your pose estimation data into the <code>movement</code> format</li>
-<li><strong>Preprocess</strong>: This step will perform cleaning, filtering and alignment of the raw pose estimation data</li>
-<li><strong>Train neural network</strong>:<ul>
-<li>Split the input data into training and test datasets.</li>
-<li>Train the VAME model to embed behavioural dynamics.</li>
-<li>Evaluate the performance of the trained model based on its reconstruction capabilities.</li>
-</ul>
-</li>
-<li><strong>Segment behavior</strong>:<ul>
-<li>Segment pose estimation time series into behavioral motifs, using HMM or K-means.</li>
-<li>Group similar motifs into communities, using hierarchical clustering.</li>
-</ul>
-</li>
-<li><strong>Analysis [Optional]</strong>:<ul>
-<li>Create motif and community videos.</li>
-<li>Visualization and projection of latent vectors onto a 2D plane via UMAP.</li>
-<li>Use the generative model (reconstruction decoder) to sample from the learned data distribution.</li>
-</ul>
-</li>
-</ol>
-</div>
-</div>
-</div>
-</div>
 <div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=d1410467">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<p>If you haven't yet, please install VAME by running <code>pip</code>:</p>
+<p>If you haven't yet, please install VAME:</p>
 </div>
 </div>
 </div>
@@ -7558,9 +7526,40 @@ a.anchor-link {
 <div class="jp-InputArea jp-Cell-inputArea">
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-ipython3"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="n">vame</span>
+<div class="highlight hl-ipython3"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="n">vame</span><span class="o">-</span><span class="n">py</span>
 </pre></div>
 </div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=cdfb5249-3464-4172-a212-cd84c4cd0723">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<p>The VAME workflow consists of four main steps, plus optional analysis:</p>
+<ol>
+<li><strong>Initialize project</strong>: In this step we will start the project and get your pose estimation data into the <code>movement</code> format</li>
+<li><strong>Preprocess</strong>: This step will perform cleaning, filtering and alignment of the raw pose estimation data</li>
+<li><strong>Train the VAME model</strong>:<ul>
+<li>Split the input data into training and test datasets.</li>
+<li>Train the VAME model to embed behavioural dynamics.</li>
+<li>Evaluate the performance of the trained model based on its reconstruction capabilities.</li>
+</ul>
+</li>
+<li><strong>Segment behavior</strong>:<ul>
+<li>Segment pose estimation time series into behavioral motifs, using HMM or K-means.</li>
+<li>Group similar motifs into communities, using hierarchical clustering.</li>
+</ul>
+</li>
+<li><strong>Vizualization and analysis [Optional]</strong>:<ul>
+<li>Visualization and projection of latent vectors onto a 2D plane via UMAP.</li>
+<li>Create motif and community videos.</li>
+<li>Use the generative model (reconstruction decoder) to sample from the learned data distribution.</li>
+</ul>
+</li>
+</ol>
 </div>
 </div>
 </div>
@@ -7628,7 +7627,12 @@ a.anchor-link {
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h2 id="Step-1:-Initialize-your-project">Step 1: Initialize your project<a class="anchor-link" href="#Step-1:-Initialize-your-project">¶</a></h2>
+<h2 id="Step-1:-Initialize-your-project">Step 1: Initialize your project<a class="anchor-link" href="#Step-1:-Initialize-your-project">¶</a></h2><p>VAME organizes around projects. To start a new project, you need to define some basic things:</p>
+<ul>
+<li>the project's name</li>
+<li>the paths to the pose estimation files</li>
+<li>the source software used to produce the pose estimation data</li>
+</ul>
 </div>
 </div>
 </div>
@@ -7655,6 +7659,9 @@ a.anchor-link {
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<p>This command will create a project folder in the defined working directory with the project name you defined.
+In this folder you can find a config file called <a href="/docs/project-config">config.yaml</a> which holds the main parameters for the VAME workflow.</p>
+<p>The videos and pose estimation files will be linked or copied to the project folder.</p>
 <p>Let's take a look at the project's configuration:</p>
 </div>
 </div>
@@ -7678,7 +7685,7 @@ a.anchor-link {
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<p>Now let's take a look at the input dataset:</p>
+<p>Now let's take a look at the formatted input dataset:</p>
 </div>
 </div>
 </div>
@@ -7703,12 +7710,15 @@ a.anchor-link {
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
 <h2 id="Step-2:-Preprocess-the-raw-pose-estimation-data">Step 2: Preprocess the raw pose estimation data<a class="anchor-link" href="#Step-2:-Preprocess-the-raw-pose-estimation-data">¶</a></h2><p>The preprocessing step includes:</p>
+<h4 id="Cleaning-low-confidence-data-points">Cleaning low confidence data points<a class="anchor-link" href="#Cleaning-low-confidence-data-points">¶</a></h4><p>Pose estimation data points with confidence below the threshold will be cleared and interpolated.</p>
+<h4 id="Egocentric-alignment-using-key-reference-points">Egocentric alignment using key reference points<a class="anchor-link" href="#Egocentric-alignment-using-key-reference-points">¶</a></h4><p>Based on two reference keypoints, the data will be aligned to an egocentric coordinate system:</p>
 <ul>
-<li>Cleaning low confidence data points</li>
-<li>Egocentric alignment using key reference points</li>
-<li>Outlier cleaning</li>
-<li>Savitzky-Golay filtering</li>
+<li><code>centered_reference_keypoint</code>: The keypoint that will be centered in the frame.</li>
+<li><code>orientation_reference_keypoint</code>: The keypoint that will be used to determine the rotation of the frame.</li>
 </ul>
+<p>By consequence, the <code>x</code> and <code>y</code> coordinates of the <code>centered_reference_keypoint</code> and the <code>x</code> coordinate of the <code>orientation_reference_keypoint</code> will be set to an array of zeros, and further removed from the dataset.</p>
+<h4 id="Outlier-cleaning">Outlier cleaning<a class="anchor-link" href="#Outlier-cleaning">¶</a></h4><p>Outliers will be removed based on the interquartile range (IQR) method. This means that data points that are below <code>Q1 - iqr_factor * IQR</code> or above <code>Q3 + iqr_factor * IQR</code> will be cleared and interpolated.</p>
+<h4 id="Savitzky-Golay-filtering">Savitzky-Golay filtering<a class="anchor-link" href="#Savitzky-Golay-filtering">¶</a></h4><p>The data will be further smoothed using a Savitzky-Golay filter.</p>
 </div>
 </div>
 </div>
@@ -7745,7 +7755,8 @@ a.anchor-link {
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<p>We start by splitting the data into train and test sets:</p>
+<p>At this point, we will prepare the data for training the VAME model, run the training and evaluate the model.</p>
+<p>We start by splitting the input data into train and test sets:</p>
 </div>
 </div>
 </div>
@@ -7791,7 +7802,7 @@ a.anchor-link {
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h2 id="Step-4:-Evaluate-the-VAME-model">Step 4: Evaluate the VAME model<a class="anchor-link" href="#Step-4:-Evaluate-the-VAME-model">¶</a></h2>
+<p>The model evaluation produces two plots, one showing the loss of the model during training and the other showing the reconstruction and future prediction of input sequence.</p>
 </div>
 </div>
 </div>
@@ -7814,7 +7825,17 @@ a.anchor-link {
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h2 id="Step-5:-Segmenting-the-behavior-into-motifs">Step 5: Segmenting the behavior into motifs<a class="anchor-link" href="#Step-5:-Segmenting-the-behavior-into-motifs">¶</a></h2>
+<h2 id="Step-4:-Segment-behavior">Step 4: Segment behavior<a class="anchor-link" href="#Step-4:-Segment-behavior">¶</a></h2><p>Behavioral segmentation in VAME is done in two steps:</p>
+<ol>
+<li>Segmentation of pose estimation data into motifs</li>
+<li>Clustering motifs in communities</li>
+</ol>
+<p>Let's start by running pose segmentation using two different algorithms: HMM and K-means. The results will be saved in the project folder.</p>
+<p><code>segment_session</code> accepts the following optional arguments:</p>
+<ul>
+<li><code>overwrite_segmentation</code>: re-runs segmentation, overwriting previous results. Defaults to False.</li>
+<li><code>overwrite_embeddings</code>: re-runs the generation of the embeddings values, overwriting previous results. Defaults to False.</li>
+</ul>
 </div>
 </div>
 </div>
@@ -7825,7 +7846,11 @@ a.anchor-link {
 <div class="jp-InputArea jp-Cell-inputArea">
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-ipython3"><pre><span></span><span class="n">vame</span><span class="o">.</span><span class="n">segment_session</span><span class="p">(</span><span class="n">config</span><span class="o">=</span><span class="n">config_data</span><span class="p">)</span>
+<div class="highlight hl-ipython3"><pre><span></span><span class="n">vame</span><span class="o">.</span><span class="n">segment_session</span><span class="p">(</span>
+    <span class="n">config</span><span class="o">=</span><span class="n">config_data</span><span class="p">,</span>
+    <span class="n">overwrite_segmentation</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="n">overwrite_embeddings</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+<span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -7837,7 +7862,7 @@ a.anchor-link {
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h2 id="Step-6:-Create-behavioural-hierarchies-via-community-clustering">Step 6: Create behavioural hierarchies via community clustering<a class="anchor-link" href="#Step-6:-Create-behavioural-hierarchies-via-community-clustering">¶</a></h2>
+<p>Community detection is done by grouping similar motifs into communities using hierarchical clustering. For that you must choose <code>cut_tree</code>, which is the cut level for the hierarchical clustering</p>
 </div>
 </div>
 </div>
@@ -7850,7 +7875,6 @@ a.anchor-link {
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">vame</span><span class="o">.</span><span class="n">community</span><span class="p">(</span>
     <span class="n">config</span><span class="o">=</span><span class="n">config_data</span><span class="p">,</span>
-    <span class="n">segmentation_algorithm</span><span class="o">=</span><span class="s1">'hmm'</span><span class="p">,</span>
     <span class="n">cut_tree</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
 <span class="p">)</span>
 </pre></div>
@@ -7864,7 +7888,7 @@ a.anchor-link {
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h2 id="Step-7:-Visualizing-the-results">Step 7: Visualizing the results<a class="anchor-link" href="#Step-7:-Visualizing-the-results">¶</a></h2>
+<h2 id="Step-5:-Vizualization-and-analysis">Step 5: Vizualization and analysis<a class="anchor-link" href="#Step-5:-Vizualization-and-analysis">¶</a></h2>
 </div>
 </div>
 </div>
@@ -7875,13 +7899,14 @@ a.anchor-link {
 <div class="jp-InputArea jp-Cell-inputArea">
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-ipython3"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">vame.visualization.motif</span><span class="w"> </span><span class="kn">import</span> <span class="n">visualize_motif_tree</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">vame.visualization.umap</span><span class="w"> </span><span class="kn">import</span> <span class="n">visualize_umap</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">vame.visualization.preprocessing</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+<div class="highlight hl-ipython3"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">vame.visualization</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">visualize_preprocessing_scatter</span><span class="p">,</span>
     <span class="n">visualize_preprocessing_timeseries</span><span class="p">,</span>
+    <span class="n">visualize_preprocessing_cloud</span><span class="p">,</span>
+    <span class="n">plot_loss</span><span class="p">,</span>
+    <span class="n">visualize_hierarchical_tree</span><span class="p">,</span>
+    <span class="n">visualize_umap</span><span class="p">,</span>
 <span class="p">)</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">vame.visualization.model</span><span class="w"> </span><span class="kn">import</span> <span class="n">plot_loss</span>
 </pre></div>
 </div>
 </div>
@@ -7913,6 +7938,19 @@ a.anchor-link {
 </div>
 </div>
 </div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=9e7b6266-a03c-4646-b7e2-0a0fb9a0070d">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-ipython3"><pre><span></span><span class="n">visualize_preprocessing_cloud</span><span class="p">(</span><span class="n">config</span><span class="o">=</span><span class="n">config_data</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
 </div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=37b45c89-1622-4e8d-916a-d8f4d8e580fa">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
@@ -7920,7 +7958,7 @@ a.anchor-link {
 <div class="jp-InputArea jp-Cell-inputArea">
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-ipython3"><pre><span></span><span class="n">plot_loss</span><span class="p">(</span><span class="n">cfg</span><span class="o">=</span><span class="n">config_data</span><span class="p">,</span> <span class="n">model_name</span><span class="o">=</span><span class="s2">"VAME"</span><span class="p">)</span>
+<div class="highlight hl-ipython3"><pre><span></span><span class="n">plot_loss</span><span class="p">(</span><span class="n">config</span><span class="o">=</span><span class="n">config_data</span><span class="p">,</span> <span class="n">model_name</span><span class="o">=</span><span class="s2">"VAME"</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -7933,7 +7971,7 @@ a.anchor-link {
 <div class="jp-InputArea jp-Cell-inputArea">
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-ipython3"><pre><span></span><span class="n">visualize_motif_tree</span><span class="p">(</span>
+<div class="highlight hl-ipython3"><pre><span></span><span class="n">visualize_hierarchical_tree</span><span class="p">(</span>
     <span class="n">config</span><span class="o">=</span><span class="n">config_data</span><span class="p">,</span>
     <span class="n">segmentation_algorithm</span><span class="o">=</span><span class="s2">"hmm"</span><span class="p">,</span>
 <span class="p">)</span>
@@ -7951,21 +7989,10 @@ a.anchor-link {
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">visualize_umap</span><span class="p">(</span>
     <span class="n">config</span><span class="o">=</span><span class="n">config_data</span><span class="p">,</span>
-    <span class="n">label</span><span class="o">=</span><span class="s2">"community"</span><span class="p">,</span>
-    <span class="n">segmentation_algorithm</span><span class="o">=</span><span class="s2">"hmm"</span><span class="p">,</span>
+    <span class="n">show_figure</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
 <span class="p">)</span>
 </pre></div>
 </div>
-</div>
-</div>
-</div>
-</div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=b42debe3-14da-4278-ab40-2eb59f7b7ae9">
-<div class="jp-Cell-inputWrapper" tabindex="0">
-<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
-</div>
-<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<hr/>
 </div>
 </div>
 </div>
@@ -7975,7 +8002,7 @@ a.anchor-link {
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h2 id="Optional:-create-motif-and-community-videos">Optional: create motif and community videos<a class="anchor-link" href="#Optional:-create-motif-and-community-videos">¶</a></h2><p>VAME only needs the pose estimation data to generate motifs and communities. But it provides auxiliary functions to split original videos into motifs or communities videos.</p>
+<h4 id="Create-motif-and-community-videos">Create motif and community videos<a class="anchor-link" href="#Create-motif-and-community-videos">¶</a></h4><p>VAME only needs the pose estimation data to generate motifs and communities. But it provides auxiliary functions to split original videos into motifs or communities videos.</p>
 </div>
 </div>
 </div>
@@ -7994,6 +8021,16 @@ a.anchor-link {
 </div>
 </div>
 </div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=2b350456-0347-4dcb-9e74-465c6f142322">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<p>Create motif videos to get insights about the fine grained poses:</p>
+</div>
+</div>
+</div>
 </div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=508a90bd">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
@@ -8001,13 +8038,19 @@ a.anchor-link {
 <div class="jp-InputArea jp-Cell-inputArea">
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-ipython3"><pre><span></span><span class="c1"># Create motif videos to get insights about the fine grained poses</span>
-<span class="n">vame</span><span class="o">.</span><span class="n">motif_videos</span><span class="p">(</span>
-    <span class="n">config</span><span class="o">=</span><span class="n">config_data</span><span class="p">,</span>
-    <span class="n">segmentation_algorithm</span><span class="o">=</span><span class="s1">'hmm'</span><span class="p">,</span>
-<span class="p">)</span>
+<div class="highlight hl-ipython3"><pre><span></span><span class="n">vame</span><span class="o">.</span><span class="n">motif_videos</span><span class="p">(</span><span class="n">config</span><span class="o">=</span><span class="n">config_data</span><span class="p">)</span>
 </pre></div>
 </div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=66fc3080-f8b0-4624-8250-0c6f4ae1dcb9">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<p>Create community videos to get insights about behavior on a hierarchical scale:</p>
 </div>
 </div>
 </div>
@@ -8018,37 +8061,7 @@ a.anchor-link {
 <div class="jp-InputArea jp-Cell-inputArea">
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-ipython3"><pre><span></span><span class="c1"># Create community videos to get insights about behavior on a hierarchical scale</span>
-<span class="n">vame</span><span class="o">.</span><span class="n">community_videos</span><span class="p">(</span>
-    <span class="n">config</span><span class="o">=</span><span class="n">config_data</span><span class="p">,</span>
-    <span class="n">segmentation_algorithm</span><span class="o">=</span><span class="s1">'hmm'</span><span class="p">,</span>
-<span class="p">)</span>
-</pre></div>
-</div>
-</div>
-</div>
-</div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=2ddc5b37-bfda-479f-873a-1f9402faf96e">
-<div class="jp-Cell-inputWrapper" tabindex="0">
-<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
-</div>
-<div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
-<div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-ipython3"><pre><span></span> 
-</pre></div>
-</div>
-</div>
-</div>
-</div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=0442385e-6f6c-4e6d-a086-fda947470c36">
-<div class="jp-Cell-inputWrapper" tabindex="0">
-<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
-</div>
-<div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
-<div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-ipython3"><pre><span></span> 
+<div class="highlight hl-ipython3"><pre><span></span><span class="n">vame</span><span class="o">.</span><span class="n">community_videos</span><span class="p">(</span><span class="n">config</span><span class="o">=</span><span class="n">config_data</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
