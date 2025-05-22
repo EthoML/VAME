@@ -8,7 +8,12 @@ import pynwb
 import ndx_pose
 import ndx_vame
 
+from vame.logging.logger import VameLogger
 from vame.io import load_vame_dataset
+
+
+logger_config = VameLogger(__name__)
+logger = logger_config.logger
 
 
 def get_base_nwbfile(
@@ -94,7 +99,7 @@ def get_base_nwbfile(
 
 def export_to_nwb(
     config: dict,
-    nwbfile_kwargs: Optional[dict] = None,
+    nwbfile_kwargs: Optional[list[dict]] = None,
     subject_kwargs: Optional[list[dict]] = None,
 ):
     """
@@ -105,18 +110,19 @@ def export_to_nwb(
         raise ValueError("No session names provided in the config.")
 
     if nwbfile_kwargs is None:
-        nwbfile_kwargs = {}
+        nwbfile_kwargs = [{}] * len(session_names)
+    if len(nwbfile_kwargs) != len(session_names):
+        raise ValueError("Number of nwbfile_kwargs must match number of sessions.")
+
     if subject_kwargs is None:
         subject_kwargs = [{}] * len(session_names)
-
     if len(subject_kwargs) != len(session_names):
         raise ValueError("Number of subject_kwargs must match number of sessions.")
 
     model_time_window = config["time_window"]
     vame_starting_sample_offset = int(model_time_window / 2)
 
-    for session_name, sub in zip(session_names, subject_kwargs):
-
+    for session_name, sub, nwbmeta in zip(session_names, subject_kwargs, nwbfile_kwargs):
         # Load session data
         data_path = (Path(config["project_path"]) / "data" / "processed" / f"{session_name}_processed.nc").resolve()
         ds = load_vame_dataset(ds_path=data_path)
@@ -129,7 +135,9 @@ def export_to_nwb(
             vame_series_kwargs["rate"] = ds.fps
             vame_series_kwargs["starting_time"] = vame_starting_sample_offset / ds.fps
         else:
-            vame_series_kwargs["timestamps"] = ds.sel(keypoints=keypoints[0]).time.values
+            # If using timestamps, we need to crop the timestamps to match the model time window
+            timestamps = ds.sel(keypoints=keypoints[0]).time.values
+            vame_series_kwargs["timestamps"] = timestamps[vame_starting_sample_offset:-vame_starting_sample_offset]
 
         # VAME content
         model_name = config.get("model_name")
@@ -144,9 +152,10 @@ def export_to_nwb(
             "results" /
             session_name /
             model_name /
-            f"{segmentation_algorithms[0]}-{n_clusters}" /
-            f"latent_vector_{session_name}.npy"
+            "latent_vectors.npy"
         ).resolve()
+        if not latent_path.exists():
+            raise ValueError(f"Latent space data not found at: {latent_path}. Make sure to run vame.segment_session() first.")
         latent_data = np.load(latent_path)
 
         for seg in segmentation_algorithms:
@@ -154,7 +163,7 @@ def export_to_nwb(
             nwbfile = get_base_nwbfile(
                 session_name=session_name,
                 ds=ds,
-                nwbfile_kwargs=nwbfile_kwargs,
+                nwbfile_kwargs=nwbmeta,
                 subject_kwargs=sub,
             )
             behavior_pm = nwbfile.processing["behavior"]
@@ -176,6 +185,8 @@ def export_to_nwb(
                 f"{seg}-{n_clusters}" /
                 f"{n_clusters}_{seg}_label_{session_name}.npy"
             ).resolve()
+            if not motifs_path.exists():
+                raise ValueError(f"Motif data not found at: {motifs_path}. Make sure to run vame.segment_session() first.")
             motif_labels = np.load(motifs_path)
             motif_series = ndx_vame.MotifSeries(
                 name="MotifSeries",
@@ -195,6 +206,8 @@ def export_to_nwb(
                 "community" /
                 f"cohort_community_label_{session_name}.npy"
             ).resolve()
+            if not community_path.exists():
+                raise ValueError(f"Community data not found at: {community_path}. Make sure to run vame.community() first.")
             data_communities = np.load(community_path)
             community_series = ndx_vame.CommunitySeries(
                 name="CommunitySeries",
@@ -226,3 +239,4 @@ def export_to_nwb(
             ).resolve()
             with pynwb.NWBHDF5IO(str(nwbfile_path), "w") as io:
                 io.write(nwbfile)
+            logger.info(f"{session_name} saved to NWB file at: {nwbfile_path}.")
