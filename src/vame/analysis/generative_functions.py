@@ -272,7 +272,6 @@ def generative_model(
                 "results",
                 session,
                 model_name,
-                segmentation_algorithm + "-" + str(n_clusters),
                 "",
             )
 
@@ -280,7 +279,7 @@ def generative_model(
                 latent_vector = np.load(
                     os.path.join(
                         path_to_file,
-                        "latent_vector_" + session + ".npy",
+                        "latent_vectors.npy",
                     )
                 )
                 return random_generative_samples(
@@ -293,7 +292,7 @@ def generative_model(
                 latent_vector = np.load(
                     os.path.join(
                         path_to_file,
-                        "latent_vector_" + session + ".npy",
+                        "latent_vectors.npy",
                     )
                 )
                 return random_reconstruction_samples(
@@ -310,6 +309,7 @@ def generative_model(
                 cluster_center = np.load(
                     os.path.join(
                         path_to_file,
+                        segmentation_algorithm + "-" + str(n_clusters),
                         "cluster_center_" + session + ".npy",
                     )
                 )
@@ -323,13 +323,13 @@ def generative_model(
                 latent_vector = np.load(
                     os.path.join(
                         path_to_file,
-                        "latent_vector_" + session + ".npy",
+                        "latent_vectors.npy",
                     )
                 )
                 labels = np.load(
                     os.path.join(
                         path_to_file,
-                        "",
+                        segmentation_algorithm + "-" + str(n_clusters),
                         str(n_clusters) + "_" + segmentation_algorithm + "_label_" + session + ".npy",
                     )
                 )
