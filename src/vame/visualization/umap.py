@@ -19,8 +19,6 @@ def umap_embedding(
     config: dict,
     session: str,
     model_name: str,
-    n_clusters: int,
-    segmentation_algorithm: SegmentationAlgorithms,
 ) -> np.ndarray:
     """
     Perform UMAP embedding for given file and parameters.
@@ -33,10 +31,6 @@ def umap_embedding(
         Session name.
     model_name : str
         Model name.
-    n_clusters : int
-        Number of clusters.
-    segmentation_algorithm : str
-        Segmentation algorithm.
 
     Returns
     -------
@@ -179,22 +173,19 @@ def visualize_umap(
             os.makedirs(save_path_base)
 
         for session in sessions:
+            base_path = Path(config["project_path"]) / "results" / session / model_name
+            umap_embeddings_path = base_path / "umap_embedding.npy"
+            if umap_embeddings_path.exists():
+                logger.info(f"UMAP embedding already exists for session {session}")
+                embed = np.load(str(umap_embeddings_path.resolve()))
+            else:
+                logger.info(f"Computing UMAP embedding for session {session}")
+                embed = umap_embedding(
+                    config=config,
+                    session=session,
+                    model_name=model_name,
+                )
             for seg in segmentation_algorithms:
-                base_path = Path(config["project_path"]) / "results" / session / model_name
-                umap_embeddings_path = base_path / "umap_embedding.npy"
-                if umap_embeddings_path.exists():
-                    logger.info(f"UMAP embedding already exists for session {session}")
-                    embed = np.load(str(umap_embeddings_path.resolve()))
-                else:
-                    logger.info(f"Computing UMAP embedding for session {session}")
-                    embed = umap_embedding(
-                        config=config,
-                        session=session,
-                        model_name=model_name,
-                        n_clusters=n_clusters,
-                        segmentation_algorithm=seg,
-                    )
-
                 labels_names = ["none", "motif", "community"]
                 for label in labels_names:
                     if label == "none":
