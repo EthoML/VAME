@@ -55,17 +55,15 @@ def umap_embedding(
         "results",
         session,
         model_name,
-        segmentation_algorithm + "-" + str(n_clusters),
-        "",
     )
-    latent_vector = np.load(os.path.join(folder, "latent_vector_" + session + ".npy"))
+    latent_vector = np.load(os.path.join(folder, "latent_vectors.npy"))
     num_points = config["num_points"]
     if num_points > latent_vector.shape[0]:
         num_points = latent_vector.shape[0]
     logger.info(f"Embedding {num_points} data points...")
     embed = reducer.fit_transform(latent_vector[:num_points, :])
     np.save(
-        os.path.join(folder, "community", "umap_embedding_" + session + ".npy"),
+        os.path.join(folder, "umap_embedding.npy"),
         embed,
     )
     return embed
@@ -182,14 +180,13 @@ def visualize_umap(
 
         for session in sessions:
             for seg in segmentation_algorithms:
-                base_path = Path(config["project_path"]) / "results" / session / model_name / f"{seg}-{n_clusters}"
-                umap_embeddings_path = base_path / "community" / f"umap_embedding_{session}.npy"
+                base_path = Path(config["project_path"]) / "results" / session / model_name
+                umap_embeddings_path = base_path / "umap_embedding.npy"
                 if umap_embeddings_path.exists():
                     logger.info(f"UMAP embedding already exists for session {session}")
                     embed = np.load(str(umap_embeddings_path.resolve()))
                 else:
                     logger.info(f"Computing UMAP embedding for session {session}")
-                    (base_path / "community").mkdir(parents=True, exist_ok=True)
                     embed = umap_embedding(
                         config=config,
                         session=session,
@@ -205,7 +202,7 @@ def visualize_umap(
                         labels = None
                     elif label == "motif":
                         output_figure_file_name = f"umap_{session}_{model_name}_{seg}-{n_clusters}_motif.png"
-                        labels_file_path = base_path / f"{n_clusters}_{seg}_label_{session}.npy"
+                        labels_file_path = base_path / f"{seg}-{n_clusters}" / f"{n_clusters}_{seg}_label_{session}.npy"
                         if labels_file_path.exists():
                             labels = np.load(str(labels_file_path.resolve()))
                         else:
@@ -213,7 +210,7 @@ def visualize_umap(
                             continue
                     elif label == "community":
                         output_figure_file_name = f"umap_{session}_{model_name}_{seg}-{n_clusters}_community.png"
-                        labels_file_path = base_path / "community" / f"cohort_community_label_{session}.npy"
+                        labels_file_path = base_path / f"{seg}-{n_clusters}" / "community" / f"cohort_community_label_{session}.npy"
                         if labels_file_path.exists():
                             labels = np.load(str(labels_file_path.resolve()))
                         else:

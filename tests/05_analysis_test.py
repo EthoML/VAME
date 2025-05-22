@@ -38,9 +38,9 @@ def test_pose_segmentation_hmm_files_exists(
     file = setup_project_and_train_model["config_data"]["session_names"][0]
     model_name = setup_project_and_train_model["config_data"]["model_name"]
     n_clusters = setup_project_and_train_model["config_data"]["n_clusters"]
-    save_base_path = Path(project_path) / "results" / file / model_name / f"{segmentation_algorithm}-{n_clusters}"
-    latent_vector_path = save_base_path / f"latent_vector_{file}.npy"
-    motif_usage_path = save_base_path / f"motif_usage_{file}.npy"
+    save_base_path = Path(project_path) / "results" / file / model_name
+    latent_vector_path = save_base_path / "latent_vectors.npy"
+    motif_usage_path = save_base_path / f"{segmentation_algorithm}-{n_clusters}" / f"motif_usage_{file}.npy"
 
     assert latent_vector_path.exists()
     assert motif_usage_path.exists()
