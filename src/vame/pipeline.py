@@ -151,7 +151,7 @@ class VAMEPipeline:
         run_outlier_cleaning: bool = True,
         run_savgol_filtering: bool = True,
         run_rescaling: bool = False,
-    ) -> None:
+    ) -> str:
         """
         Preprocesses the data.
 
@@ -174,11 +174,11 @@ class VAMEPipeline:
 
         Returns
         -------
-        None
+        variable name of the last-executed preprocessing step output
         """
         self.centered_reference_keypoint = centered_reference_keypoint
         self.orientation_reference_keypoint = orientation_reference_keypoint
-        vame.preprocessing(
+        return vame.preprocessing(
             config=self.config,
             centered_reference_keypoint=centered_reference_keypoint,
             orientation_reference_keypoint=orientation_reference_keypoint,
@@ -194,6 +194,7 @@ class VAMEPipeline:
         self,
         test_fraction: float = 0.1,
         split_mode: Literal["mode_1", "mode_2"] = "mode_2",
+        read_from_variable: str = "position_processed",
     ) -> None:
         """
         Creates the training set.
@@ -212,6 +213,7 @@ class VAMEPipeline:
         vame.create_trainset(
             config=self.config,
             test_fraction=test_fraction,
+            read_from_variable=read_from_variable,
             split_mode=split_mode,
             save_logs=self.save_logs,
         )
@@ -491,7 +493,7 @@ class VAMEPipeline:
         None
         """
         if from_step == 0:
-            self.preprocessing(**preprocessing_kwargs)
+            trainingset_kwargs["read_from_variable"] = self.preprocessing(**preprocessing_kwargs)
         if from_step <= 1:
             self.create_training_set(**trainingset_kwargs)
         if from_step <= 2:
