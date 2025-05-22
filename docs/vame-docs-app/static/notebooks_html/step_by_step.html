@@ -7610,12 +7610,14 @@ a.anchor-link {
 <span class="n">source_software</span> <span class="o">=</span> <span class="s2">"DeepLabCut"</span>
 
 <span class="c1"># Download sample data</span>
-<span class="n">ps</span> <span class="o">=</span> <span class="n">download_sample_data</span><span class="p">(</span><span class="n">source_software</span><span class="p">)</span>
-<span class="n">videos</span> <span class="o">=</span> <span class="p">[</span><span class="n">ps</span><span class="p">[</span><span class="s2">"video"</span><span class="p">]]</span>
-<span class="n">poses_estimations</span> <span class="o">=</span> <span class="p">[</span><span class="n">ps</span><span class="p">[</span><span class="s2">"poses"</span><span class="p">]]</span>
+<span class="n">sample</span> <span class="o">=</span> <span class="n">download_sample_data</span><span class="p">(</span><span class="n">source_software</span><span class="p">)</span>
+<span class="n">videos</span> <span class="o">=</span> <span class="p">[</span><span class="n">sample</span><span class="p">[</span><span class="s2">"video"</span><span class="p">]]</span>
+<span class="n">poses_estimations</span> <span class="o">=</span> <span class="p">[</span><span class="n">sample</span><span class="p">[</span><span class="s2">"poses"</span><span class="p">]]</span>
+<span class="n">fps</span> <span class="o">=</span> <span class="n">sample</span><span class="p">[</span><span class="s2">"fps"</span><span class="p">]</span>
 
 <span class="nb">print</span><span class="p">(</span><span class="n">videos</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="n">poses_estimations</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">fps</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -7647,6 +7649,7 @@ a.anchor-link {
     <span class="n">project_name</span><span class="o">=</span><span class="s2">"my_vame_project"</span><span class="p">,</span>
     <span class="n">poses_estimations</span><span class="o">=</span><span class="n">poses_estimations</span><span class="p">,</span>
     <span class="n">source_software</span><span class="o">=</span><span class="s2">"DeepLabCut"</span><span class="p">,</span>
+    <span class="n">fps</span><span class="o">=</span><span class="n">fps</span><span class="p">,</span>
 <span class="p">)</span>
 </pre></div>
 </div>
@@ -8062,6 +8065,78 @@ In this folder you can find a config file called <a href="/docs/project-config">
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">vame</span><span class="o">.</span><span class="n">community_videos</span><span class="p">(</span><span class="n">config</span><span class="o">=</span><span class="n">config_data</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=77e0323a-295b-45cf-a568-c99d29467dda">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h3 id="Export-VAME-results-to-NWB">Export VAME results to NWB<a class="anchor-link" href="#Export-VAME-results-to-NWB">¶</a></h3><p>You can easily export the results from your VAME project to a NWB file, which will include:</p>
+<ul>
+<li><a href="https://pynwb.readthedocs.io/en/latest/pynwb.file.html#pynwb.file.NWBFile">NWBFile</a> metadata</li>
+<li><a href="https://pynwb.readthedocs.io/en/stable/pynwb.file.html#pynwb.file.Subject">Subject</a> metadata</li>
+<li>Pose estimation data, using the <a href="https://github.com/rly/ndx-pose">ndx-pose</a> extension</li>
+<li>VAME project data, using the <a href="https://github.com/catalystneuro/ndx-vame">ndx-vame</a> extension</li>
+</ul>
+<p>NWBFile and Subject metadata dictionaries are unique for each session in your project. These values are optional, but it is highly recommended that you fill them if you plan on sharing your data.</p>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=c09f4d81-6ad8-4e51-8981-c357947b6d71">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-ipython3"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">vame.io</span><span class="w"> </span><span class="kn">import</span> <span class="n">export_to_nwb</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span><span class="p">,</span> <span class="n">timezone</span>
+
+<span class="n">nwbfile_kwargs</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">"session_description"</span><span class="p">:</span> <span class="s2">"The description of this experimental session."</span><span class="p">,</span>
+    <span class="s2">"identifier"</span><span class="p">:</span> <span class="s2">"id123"</span><span class="p">,</span>
+    <span class="s2">"session_start_time"</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">fromisoformat</span><span class="p">(</span><span class="s2">"2025-05-21T14:30:00+02:00"</span><span class="p">),</span>
+<span class="p">}</span>
+
+<span class="n">subject_kwargs</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">"age"</span><span class="p">:</span> <span class="s2">"P90D"</span><span class="p">,</span>
+    <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"mouse A10"</span><span class="p">,</span>
+    <span class="s2">"sex"</span><span class="p">:</span> <span class="s2">"M"</span><span class="p">,</span>
+    <span class="s2">"species"</span><span class="p">:</span> <span class="s2">"Mus musculus"</span><span class="p">,</span>
+<span class="p">}</span>
+
+<span class="n">export_to_nwb</span><span class="p">(</span>
+    <span class="n">config</span><span class="o">=</span><span class="n">config_data</span><span class="p">,</span>
+    <span class="n">nwbfile_kwargs</span><span class="o">=</span><span class="p">[</span><span class="n">nwbfile_kwargs</span><span class="p">],</span>
+    <span class="n">subject_kwargs</span><span class="o">=</span><span class="p">[</span><span class="n">subject_kwargs</span><span class="p">],</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=c3aa4a55-86fd-4b92-92c5-427249f005ea">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-ipython3"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pynwb</span><span class="w"> </span><span class="kn">import</span> <span class="n">read_nwb</span>
+
+
+<span class="n">session</span> <span class="o">=</span> <span class="n">config_data</span><span class="p">[</span><span class="s2">"session_names"</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">config_data</span><span class="p">[</span><span class="s2">"model_name"</span><span class="p">]</span>
+<span class="n">nwbfile_path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">config_data</span><span class="p">[</span><span class="s2">"project_path"</span><span class="p">])</span> <span class="o">/</span> <span class="s2">"results"</span> <span class="o">/</span> <span class="n">session</span> <span class="o">/</span> <span class="n">model</span> <span class="o">/</span> <span class="sa">f</span><span class="s2">"hmm-</span><span class="si">{</span><span class="n">config_data</span><span class="p">[</span><span class="s1">'n_clusters'</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span> <span class="o">/</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">session</span><span class="si">}</span><span class="s2">.nwb"</span>
+
+<span class="n">nwbfile</span> <span class="o">=</span> <span class="n">read_nwb</span><span class="p">(</span><span class="n">nwbfile_path</span><span class="p">)</span>
+<span class="n">nwbfile</span>
 </pre></div>
 </div>
 </div>

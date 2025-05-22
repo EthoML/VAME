@@ -3,6 +3,10 @@ sidebar_label: nwb
 title: io.nwb
 ---
 
+#### logger\_config
+
+#### logger
+
 #### get\_base\_nwbfile
 
 ```python
@@ -16,7 +20,7 @@ Create base NWBFile object.
 
 ```python
 def export_to_nwb(config: dict,
-                  nwbfile_kwargs: Optional[dict] = None,
+                  nwbfile_kwargs: Optional[list[dict]] = None,
                   subject_kwargs: Optional[list[dict]] = None)
 ```
 
