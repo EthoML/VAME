@@ -601,6 +601,8 @@ def umap_vis_plotly(
             font=dict(size=14),
             itemclick="toggle",
             itemdoubleclick="toggleothers",
+            itemsizing="constant",
+            itemwidth=30,
         ),
         updatemenus=updatemenus,
         margin=dict(l=40, r=200, t=80, b=40),
