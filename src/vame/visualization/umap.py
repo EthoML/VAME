@@ -486,16 +486,33 @@ def umap_vis_plotly(
 
     updatemenus = [dict(active=0, buttons=buttons, x=1.1, y=1)]
     layout = go.Layout(
-        title=title_none,
-        xaxis=dict(title="UMAP 1", showgrid=True, gridcolor="lightgray", zeroline=False),
-        yaxis=dict(title="UMAP 2", showgrid=True, gridcolor="lightgray", zeroline=False),
+        title=dict(text=title_none, font=dict(size=18)),
+        xaxis=dict(
+            title=dict(text="UMAP 1", font=dict(size=16)),
+            showgrid=True,
+            gridcolor="lightgray",
+            zeroline=False,
+            tickfont=dict(size=14),
+        ),
+        yaxis=dict(
+            title=dict(text="UMAP 2", font=dict(size=16)),
+            showgrid=True,
+            gridcolor="lightgray",
+            zeroline=False,
+            tickfont=dict(size=14),
+        ),
         plot_bgcolor="white",
         paper_bgcolor="white",
         shapes=[
             dict(type="line", xref="x", yref="paper", x0=0, x1=0, y0=0, y1=1, line=dict(color="black", width=1)),
             dict(type="line", xref="paper", yref="y", x0=0, x1=1, y0=0, y1=0, line=dict(color="black", width=1)),
         ],
-        legend=dict(title_text="Label"),
+        legend=dict(
+            title=dict(text="Label", font=dict(size=16)),
+            font=dict(size=14),
+            itemclick="toggle",
+            itemdoubleclick="toggleothers",
+        ),
         updatemenus=updatemenus,
         margin=dict(l=40, r=40, t=40, b=40),
         height=600,
