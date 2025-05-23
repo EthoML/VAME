@@ -227,6 +227,8 @@ def visualize_umap(
             os.makedirs(save_path_base)
 
         all_sessions_embeddings = []
+        all_session_names = []
+        all_sample_indices = []
         all_sessions_labels_motif = {}
         all_sessions_labels_community = {}
         for session in sessions:
@@ -243,7 +245,9 @@ def visualize_umap(
                     model_name=model_name,
                 )
             all_sessions_embeddings.append(embed)
-            # all_sessions_labels_session_name.append([session] * len(embed))
+            # Add session names and sample indices for each point
+            all_session_names.extend([session] * len(embed))
+            all_sample_indices.extend(list(range(len(embed))))
             for seg in segmentation_algorithms:
                 labels_names = ["none", "motif", "community"]
                 labels_motif = []
@@ -330,6 +334,8 @@ def visualize_umap(
                 embed=all_embeddings,
                 labels_motif=motif_labels,
                 labels_community=community_labels,
+                session_names=all_session_names,
+                sample_indices=all_sample_indices,
                 num_points=num_points,
                 title=f"UMAP Visualization - Model: {model_name} | {seg}-{n_clusters}",
             )
@@ -352,6 +358,8 @@ def umap_vis_plotly(
     embed: np.ndarray,
     labels_motif: Optional[np.ndarray] = None,
     labels_community: Optional[np.ndarray] = None,
+    session_names: Optional[list] = None,
+    sample_indices: Optional[list] = None,
     num_points: int = 30_000,
     title: str = "UMAP",
     marker_size: float = 3.5,
@@ -394,7 +402,36 @@ def umap_vis_plotly(
     x_vals = embed[indices, 0]
     y_vals = embed[indices, 1]
 
+    # Prepare hover data
+    if session_names is not None and sample_indices is not None:
+        session_vals = [session_names[i] for i in indices]
+        sample_vals = [sample_indices[i] for i in indices]
+    else:
+        session_vals = ["N/A"] * len(indices)
+        sample_vals = ["N/A"] * len(indices)
+
+    # Prepare motif and community values for hover
+    if labels_motif is not None:
+        motif_vals = np.array(labels_motif)[indices]
+    else:
+        motif_vals = ["N/A"] * len(indices)
+
+    if labels_community is not None:
+        comm_vals = np.array(labels_community)[indices]
+    else:
+        comm_vals = ["N/A"] * len(indices)
+
+    # Custom hover template
+    hover_template = (
+        "<b>Session:</b> %{customdata[0]}<br>"
+        "<b>Motif:</b> %{customdata[1]}<br>"
+        "<b>Community:</b> %{customdata[2]}<br>"
+        "<b>Sample:</b> %{customdata[3]}<br>"
+        "<extra></extra>"
+    )
+
     # Trace for no labeling (grey)
+    customdata_none = list(zip(session_vals, motif_vals, comm_vals, sample_vals))
     trace_none = go.Scattergl(
         x=x_vals,
         y=y_vals,
@@ -406,6 +443,8 @@ def umap_vis_plotly(
         ),
         name="None",
         visible=True,
+        customdata=customdata_none,
+        hovertemplate=hover_template,
     )
     data = [trace_none]
 
@@ -420,6 +459,8 @@ def umap_vis_plotly(
 
         for i, motif_id in enumerate(unique_motifs):
             mask = motif_vals == motif_id
+            # Prepare customdata for this motif
+            customdata_motif = [customdata_none[j] for j in range(len(mask)) if mask[j]]
             trace_motif = go.Scattergl(
                 x=x_vals[mask],
                 y=y_vals[mask],
@@ -431,6 +472,8 @@ def umap_vis_plotly(
                 ),
                 name=f"Motif {int(motif_id)}",
                 visible=False,
+                customdata=customdata_motif,
+                hovertemplate=hover_template,
             )
             data.append(trace_motif)
 
@@ -445,6 +488,8 @@ def umap_vis_plotly(
 
         for i, comm_id in enumerate(unique_communities):
             mask = comm_vals == comm_id
+            # Prepare customdata for this community
+            customdata_comm = [customdata_none[j] for j in range(len(mask)) if mask[j]]
             trace_comm = go.Scattergl(
                 x=x_vals[mask],
                 y=y_vals[mask],
@@ -456,6 +501,8 @@ def umap_vis_plotly(
                 ),
                 name=f"Community {int(comm_id)}",
                 visible=False,
+                customdata=customdata_comm,
+                hovertemplate=hover_template,
             )
             data.append(trace_comm)
 
