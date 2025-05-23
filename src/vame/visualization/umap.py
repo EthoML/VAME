@@ -489,7 +489,7 @@ def umap_vis_plotly(
             dict(label="Community", method="restyle", args=["visible", mask_comm]),
         )
 
-    updatemenus = [dict(active=0, buttons=buttons, x=0., y=1., xanchor="left", yanchor="bottom")]
+    updatemenus = [dict(active=0, buttons=buttons, x=0.98, y=1., xanchor="left", yanchor="bottom")]
     layout = go.Layout(
         title=dict(text=title, font=dict(size=18)),
         xaxis=dict(
@@ -519,7 +519,7 @@ def umap_vis_plotly(
             itemdoubleclick="toggleothers",
         ),
         updatemenus=updatemenus,
-        margin=dict(l=40, r=200, t=90, b=40),
+        margin=dict(l=40, r=200, t=80, b=40),
         height=800,
         width=1100,
         dragmode="pan",
