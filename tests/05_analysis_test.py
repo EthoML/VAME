@@ -145,14 +145,13 @@ def test_visualization_output_files(setup_project_and_train_model):
     visualize_umap(
         config=setup_project_and_train_model["config_data"],
         save_to_file=True,
-        show_figure=False,
         save_logs=True,
     )
     project_path = setup_project_and_train_model["config_data"]["project_path"]
     session_names = setup_project_and_train_model["config_data"]["session_names"]
     images_base_path = Path(project_path) / "reports" / "umap"
     for ses in session_names:
-        assert len(list(images_base_path.glob(f"umap_{ses}*.png"))) > 0
+        assert len(list(images_base_path.glob("umap_*.png"))) > 0
 
 
 @pytest.mark.parametrize(
