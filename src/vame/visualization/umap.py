@@ -512,14 +512,13 @@ def visualize_umap(
     Saves results files at:
     - project_name/
         - results/
-            - file_name/
-                - model_name/
-                    - segmentation_algorithm-n_clusters/
-                        - community/
-                            - umap_embedding_file_name.npy
-                            - umap_vis_label_none_file_name.png  (UMAP visualization without labels)
-                            - umap_vis_motif_file_name.png  (UMAP visualization with motif labels)
-                            - umap_vis_community_file_name.png  (UMAP visualization with community labels)
+            - umap_embedding.nc
+        - reports/
+            - umap/
+                - umap_{model}_{seg}-{n_clusters}.png              (UMAP visualization without labels)
+                - umap_{model}_{seg}-{n_clusters}_motif.png        (UMAP visualization with motif labels)
+                - umap_{model}_{seg}-{n_clusters}_community.png    (UMAP visualization with community labels)
+                - umap_{model}_{seg}-{n_clusters}_interactive.html (Interactive UMAP visualization)
 
     Parameters
     ----------
