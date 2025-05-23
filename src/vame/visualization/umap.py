@@ -8,6 +8,8 @@ from matplotlib.lines import Line2D
 from matplotlib.figure import Figure
 from typing import Optional
 
+import plotly.graph_objects as go
+
 from vame.util.cli import get_sessions_from_user_input
 from vame.logging.logger import VameLogger
 
@@ -316,8 +318,139 @@ def visualize_umap(
                 else:
                     plt.close(fig)
 
+        # Generate interactive Plotly UMAP figures
+        for seg in segmentation_algorithms:
+            motif_labels = all_sessions_labels_motif[f"{seg}-{n_clusters}"]
+            community_labels = all_sessions_labels_community[f"{seg}-{n_clusters}"]
+            interactive_fig = umap_vis_plotly(
+                embed=all_embeddings,
+                labels_motif=motif_labels,
+                labels_community=community_labels,
+                num_points=num_points,
+            )
+            if save_to_file:
+                html_path = save_path_base / f"umap_{model_name}_{seg}-{n_clusters}_interactive.html"
+                interactive_fig.write_html(str(html_path))
+                logger.info(f"Interactive UMAP figure saved to {html_path}")
+            if show_figure:
+                interactive_fig.show()
+
     except Exception as e:
         logger.exception(str(e))
         raise e
     finally:
         logger_config.remove_file_handler()
+
+
+def umap_vis_plotly(
+    embed: np.ndarray,
+    labels_motif: Optional[np.ndarray] = None,
+    labels_community: Optional[np.ndarray] = None,
+    num_points: int = 30_000,
+) -> go.Figure:
+    """
+    Create an interactive Plotly UMAP scatter with dropdown to select labels:
+      - None: grey points
+      - Motif: colored by motif labels
+      - Community: colored by community labels
+
+    Parameters
+    ----------
+    embed : np.ndarray
+        2D UMAP embedding array of shape (N,2).
+    labels_motif : np.ndarray or None
+        1D motif labels of length N.
+    labels_community : np.ndarray or None
+        1D community labels of length N.
+    num_points : int
+        Maximum number of points to show.
+
+    Returns
+    -------
+    plotly.graph_objs.Figure
+        The interactive Plotly figure.
+    """
+    # Randomly sample up to num_points rows without replacement
+    n_samples = min(num_points, embed.shape[0])
+    if embed.shape[0] > n_samples:
+        indices = np.random.choice(embed.shape[0], size=n_samples, replace=False)
+    else:
+        indices = np.arange(n_samples)
+    x_vals = embed[indices, 0]
+    y_vals = embed[indices, 1]
+
+    # Trace for no labeling (grey)
+    trace_none = go.Scattergl(
+        x=x_vals,
+        y=y_vals,
+        mode="markers",
+        marker=dict(color="grey", size=4, opacity=0.6),
+        name="None",
+        visible=True,
+    )
+    data = [trace_none]
+
+    # Trace for motif labels
+    if labels_motif is not None:
+        motif_vals = np.array(labels_motif)[indices]
+        trace_motif = go.Scattergl(
+            x=x_vals,
+            y=y_vals,
+            mode="markers",
+            marker=dict(color=motif_vals, colorscale="Spectral", size=4, opacity=0.6),
+            name="Motif",
+            visible=False,
+        )
+        data.append(trace_motif)
+
+    # Trace for community labels
+    if labels_community is not None:
+        comm_vals = np.array(labels_community)[indices]
+        trace_comm = go.Scattergl(
+            x=x_vals,
+            y=y_vals,
+            mode="markers",
+            marker=dict(color=comm_vals, colorscale="Viridis", size=4, opacity=0.6),
+            name="Community",
+            visible=False,
+        )
+        data.append(trace_comm)
+
+    # Create dropdown buttons
+    buttons = [
+        dict(
+            label="None",
+            method="update",
+            args=[{"visible": [True] + [False] * (len(data) - 1)}, {"title": "UMAP - None"}],
+        )
+    ]
+    if labels_motif is not None:
+        visible = [False] * len(data)
+        visible[1] = True
+        buttons.append(
+            dict(label="Motif", method="update", args=[{"visible": visible}, {"title": "UMAP - Motif"}]),
+        )
+    if labels_community is not None:
+        idx_comm = 2 if labels_motif is not None else 1
+        visible = [False] * len(data)
+        visible[idx_comm] = True
+        buttons.append(
+            dict(
+                label="Community",
+                method="update",
+                args=[{"visible": visible}, {"title": "UMAP - Community"}],
+            ),
+        )
+
+    updatemenus = [dict(active=0, buttons=buttons, x=1.1, y=1)]
+    layout = go.Layout(
+        title="UMAP - None",
+        xaxis=dict(title="UMAP 1"),
+        yaxis=dict(title="UMAP 2"),
+        updatemenus=updatemenus,
+        margin=dict(l=40, r=40, t=40, b=40),
+        height=600,
+        width=800,
+    )
+    fig = go.Figure(data=data, layout=layout)
+    return fig
