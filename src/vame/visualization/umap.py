@@ -327,6 +327,7 @@ def visualize_umap(
                 labels_motif=motif_labels,
                 labels_community=community_labels,
                 num_points=num_points,
+                base_title=f"UMAP Visualization - Model: {model_name} | {seg}-{n_clusters}",
             )
             if save_to_file:
                 html_path = save_path_base / f"umap_{model_name}_{seg}-{n_clusters}_interactive.html"
@@ -347,6 +348,7 @@ def umap_vis_plotly(
     labels_motif: Optional[np.ndarray] = None,
     labels_community: Optional[np.ndarray] = None,
     num_points: int = 30_000,
+    base_title: Optional[str] = None,
 ) -> go.Figure:
     """
     Create an interactive Plotly UMAP scatter with dropdown to select labels:
@@ -370,6 +372,16 @@ def umap_vis_plotly(
     plotly.graph_objs.Figure
         The interactive Plotly figure.
     """
+    # Base title for dropdown
+    if base_title is None:
+        base_title_str = "UMAP"
+    else:
+        base_title_str = base_title
+
+    title_none = base_title_str
+    title_motif = f"{base_title_str} | Motif Labels"
+    title_comm = f"{base_title_str} | Community Labels"
+
     # Randomly sample up to num_points rows without replacement
     n_samples = min(num_points, embed.shape[0])
     if embed.shape[0] > n_samples:
@@ -390,63 +402,100 @@ def umap_vis_plotly(
     )
     data = [trace_none]
 
-    # Trace for motif labels
+    # Trace for motif labels - create separate traces for each unique motif
     if labels_motif is not None:
         motif_vals = np.array(labels_motif)[indices]
-        trace_motif = go.Scattergl(
-            x=x_vals,
-            y=y_vals,
-            mode="markers",
-            marker=dict(color=motif_vals, colorscale="Spectral", size=4, opacity=0.6),
-            name="Motif",
-            visible=False,
-        )
-        data.append(trace_motif)
+        unique_motifs = np.unique(motif_vals)
 
-    # Trace for community labels
+        # Get colors from Spectral colorscale
+        import plotly.colors as pc
+        spectral_colors = pc.sample_colorscale("Spectral", [i/(len(unique_motifs)-1) if len(unique_motifs) > 1 else 0.5 for i in range(len(unique_motifs))])
+
+        for i, motif_id in enumerate(unique_motifs):
+            mask = motif_vals == motif_id
+            trace_motif = go.Scattergl(
+                x=x_vals[mask],
+                y=y_vals[mask],
+                mode="markers",
+                marker=dict(
+                    color=spectral_colors[i],
+                    size=4,
+                    opacity=0.6,
+                ),
+                name=f"Motif {int(motif_id)}",
+                visible=False,
+                legendgroup="motif",
+            )
+            data.append(trace_motif)
+
+    # Trace for community labels - create separate traces for each unique community
     if labels_community is not None:
         comm_vals = np.array(labels_community)[indices]
-        trace_comm = go.Scattergl(
-            x=x_vals,
-            y=y_vals,
-            mode="markers",
-            marker=dict(color=comm_vals, colorscale="Viridis", size=4, opacity=0.6),
-            name="Community",
-            visible=False,
-        )
-        data.append(trace_comm)
+        unique_communities = np.unique(comm_vals)
 
-    # Create dropdown buttons
+        # Get colors from Viridis colorscale
+        import plotly.colors as pc
+        viridis_colors = pc.sample_colorscale("Viridis", [i/(len(unique_communities)-1) if len(unique_communities) > 1 else 0.5 for i in range(len(unique_communities))])
+
+        for i, comm_id in enumerate(unique_communities):
+            mask = comm_vals == comm_id
+            trace_comm = go.Scattergl(
+                x=x_vals[mask],
+                y=y_vals[mask],
+                mode="markers",
+                marker=dict(
+                    color=viridis_colors[i],
+                    size=4,
+                    opacity=0.6,
+                ),
+                name=f"Community {int(comm_id)}",
+                visible=False,
+                legendgroup="community",
+            )
+            data.append(trace_comm)
+
+    # Create dropdown buttons - need to update visibility masks for multiple traces per group
+    mask_none = [True] + [False] * (len(data) - 1)
+
+    # For motif: show all motif traces (indices 1 to 1+num_motifs-1)
+    mask_motif = [False] * len(data)
+    if labels_motif is not None:
+        unique_motifs = np.unique(np.array(labels_motif)[indices])
+        for i in range(len(unique_motifs)):
+            mask_motif[1 + i] = True
+
+    # For community: show all community traces (after motif traces)
+    mask_comm = [False] * len(data)
+    if labels_community is not None:
+        unique_communities = np.unique(np.array(labels_community)[indices])
+        start_idx = 1 + (len(unique_motifs) if labels_motif is not None else 0)
+        for i in range(len(unique_communities)):
+            mask_comm[start_idx + i] = True
+
     buttons = [
-        dict(
-            label="None",
-            method="update",
-            args=[{"visible": [True] + [False] * (len(data) - 1)}, {"title": "UMAP - None"}],
-        )
+        dict(label="None", method="restyle", args=["visible", mask_none]),
     ]
     if labels_motif is not None:
-        visible = [False] * len(data)
-        visible[1] = True
         buttons.append(
-            dict(label="Motif", method="update", args=[{"visible": visible}, {"title": "UMAP - Motif"}]),
+            dict(label="Motif", method="restyle", args=["visible", mask_motif]),
         )
     if labels_community is not None:
-        idx_comm = 2 if labels_motif is not None else 1
-        visible = [False] * len(data)
-        visible[idx_comm] = True
         buttons.append(
-            dict(
-                label="Community",
-                method="update",
-                args=[{"visible": visible}, {"title": "UMAP - Community"}],
-            ),
+            dict(label="Community", method="restyle", args=["visible", mask_comm]),
         )
 
     updatemenus = [dict(active=0, buttons=buttons, x=1.1, y=1)]
     layout = go.Layout(
-        title="UMAP - None",
-        xaxis=dict(title="UMAP 1"),
-        yaxis=dict(title="UMAP 2"),
+        title=title_none,
+        xaxis=dict(title="UMAP 1", showgrid=True, gridcolor="lightgray", zeroline=False),
+        yaxis=dict(title="UMAP 2", showgrid=True, gridcolor="lightgray", zeroline=False),
+        plot_bgcolor="white",
+        paper_bgcolor="white",
+        shapes=[
+            dict(type="line", xref="x", yref="paper", x0=0, x1=0, y0=0, y1=1, line=dict(color="black", width=1)),
+            dict(type="line", xref="paper", yref="y", x0=0, x1=1, y0=0, y1=0, line=dict(color="black", width=1)),
+        ],
+        legend=dict(title_text="Label"),
         updatemenus=updatemenus,
         margin=dict(l=40, r=40, t=40, b=40),
         height=600,
