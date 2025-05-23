@@ -31,7 +31,7 @@ def embed_latent_vectors(
     tqdm_stream: Union[TqdmToLogger, None] = None,
 ) -> List[np.ndarray]:
     """
-    Embed latent vectors for the given files using the VAME model.
+    Embed latent vectors for the given sessions using the VAME model.
 
     Parameters
     ----------
@@ -51,7 +51,7 @@ def embed_latent_vectors(
     Returns
     -------
     List[np.ndarray]
-        List of latent vectors for each file.
+        List of latent vectors for all sessions.
     """
     project_path = config["project_path"]
     model_name = config["model_name"]
@@ -115,50 +115,6 @@ def embed_latent_vectors(
     return latent_vector_sessions
 
 
-def get_latent_vectors(
-    project_path: str,
-    sessions: list,
-    model_name: str,
-    seg,
-    n_clusters: int,
-) -> List:
-    """
-    Gets all the latent vectors from each session into one list
-
-    Parameters
-    ----------
-    project_path: str
-        Path to vame project folder
-    session: list
-        List of sessions
-    model_name: str
-        Name of model
-    seg: str
-        Type of segmentation algorithm
-    n_clusters : int
-        Number of clusters.
-
-    Returns
-    -------
-    List
-        List of session latent vectors
-    """
-
-    latent_vectors = []  # list of session latent vectors
-    for session in sessions:  # session loop to build latent_vector list
-        latent_vector_path = os.path.join(
-            str(project_path),
-            "results",
-            session,
-            model_name,
-            seg + "-" + str(n_clusters),
-            "latent_vector_" + session + ".npy",
-        )
-        latent_vector = np.load(latent_vector_path)
-        latent_vectors.append(latent_vector)
-    return latent_vectors
-
-
 def get_motif_usage(
     session_labels: np.ndarray,
     n_clusters: int,
@@ -191,11 +147,10 @@ def get_motif_usage(
 
 def save_session_data(
     project_path: str,
-    session: int,
+    session: str,
     model_name: str,
     label: np.ndarray,
-    cluster_center: np.ndarray,
-    latent_vector: np.ndarray,
+    cluster_centers: np.ndarray,
     motif_usage: np.ndarray,
     n_clusters: int,
     segmentation_algorithm: str,
@@ -207,16 +162,14 @@ def save_session_data(
     ----------
     project_path: str
         Path to the vame project folder.
-    session: int
-        Session of interest to segment.
+    session: str
+        Session name.
     model_name: str
         Name of model
     label: np.ndarray
         Array of the session's motif labels.
-    cluster_center: np.ndarray
+    cluster_centers: np.ndarray
         Array of the session's kmeans cluster centers location in the latent space.
-    latent_vector: np.ndarray,
-        Array of the session's latent vectors.
     motif_usage: np.ndarray
         Array of the session's motif usage counts.
     n_clusters : int
@@ -248,17 +201,12 @@ def save_session_data(
     if segmentation_algorithm == "kmeans":
         np.save(
             os.path.join(session_results_path, "cluster_center_" + session),
-            cluster_center,
+            cluster_centers,
         )
-    np.save(
-        os.path.join(session_results_path, "latent_vector_" + session),
-        latent_vector,
-    )
     np.save(
         os.path.join(session_results_path, "motif_usage_" + session),
         motif_usage,
     )
-
     logger.info(f"Saved {session} segmentation data")
 
 
@@ -290,8 +238,7 @@ def same_segmentation(
     None
     """
     # List of arrays containing each session's motif labels #[SRM, 10/28/24], recommend rename this and similar variables to allsessions_labels
-    labels = []  # List of array containing each session's motif labels
-    cluster_center = []  # List of arrays containing each session's cluster centers
+    cluster_centers = []  # List of arrays containing each session's cluster centers
     motif_usages = []  # List of arrays containing each session's motif usages
 
     latent_vector_cat = np.concatenate(latent_vectors, axis=0)
@@ -303,7 +250,7 @@ def same_segmentation(
             random_state=42,
             n_init=20,
         ).fit(latent_vector_cat)
-        cluster_center = kmeans.cluster_centers_
+        cluster_centers = kmeans.cluster_centers_
         # 1D, vector of all labels for the entire cohort
         label = kmeans.predict(latent_vector_cat)
 
@@ -341,15 +288,14 @@ def same_segmentation(
         idx += file_len  # updating the session start index
 
         save_session_data(
-            config["project_path"],
-            session,
-            config["model_name"],
-            session_labels,
-            cluster_center,
-            latent_vectors[i],
-            motif_usage,
-            n_clusters,
-            segmentation_algorithm,
+            project_path=config["project_path"],
+            session=session,
+            model_name=config["model_name"],
+            label=session_labels,
+            cluster_centers=cluster_centers,
+            motif_usage=motif_usage,
+            n_clusters=n_clusters,
+            segmentation_algorithm=segmentation_algorithm,
         )
 
 
@@ -431,17 +377,16 @@ def segment_session(
             - hmm_trained.pkl
             - session/
                 - model_name/
+                    - latent_vectors.npy
                     - hmm-n_clusters/
-                        - latent_vector_session.npy
                         - motif_usage_session.npy
                         - n_cluster_label_session.npy
                     - kmeans-n_clusters/
-                        - latent_vector_session.npy
                         - motif_usage_session.npy
                         - n_cluster_label_session.npy
                         - cluster_center_session.npy
 
-    latent_vector_session.npy contains the projection of the data into the latent space,
+    latent_vectors.npy contains the projection of the data into the latent space,
     for each frame of the video. Dimmentions: (n_frames, n_latent_features)
 
     motif_usage_session.npy contains the number of times each motif was used in the video.

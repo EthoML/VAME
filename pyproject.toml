@@ -5,6 +5,7 @@ description = "Variational Animal Motion Embedding."
 authors = [{ name = "K. Luxem & " }, { name = "P. Bauer" }]
 requires-python = ">=3.11"
 keywords = ["vame", "auto-encoder"]
+readme = { file = 'README.md', content-type = 'text/markdown' }
 dependencies = [
     "PyYAML>=6.0.0",
     "ruamel.yaml>=0.18.0",
@@ -12,6 +13,7 @@ dependencies = [
     "pandas>=2.2.0",
     "scipy>=1.13.0",
     "matplotlib>=3.9.0",
+    "plotly>=6.0.0",
     "torch==2.2.2; platform_system == 'Darwin' and platform_machine == 'x86_64'", # Intel Macs
     "torch>=2.3.1; platform_system == 'Darwin' and platform_machine == 'arm64'",  # M1/M2 Macs
     "torch>=2.3.1; platform_system != 'Darwin'",                                  # All other systems
@@ -30,7 +32,6 @@ dependencies = [
     "movement==0.6.1",
     "netCDF4==1.7.2",
 ]
-readme = { file = 'README.md', content-type = 'text/markdown' }
 
 [project.urls]
 homepage = "https://github.com/EthoML/VAME/"
