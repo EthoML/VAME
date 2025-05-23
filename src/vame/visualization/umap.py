@@ -333,12 +333,13 @@ def visualize_umap(
                 num_points=num_points,
                 title=f"UMAP Visualization - Model: {model_name} | {seg}-{n_clusters}",
             )
+            config_plotly = {"displaylogo": False, "scrollZoom": True}
             if save_to_file:
                 html_path = save_path_base / f"umap_{model_name}_{seg}-{n_clusters}_interactive.html"
-                interactive_fig.write_html(str(html_path))
+                interactive_fig.write_html(str(html_path), config=config_plotly)
                 logger.info(f"Interactive UMAP figure saved to {html_path}")
             if show_figure in ["plotly", "all"]:
-                interactive_fig.show()
+                interactive_fig.show(config=config_plotly)
                 return interactive_fig
 
     except Exception as e:
@@ -522,6 +523,11 @@ def umap_vis_plotly(
         margin=dict(l=40, r=40, t=90, b=40),
         height=800,
         width=900,
+        dragmode="pan",
     )
     fig = go.Figure(data=data, layout=layout)
+    fig.update_layout(
+        xaxis=dict(fixedrange=False),
+        yaxis=dict(fixedrange=False),
+    )
     return fig
