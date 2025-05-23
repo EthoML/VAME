@@ -3,12 +3,13 @@ import umap
 import numpy as np
 from pathlib import Path
 import matplotlib.pyplot as plt
+import matplotlib.cm as cm
+from matplotlib.lines import Line2D
 from matplotlib.figure import Figure
 from typing import Optional
 
 from vame.util.cli import get_sessions_from_user_input
 from vame.logging.logger import VameLogger
-from vame.schemas.project import SegmentationAlgorithms
 
 
 logger_config = VameLogger(__name__)
@@ -67,6 +68,9 @@ def umap_vis(
     embed: np.ndarray,
     num_points: int = 30_000,
     labels: Optional[np.ndarray] = None,
+    title: Optional[str] = None,
+    show_legend: bool = True,
+    label_type: str = "none",
 ) -> Figure:
     """
     Visualize UMAP embedding.
@@ -79,6 +83,12 @@ def umap_vis(
         Number of data points to visualize. Default is 30,000.
     labels : np.ndarray, optional
         Motif or community labels. Default is None.
+    title : str, optional
+        Title for the plot. Default is None.
+    show_legend : bool, optional
+        Whether to show legend for labeled plots. Default is True.
+    label_type : str, optional
+        Type of labels ('none', 'motif', 'community'). Default is 'none'.
 
     Returns
     -------
@@ -104,10 +114,48 @@ def umap_vis(
         scatter_kwargs["alpha"] = 0.7
 
     plt.close("all")
-    fig = plt.figure()
+    fig = plt.figure(figsize=(10, 8))
     plt.scatter(**scatter_kwargs)
     plt.gca().set_aspect("equal", "datalim")
     plt.grid(False)
+
+    # Add title if provided
+    if title:
+        plt.title(title, fontsize=14, fontweight="bold")
+
+    # Add legend for labeled plots
+    if labels is not None and show_legend:
+        unique_labels = np.unique(labels[indices])
+        if len(unique_labels) <= 20:  # Only show legend if not too many labels
+            if label_type == "motif":
+                legend_title = "Motif"
+            elif label_type == "community":
+                legend_title = "Community"
+            else:
+                legend_title = "Label"
+
+            # Create legend with discrete colors
+            handles = []
+            for label_val in sorted(unique_labels):
+                color = cm.Spectral(label_val / max(unique_labels) if max(unique_labels) > 0 else 0)
+                handles.append(
+                    Line2D(
+                        [0],
+                        [0],
+                        marker="o",
+                        color="w",
+                        markerfacecolor=color,
+                        markersize=8,
+                        label=f"{legend_title} {int(label_val)}",
+                    )
+                )
+
+            plt.legend(handles=handles, title=legend_title, bbox_to_anchor=(1.05, 1), loc="upper left")
+
+    plt.xlabel("UMAP 1", fontsize=12)
+    plt.ylabel("UMAP 2", fontsize=12)
+    plt.tight_layout()
+
     return fig
 
 
@@ -172,6 +220,9 @@ def visualize_umap(
         if not save_path_base.exists():
             os.makedirs(save_path_base)
 
+        all_sessions_embeddings = []
+        all_sessions_labels_motif = {}
+        all_sessions_labels_community = {}
         for session in sessions:
             base_path = Path(config["project_path"]) / "results" / session / model_name
             umap_embeddings_path = base_path / "umap_embedding.npy"
@@ -185,44 +236,85 @@ def visualize_umap(
                     session=session,
                     model_name=model_name,
                 )
+            all_sessions_embeddings.append(embed)
+            # all_sessions_labels_session_name.append([session] * len(embed))
             for seg in segmentation_algorithms:
                 labels_names = ["none", "motif", "community"]
+                labels_motif = []
+                labels_community = []
                 for label in labels_names:
                     if label == "none":
-                        output_figure_file_name = f"umap_{session}_{model_name}_{seg}-{n_clusters}.png"
+                        # output_figure_file_name = f"umap_{session}_{model_name}_{seg}-{n_clusters}.png"
                         labels = None
                     elif label == "motif":
-                        output_figure_file_name = f"umap_{session}_{model_name}_{seg}-{n_clusters}_motif.png"
-                        labels_file_path = base_path / f"{seg}-{n_clusters}" / f"{n_clusters}_{seg}_label_{session}.npy"
+                        # output_figure_file_name = f"umap_{session}_{model_name}_{seg}-{n_clusters}_motif.png"
+                        labels_file_path = (
+                            base_path / f"{seg}-{n_clusters}" / f"{n_clusters}_{seg}_label_{session}.npy"
+                        )
                         if labels_file_path.exists():
                             labels = np.load(str(labels_file_path.resolve()))
+                            labels_motif.append(labels)
                         else:
                             logger.warning(f"Motif labels not found for session {session}. Skipping visualization.")
                             continue
                     elif label == "community":
-                        output_figure_file_name = f"umap_{session}_{model_name}_{seg}-{n_clusters}_community.png"
-                        labels_file_path = base_path / f"{seg}-{n_clusters}" / "community" / f"cohort_community_label_{session}.npy"
+                        # output_figure_file_name = f"umap_{session}_{model_name}_{seg}-{n_clusters}_community.png"
+                        labels_file_path = (
+                            base_path / f"{seg}-{n_clusters}" / "community" / f"cohort_community_label_{session}.npy"
+                        )
                         if labels_file_path.exists():
                             labels = np.load(str(labels_file_path.resolve()))
+                            labels_community.append(labels)
                         else:
-                            logger.warning(f"Community labels not found for session {session}. Skipping visualization.")
+                            logger.warning(
+                                f"Community labels not found for session {session}. Skipping visualization."
+                            )
                             continue
 
-                    fig = umap_vis(
-                        embed=embed,
-                        num_points=num_points,
-                        labels=labels,
-                    )
+                all_sessions_labels_motif[f"{seg}-{n_clusters}"] = np.concatenate(labels_motif, axis=0)
+                all_sessions_labels_community[f"{seg}-{n_clusters}"] = np.concatenate(labels_community, axis=0)
 
-                    if save_to_file:
-                        fig_path = save_path_base / output_figure_file_name
-                        fig.savefig(fig_path)
-                        logger.info(f"UMAP figure saved to {fig_path}")
+        all_embeddings = np.concatenate(all_sessions_embeddings, axis=0)
 
-                    if show_figure:
-                        plt.show()
-                    else:
-                        plt.close(fig)
+        # Generate UMAP figures
+        for seg in segmentation_algorithms:
+            for label in labels_names:
+                if label == "none":
+                    output_figure_file_name = f"umap_{model_name}_{seg}-{n_clusters}.png"
+                    labels = None
+                elif label == "motif":
+                    output_figure_file_name = f"umap_{model_name}_{seg}-{n_clusters}_motif.png"
+                    labels = all_sessions_labels_motif[f"{seg}-{n_clusters}"]
+                elif label == "community":
+                    output_figure_file_name = f"umap_{model_name}_{seg}-{n_clusters}_community.png"
+                    labels = all_sessions_labels_community[f"{seg}-{n_clusters}"]
+
+                # Generate title
+                if label == "none":
+                    title = f"UMAP Visualization - Model: {model_name} | {seg}-{n_clusters}"
+                elif label == "motif":
+                    title = f"UMAP Visualization - Model: {model_name} | {seg}-{n_clusters} | Motif Labels"
+                elif label == "community":
+                    title = f"UMAP Visualization - Model: {model_name} | {seg}-{n_clusters} | Community Labels"
+
+                fig = umap_vis(
+                    embed=all_embeddings,
+                    num_points=num_points,
+                    labels=labels,
+                    title=title,
+                    show_legend=True,
+                    label_type=label,
+                )
+
+                if save_to_file:
+                    fig_path = save_path_base / output_figure_file_name
+                    fig.savefig(fig_path)
+                    logger.info(f"UMAP figure saved to {fig_path}")
+
+                if show_figure:
+                    plt.show()
+                else:
+                    plt.close(fig)
 
     except Exception as e:
         logger.exception(str(e))
