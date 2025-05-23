@@ -340,7 +340,6 @@ def visualize_umap(
                 logger.info(f"Interactive UMAP figure saved to {html_path}")
             if show_figure in ["plotly", "all"]:
                 interactive_fig.show(config=config_plotly)
-                return interactive_fig
 
     except Exception as e:
         logger.exception(str(e))
