@@ -19,7 +19,7 @@ def embed_latent_vectors(
         tqdm_stream: Union[TqdmToLogger, None] = None) -> List[np.ndarray]
 ```
 
-Embed latent vectors for the given files using the VAME model.
+Embed latent vectors for the given sessions using the VAME model.
 
 **Parameters**
 
@@ -32,28 +32,7 @@ Embed latent vectors for the given files using the VAME model.
 
 **Returns**
 
-* `List[np.ndarray]`: List of latent vectors for each file.
-
-#### get\_latent\_vectors
-
-```python
-def get_latent_vectors(project_path: str, sessions: list, model_name: str, seg,
-                       n_clusters: int) -> List
-```
-
-Gets all the latent vectors from each session into one list
-
-**Parameters**
-
-* **project_path: str**: Path to vame project folder
-* **session: list**: List of sessions
-* **model_name: str**: Name of model
-* **seg: str**: Type of segmentation algorithm
-* **n_clusters** (`int`): Number of clusters.
-
-**Returns**
-
-* `List`: List of session latent vectors
+* `List[np.ndarray]`: List of latent vectors for all sessions.
 
 #### get\_motif\_usage
 
@@ -75,10 +54,10 @@ Count motif usage from session label array.
 #### save\_session\_data
 
 ```python
-def save_session_data(project_path: str, session: int, model_name: str,
-                      label: np.ndarray, cluster_center: np.ndarray,
-                      latent_vector: np.ndarray, motif_usage: np.ndarray,
-                      n_clusters: int, segmentation_algorithm: str)
+def save_session_data(project_path: str, session: str, model_name: str,
+                      label: np.ndarray, cluster_centers: np.ndarray,
+                      motif_usage: np.ndarray, n_clusters: int,
+                      segmentation_algorithm: str)
 ```
 
 Saves pose segmentation data for given session.
@@ -86,11 +65,10 @@ Saves pose segmentation data for given session.
 **Parameters**
 
 * **project_path: str**: Path to the vame project folder.
-* **session: int**: Session of interest to segment.
+* **session: str**: Session name.
 * **model_name: str**: Name of model
 * **label: np.ndarray**: Array of the session&#x27;s motif labels.
-* **cluster_center: np.ndarray**: Array of the session&#x27;s kmeans cluster centers location in the latent space.
-* **latent_vector: np.ndarray,**: Array of the session&#x27;s latent vectors.
+* **cluster_centers: np.ndarray**: Array of the session&#x27;s kmeans cluster centers location in the latent space.
 * **motif_usage: np.ndarray**: Array of the session&#x27;s motif usage counts.
 * **n_clusters** (`int`): Number of clusters.
 * **segmentation_algorithm: str**: Type of segmentation method, either &#x27;kmeans or &#x27;hmm&#x27;.
@@ -160,17 +138,16 @@ Creates files at:
         - hmm_trained.pkl
         - session/
             - model_name/
+                - latent_vectors.npy
                 - hmm-n_clusters/
-                    - latent_vector_session.npy
                     - motif_usage_session.npy
                     - n_cluster_label_session.npy
                 - kmeans-n_clusters/
-                    - latent_vector_session.npy
                     - motif_usage_session.npy
                     - n_cluster_label_session.npy
                     - cluster_center_session.npy
 
-latent_vector_session.npy contains the projection of the data into the latent space,
+latent_vectors.npy contains the projection of the data into the latent space,
 for each frame of the video. Dimmentions: (n_frames, n_latent_features)
 
 motif_usage_session.npy contains the number of times each motif was used in the video.
