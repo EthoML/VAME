@@ -424,7 +424,6 @@ def umap_vis_plotly(
                 ),
                 name=f"Motif {int(motif_id)}",
                 visible=False,
-                legendgroup="motif",
             )
             data.append(trace_motif)
 
@@ -450,7 +449,6 @@ def umap_vis_plotly(
                 ),
                 name=f"Community {int(comm_id)}",
                 visible=False,
-                legendgroup="community",
             )
             data.append(trace_comm)
 
