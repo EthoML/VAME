@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 from matplotlib.lines import Line2D
 from matplotlib.figure import Figure
-from typing import Optional
+from typing import Optional, Literal
 
 import plotly.graph_objects as go
 
@@ -165,7 +165,7 @@ def visualize_umap(
     config: dict,
     num_points: int = 30_000,
     save_to_file: bool = True,
-    show_figure: bool = True,
+    show_figure: Literal["none", "matplotlib", "plotly", "all"] = "none",
     save_logs: bool = True,
 ) -> None:
     """
@@ -191,8 +191,12 @@ def visualize_umap(
         Number of data points to visualize. Default is 30,000.
     save_to_file : bool, optional
         Save the figure to file. Default is True.
-    show_figure : bool, optional
-        Show the figure. Default is True.
+    show_figure : Literal["none", "matplotlib", "plotly", "all"], optional
+        Show the figure. Default is "none".
+        - "none": do not show
+        - "matplotlib": show with matplotlib
+        - "plotly": show with plotly
+        - "all": show with both matplotlib and plotly
     save_logs : bool, optional
         Save logs. Default is True.
 
@@ -313,7 +317,7 @@ def visualize_umap(
                     fig.savefig(fig_path)
                     logger.info(f"UMAP figure saved to {fig_path}")
 
-                if show_figure:
+                if show_figure in ["matplotlib", "all"]:
                     plt.show()
                 else:
                     plt.close(fig)
@@ -327,14 +331,15 @@ def visualize_umap(
                 labels_motif=motif_labels,
                 labels_community=community_labels,
                 num_points=num_points,
-                base_title=f"UMAP Visualization - Model: {model_name} | {seg}-{n_clusters}",
+                title=f"UMAP Visualization - Model: {model_name} | {seg}-{n_clusters}",
             )
             if save_to_file:
                 html_path = save_path_base / f"umap_{model_name}_{seg}-{n_clusters}_interactive.html"
                 interactive_fig.write_html(str(html_path))
                 logger.info(f"Interactive UMAP figure saved to {html_path}")
-            if show_figure:
+            if show_figure in ["plotly", "all"]:
                 interactive_fig.show()
+                return interactive_fig
 
     except Exception as e:
         logger.exception(str(e))
@@ -348,7 +353,9 @@ def umap_vis_plotly(
     labels_motif: Optional[np.ndarray] = None,
     labels_community: Optional[np.ndarray] = None,
     num_points: int = 30_000,
-    base_title: Optional[str] = None,
+    title: str = "UMAP",
+    marker_size: float = 3.5,
+    marker_opacity: float = 0.7,
 ) -> go.Figure:
     """
     Create an interactive Plotly UMAP scatter with dropdown to select labels:
@@ -366,22 +373,18 @@ def umap_vis_plotly(
         1D community labels of length N.
     num_points : int
         Maximum number of points to show.
+    title : str
+        Title for the figure. Defaults to "UMAP".
+    marker_size : float
+        Size of the markers in the plot.
+    marker_opacity : float
+        Opacity of the markers in the plot.
 
     Returns
     -------
     plotly.graph_objs.Figure
         The interactive Plotly figure.
     """
-    # Base title for dropdown
-    if base_title is None:
-        base_title_str = "UMAP"
-    else:
-        base_title_str = base_title
-
-    title_none = base_title_str
-    title_motif = f"{base_title_str} | Motif Labels"
-    title_comm = f"{base_title_str} | Community Labels"
-
     # Randomly sample up to num_points rows without replacement
     n_samples = min(num_points, embed.shape[0])
     if embed.shape[0] > n_samples:
@@ -396,7 +399,11 @@ def umap_vis_plotly(
         x=x_vals,
         y=y_vals,
         mode="markers",
-        marker=dict(color="grey", size=4, opacity=0.6),
+        marker=dict(
+            color="grey",
+            size=marker_size,
+            opacity=marker_opacity,
+        ),
         name="None",
         visible=True,
     )
@@ -419,8 +426,8 @@ def umap_vis_plotly(
                 mode="markers",
                 marker=dict(
                     color=spectral_colors[i],
-                    size=4,
-                    opacity=0.6,
+                    size=marker_size,
+                    opacity=marker_opacity,
                 ),
                 name=f"Motif {int(motif_id)}",
                 visible=False,
@@ -444,8 +451,8 @@ def umap_vis_plotly(
                 mode="markers",
                 marker=dict(
                     color=viridis_colors[i],
-                    size=4,
-                    opacity=0.6,
+                    size=marker_size,
+                    opacity=marker_opacity,
                 ),
                 name=f"Community {int(comm_id)}",
                 visible=False,
@@ -482,9 +489,9 @@ def umap_vis_plotly(
             dict(label="Community", method="restyle", args=["visible", mask_comm]),
         )
 
-    updatemenus = [dict(active=0, buttons=buttons, x=1.1, y=1)]
+    updatemenus = [dict(active=0, buttons=buttons, x=0., y=1., xanchor="left", yanchor="bottom")]
     layout = go.Layout(
-        title=dict(text=title_none, font=dict(size=18)),
+        title=dict(text=title, font=dict(size=18)),
         xaxis=dict(
             title=dict(text="UMAP 1", font=dict(size=16)),
             showgrid=True,
@@ -512,9 +519,9 @@ def umap_vis_plotly(
             itemdoubleclick="toggleothers",
         ),
         updatemenus=updatemenus,
-        margin=dict(l=40, r=40, t=40, b=40),
-        height=600,
-        width=800,
+        margin=dict(l=40, r=40, t=90, b=40),
+        height=800,
+        width=900,
     )
     fig = go.Figure(data=data, layout=layout)
     return fig
