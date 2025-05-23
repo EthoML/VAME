@@ -314,8 +314,6 @@ def umap_vis_plotly(
     plotly.graph_objs.Figure
         The interactive Plotly figure.
     """
-    # Since we already have the exact points we want, use all of them
-    # But still respect the num_points limit for display
     n_samples = min(num_points, embed.shape[0])
     if embed.shape[0] > n_samples:
         indices = np.random.choice(embed.shape[0], size=n_samples, replace=False)
