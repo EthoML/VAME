@@ -520,9 +520,9 @@ def umap_vis_plotly(
             itemdoubleclick="toggleothers",
         ),
         updatemenus=updatemenus,
-        margin=dict(l=40, r=40, t=90, b=40),
+        margin=dict(l=40, r=200, t=90, b=40),
         height=800,
-        width=900,
+        width=1100,
         dragmode="pan",
     )
     fig = go.Figure(data=data, layout=layout)
