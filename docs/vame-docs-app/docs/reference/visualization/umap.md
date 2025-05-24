@@ -103,10 +103,10 @@ Saves results files at:
         - umap_embedding.nc
     - reports/
         - umap/
-            - umap_{model}_{seg}-{n_clusters}.png              (UMAP visualization without labels)
-            - umap_{model}_{seg}-{n_clusters}_motif.png        (UMAP visualization with motif labels)
-            - umap_{model}_{seg}-{n_clusters}_community.png    (UMAP visualization with community labels)
-            - umap_{model}_{seg}-{n_clusters}_interactive.html (Interactive UMAP visualization)
+            - umap_&lt;model&gt;_&lt;seg&gt;-&lt;n_clusters&gt;.png              (UMAP visualization without labels)
+            - umap_&lt;model&gt;_&lt;seg&gt;-&lt;n_clusters&gt;_motif.png        (UMAP visualization with motif labels)
+            - umap_&lt;model&gt;_&lt;seg&gt;-&lt;n_clusters&gt;_community.png    (UMAP visualization with community labels)
+            - umap_&lt;model&gt;_&lt;seg&gt;-&lt;n_clusters&gt;_interactive.html (Interactive UMAP visualization)
 
 **Parameters**
 

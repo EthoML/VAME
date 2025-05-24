@@ -634,10 +634,10 @@ def visualize_umap(
             - umap_embedding.nc
         - reports/
             - umap/
-                - umap_{model}_{seg}-{n_clusters}.png              (UMAP visualization without labels)
-                - umap_{model}_{seg}-{n_clusters}_motif.png        (UMAP visualization with motif labels)
-                - umap_{model}_{seg}-{n_clusters}_community.png    (UMAP visualization with community labels)
-                - umap_{model}_{seg}-{n_clusters}_interactive.html (Interactive UMAP visualization)
+                - umap_<model>_<seg>-<n_clusters>.png              (UMAP visualization without labels)
+                - umap_<model>_<seg>-<n_clusters>_motif.png        (UMAP visualization with motif labels)
+                - umap_<model>_<seg>-<n_clusters>_community.png    (UMAP visualization with community labels)
+                - umap_<model>_<seg>-<n_clusters>_interactive.html (Interactive UMAP visualization)
 
     Parameters
     ----------
