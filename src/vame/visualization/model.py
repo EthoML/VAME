@@ -136,7 +136,7 @@ def plot_reconstruction(
 
 def plot_loss(
     config: dict,
-    model_name: str,
+    model_name: Optional[str] = None,
     save_to_file: bool = False,
     show_figure: bool = True,
 ) -> None:
@@ -153,7 +153,7 @@ def plot_loss(
     config : dict
         Configuration dictionary.
     model_name : str
-        Name of the model.
+        Name of the model. Defaults to None, in which case the model name in config is used.
     save_to_file : bool, optional
         Flag indicating whether to save the plot. Defaults to False.
     show_figure : bool, optional
@@ -163,6 +163,8 @@ def plot_loss(
     -------
     None
     """
+    if model_name is None:
+        model_name = config["model_name"]
     basepath = os.path.join(config["project_path"], "model", "model_losses")
     train_loss = np.load(os.path.join(basepath, "train_losses_" + model_name + ".npy"))
     test_loss = np.load(os.path.join(basepath, "test_losses_" + model_name + ".npy"))

@@ -7,7 +7,12 @@ from pathlib import Path
 from typing import Tuple, Any
 from enum import Enum
 
+from vame.logging.logger import VameLogger
 from vame.schemas.states import save_state, UpdateConfigFunctionSchema
+
+
+logger_config = VameLogger(__name__)
+logger = logger_config.logger
 
 
 def get_version() -> str:
@@ -20,6 +25,20 @@ def get_version() -> str:
         The version string.
     """
     return version("vame-py")
+
+
+def check_torch_device() -> bool:
+    import torch
+
+    use_gpu = torch.cuda.is_available()
+    if use_gpu:
+        logger.info("Using CUDA")
+        logger.info("GPU active: {}".format(torch.cuda.is_available()))
+        logger.info("GPU used: {}".format(torch.cuda.get_device_name(0)))
+    else:
+        logger.info("CUDA is not working! Attempting to use the CPU...")
+        torch.device("cpu")
+    return use_gpu
 
 
 def _convert_enums_to_values(obj: Any) -> Any:

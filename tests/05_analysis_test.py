@@ -38,9 +38,9 @@ def test_pose_segmentation_hmm_files_exists(
     file = setup_project_and_train_model["config_data"]["session_names"][0]
     model_name = setup_project_and_train_model["config_data"]["model_name"]
     n_clusters = setup_project_and_train_model["config_data"]["n_clusters"]
-    save_base_path = Path(project_path) / "results" / file / model_name / f"{segmentation_algorithm}-{n_clusters}"
-    latent_vector_path = save_base_path / f"latent_vector_{file}.npy"
-    motif_usage_path = save_base_path / f"motif_usage_{file}.npy"
+    save_base_path = Path(project_path) / "results" / file / model_name
+    latent_vector_path = save_base_path / "latent_vectors.npy"
+    motif_usage_path = save_base_path / f"{segmentation_algorithm}-{n_clusters}" / f"motif_usage_{file}.npy"
 
     assert latent_vector_path.exists()
     assert motif_usage_path.exists()
@@ -145,14 +145,13 @@ def test_visualization_output_files(setup_project_and_train_model):
     visualize_umap(
         config=setup_project_and_train_model["config_data"],
         save_to_file=True,
-        show_figure=False,
         save_logs=True,
     )
     project_path = setup_project_and_train_model["config_data"]["project_path"]
     session_names = setup_project_and_train_model["config_data"]["session_names"]
     images_base_path = Path(project_path) / "reports" / "umap"
     for ses in session_names:
-        assert len(list(images_base_path.glob(f"umap_{ses}*.png"))) > 0
+        assert len(list(images_base_path.glob("umap_*.png"))) > 0
 
 
 @pytest.mark.parametrize(

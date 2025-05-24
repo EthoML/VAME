@@ -17,7 +17,7 @@ def download_sample_data(source_software: str, with_video: bool = True) -> dict:
     dict
         Dictionary with the paths to the downloaded sample data.
     """
-    from movement.sample_data import fetch_dataset_paths
+    from movement.sample_data import fetch_dataset_paths, metadata
 
     download_path = Path("~", ".movement", "data").expanduser().resolve()
     if not download_path.exists():
@@ -28,18 +28,19 @@ def download_sample_data(source_software: str, with_video: bool = True) -> dict:
         "SLEAP": "SLEAP_single-mouse_EPM.predictions.slp",
     }
 
-    paths_dict = fetch_dataset_paths(
+    info_dict = fetch_dataset_paths(
         filename=dataset_options[source_software],
         with_video=with_video,
     )
 
-    video_path = paths_dict.get("video")
-    if video_path and video_path.stem != paths_dict["poses"].stem:
+    video_path = info_dict.get("video")
+    if video_path and video_path.stem != info_dict["poses"].stem:
         # rename video file to match pose file
-        video_path = video_path.rename(video_path.parent / (str(paths_dict["poses"].stem) + video_path.suffix))
+        video_path = video_path.rename(video_path.parent / (str(info_dict["poses"].stem) + video_path.suffix))
 
-    paths_dict["video"] = str(video_path) if video_path is not None else ""
-    paths_dict["poses"] = str(paths_dict["poses"])
-    paths_dict["frame"] = str(paths_dict["frame"])
+    info_dict["video"] = str(video_path) if video_path is not None else ""
+    info_dict["poses"] = str(info_dict["poses"])
+    info_dict["frame"] = str(info_dict["frame"])
+    info_dict["fps"] = metadata[dataset_options[source_software]]["fps"]
 
-    return paths_dict
+    return info_dict
