@@ -19,7 +19,7 @@ def preprocessing(config: dict,
                   run_outlier_cleaning: bool = True,
                   run_savgol_filtering: bool = True,
                   run_rescaling: bool = False,
-                  save_logs: bool = True) -> None
+                  save_logs: bool = True) -> str
 ```
 
 Preprocess the data by:
@@ -43,5 +43,5 @@ Preprocess the data by:
 
 **Returns**
 
-* `None`
+* `variable name of the last-executed preprocessing step output`
 

@@ -61,8 +61,8 @@ Draw a tree.
 
 ```python
 def visualize_hierarchical_tree(
-        config: dict, segmentation_algorithm: Literal["hmm",
-                                                      "kmeans"]) -> None
+        config: dict,
+        segmentation_algorithm: Literal["hmm", "kmeans"] = "hmm") -> None
 ```
 
 Visualizes the hierarchical tree.
@@ -70,7 +70,7 @@ Visualizes the hierarchical tree.
 **Parameters**
 
 * **config** (`dict`): Configuration dictionary.
-* **segmentation_algorithm** (`Literal["hmm", "kmeans"]`): Segmentation algorithm.
+* **segmentation_algorithm** (`Literal["hmm", "kmeans"]`): Segmentation algorithm. Defaults to &quot;hmm&quot;.
 
 **Returns**
 
