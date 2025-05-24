@@ -46,10 +46,12 @@ jobs:
       - name: Auto generate API Reference.
         run: cd docs && pydoc-markdown
 
-      - name: Convert Jupyter Notebooks to HTML
+      - name: Convert Jupyter Notebooks to Markdown
         run: |
-          jupyter nbconvert --to html examples/pipeline.ipynb --embed-images --no-prompt --output-dir=docs/vame-docs-app/static/notebooks_html
-          jupyter nbconvert --to html examples/step_by_step.ipynb --embed-images --no-prompt --output-dir=docs/vame-docs-app/static/notebooks_html
+          jupyter nbconvert --to markdown examples/pipeline.ipynb --embed-images --no-prompt --output-dir=docs/vame-docs-app/docs/getting_started --output _pipeline
+          mv docs/vame-docs-app/docs/getting_started/_pipeline.md docs/vame-docs-app/docs/getting_started/_pipeline.mdx
+          jupyter nbconvert --to markdown examples/step_by_step.ipynb --embed-images --no-prompt --output-dir=docs/vame-docs-app/docs/getting_started --output _step_by_step
+          mv docs/vame-docs-app/docs/getting_started/_step_by_step.md docs/vame-docs-app/docs/getting_started/_step_by_step.mdx
 
       - name: Commit pydoc-markdown files
         run: |
