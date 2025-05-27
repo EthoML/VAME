@@ -17,6 +17,7 @@ dependencies = [
     "torch==2.2.2; platform_system == 'Darwin' and platform_machine == 'x86_64'", # Intel Macs
     "torch>=2.3.1; platform_system == 'Darwin' and platform_machine == 'arm64'",  # M1/M2 Macs
     "torch>=2.3.1; platform_system != 'Darwin'",                                  # All other systems
+    "tensorboard",
     "tqdm>=4.66.0",
     "hmmlearn>=0.3.0",
     "opencv-python-headless>=4.9.0.0",
