@@ -85,7 +85,7 @@ def umap_embedding(
         n_components=2,
         min_dist=config["min_dist"],
         n_neighbors=config["n_neighbors"],
-        random_state=config["random_state"],
+        random_state=config.get("project_random_state", 42),
     )
     umap_embeddings = reducer.fit_transform(all_latent_vectors_selected)
 
@@ -177,7 +177,7 @@ def umap_embedding(
         attrs={
             "num_points_in_project": int(all_latent_vectors.shape[0]),
             "num_points_selected": int(len(indices)),
-            "random_state": int(config["random_state"]),
+            "random_state": int(config.get("project_random_state", 42)),
         },
     )
 

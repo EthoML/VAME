@@ -216,7 +216,6 @@ def embed_latent_vectors_optimized(
             # Transpose data to (time, features) for sliding window
             data_transposed = data.T  # Shape: (time, features)
 
-            # Create sliding windows using a simpler approach
             # Use sliding_window_view on each axis separately
             windows = np.lib.stride_tricks.sliding_window_view(
                 data_transposed,
@@ -422,6 +421,8 @@ def same_segmentation(
     -------
     None
     """
+    random_state = config.get("project_random_state", 42)
+
     # List of arrays containing each session's motif labels #[SRM, 10/28/24], recommend rename this and similar variables to allsessions_labels
     cluster_centers = []  # List of arrays containing each session's cluster centers
     motif_usages = []  # List of arrays containing each session's motif usages
@@ -432,48 +433,45 @@ def same_segmentation(
         kmeans = KMeans(
             init="k-means++",
             n_clusters=n_clusters,
-            random_state=42,
+            random_state=random_state,
             n_init=20,
         ).fit(latent_vector_cat)
         cluster_centers = kmeans.cluster_centers_
         # 1D, vector of all labels for the entire cohort
-        label = kmeans.predict(latent_vector_cat)
+        labels = kmeans.predict(latent_vector_cat)
 
     elif segmentation_algorithm == "hmm":
         if not config["hmm_trained"]:
             logger.info("Using a HMM as segmentation algorithm!")
+            hmm_n_iter = config.get("hmm_n_iter", 100)
             hmm_model = hmm.GaussianHMM(
                 n_components=n_clusters,
                 covariance_type="full",
-                n_iter=100,
-                random_state=42,
+                n_iter=hmm_n_iter,
+                random_state=random_state,
                 verbose=True,
             )
             hmm_model.fit(latent_vector_cat)
-            label = hmm_model.predict(latent_vector_cat)
-            save_data = os.path.join(config["project_path"], "results", "")
-            with open(save_data + "hmm_trained.pkl", "wb") as file:
+            labels = hmm_model.predict(latent_vector_cat)
+            model_path = Path(config["project_path"]) / "results" / "hmm_trained.pkl"
+            with open(model_path, "wb") as file:
                 pickle.dump(hmm_model, file)
         else:
             logger.info("Using a pretrained HMM as segmentation algorithm!")
-            save_data = os.path.join(config["project_path"], "results", "")
-            with open(save_data + "hmm_trained.pkl", "rb") as file:
+            model_path = Path(config["project_path"]) / "results" / "hmm_trained.pkl"
+            with open(model_path, "rb") as file:
                 hmm_model = pickle.load(file)
-            label = hmm_model.predict(latent_vector_cat)
+            labels = hmm_model.predict(latent_vector_cat)
 
     idx = 0  # start index for each session
     for i, session in enumerate(sessions):
-        file_len = latent_vectors[i].shape[0]  # stop index of the session
-        session_labels = label[idx : idx + file_len]
-        # labels.append(label[idx : idx + file_len])  # append session's label
-        # if segmentation_algorithm == "kmeans":
-        #     cluster_centers.append(cluster_center) #will this be the same for each session?
+        session_len = latent_vectors[i].shape[0]  # stop index of the session
+        session_labels = labels[idx : idx + session_len]
 
-        # session's motif usage
+        # Session's motif usage
         motif_usage = get_motif_usage(session_labels, n_clusters)
         motif_usages.append(motif_usage)
-        idx += file_len  # updating the session start index
-
+        idx += session_len  # updating the session start index
         save_session_data(
             project_path=config["project_path"],
             session=session,
@@ -511,7 +509,7 @@ def individual_segmentation(
     Tuple
         Tuple of labels, cluster centers, and motif usages.
     """
-    random_state = config["random_state_kmeans"]
+    random_state = config.get("project_random_state", 42)
     n_init = config["n_init_kmeans"]
     labels = []
     cluster_centers = []
