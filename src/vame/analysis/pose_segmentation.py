@@ -169,7 +169,7 @@ def embed_latent_vectors_optimized(
     latent_vector_sessions = []
 
     for session in sessions:
-        latent_vector_path = Path(project_path) / "results" / session / config["model_name"] / "latent_vectors_opt.npy"
+        latent_vector_path = Path(project_path) / "results" / session / config["model_name"] / "latent_vectors.npy"
         if latent_vector_path.exists():
             if not overwrite:
                 logger.info(f"Latent vector for {session} already exists, skipping...")
