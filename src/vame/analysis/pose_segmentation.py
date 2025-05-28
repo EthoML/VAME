@@ -94,7 +94,7 @@ def embed_latent_vectors(
 
         latent_vector_list = []
         with torch.no_grad():
-            for i in tqdm.tqdm(range(data.shape[1] - temp_win), file=tqdm_stream):
+            for i in tqdm.tqdm(range(data.shape[1] - temp_win + 1), file=tqdm_stream):
                 data_sample_np = data[:, i : temp_win + i].T
                 data_sample_np = np.reshape(data_sample_np, (1, temp_win, num_features))
                 if use_gpu:
