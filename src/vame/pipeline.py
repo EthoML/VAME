@@ -9,7 +9,6 @@ from vame.visualization import (
     visualize_preprocessing_scatter,
     visualize_preprocessing_timeseries,
     visualize_preprocessing_cloud,
-    plot_reconstruction,
     plot_loss,
     visualize_hierarchical_tree,
     visualize_umap,

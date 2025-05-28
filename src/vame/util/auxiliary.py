@@ -80,6 +80,7 @@ def create_config_template() -> Tuple[dict, ruamel.yaml.YAML]:
     project_path:
     creation_datetime:
     session_names:
+    project_random_state:
     \n
 # Data
     all_data:
@@ -124,10 +125,10 @@ def create_config_template() -> Tuple[dict, ruamel.yaml.YAML]:
 # Segmentation:
     n_clusters:
     segmentation_algorithms:
-    hmm_trained: False
+    hmm_trained:
+    hmm_n_iter:
     load_data:
     individual_segmentation:
-    random_state_kmeans:
     n_init_kmeans:
     \n
 # Video writer:
@@ -136,7 +137,6 @@ def create_config_template() -> Tuple[dict, ruamel.yaml.YAML]:
 # UMAP parameter:
     min_dist:
     n_neighbors:
-    random_state:
     num_points:
     \n
 #--------------------------------------------------------
