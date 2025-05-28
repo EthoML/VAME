@@ -34,6 +34,42 @@ Embed latent vectors for the given sessions using the VAME model.
 
 * `List[np.ndarray]`: List of latent vectors for all sessions.
 
+#### embed\_latent\_vectors\_optimized
+
+```python
+def embed_latent_vectors_optimized(
+        config: dict,
+        sessions: List[str],
+        fixed: bool,
+        read_from_variable: str = "position_processed",
+        overwrite: bool = False,
+        batch_size: int = 64,
+        tqdm_stream: Union[TqdmToLogger, None] = None) -> List[np.ndarray]
+```
+
+Optimized version of embed_latent_vectors with batch processing and vectorized operations.
+
+This function provides significant performance improvements over the original implementation:
+- Vectorized sliding window creation (no data copying)
+- Batch processing of multiple windows simultaneously
+- GPU memory optimization with pre-allocated tensors
+- Model optimizations for faster inference
+
+**Parameters**
+
+* **config** (`dict`): Configuration dictionary.
+* **sessions** (`List[str]`): List of session names.
+* **fixed** (`bool`): Whether the model is fixed.
+* **read_from_variable** (`str, optional`): Variable to read from the dataset. Defaults to &quot;position_processed&quot;.
+* **overwrite** (`bool, optional`): Whether to overwrite existing latent vector files. Defaults to False.
+* **batch_size** (`int, optional`): Number of windows to process simultaneously. Defaults to 64.
+Larger values use more GPU memory but may be faster.
+* **tqdm_stream** (`TqdmToLogger, optional`): TQDM Stream to redirect the tqdm output to logger.
+
+**Returns**
+
+* `List[np.ndarray]`: List of latent vectors for all sessions.
+
 #### get\_motif\_usage
 
 ```python
@@ -127,7 +163,8 @@ Apply individual segmentation to each session.
 def segment_session(config: dict,
                     overwrite_segmentation: bool = False,
                     overwrite_embeddings: bool = False,
-                    save_logs: bool = True) -> None
+                    save_logs: bool = True,
+                    optimized: bool = True) -> None
 ```
 
 Perform pose segmentation using the VAME model.
@@ -162,6 +199,8 @@ Dimmentions: (n_frames,)
 * **overwrite_segmentation** (`bool, optional`): Whether to overwrite existing segmentation results. Defaults to False.
 * **overwrite_embeddings** (`bool, optional`): If True, runs embedding function and re-creates embeddings files, even if they already exist.
 Defaults to False.
+* **optimized** (`bool, optional`): If True, uses the optimized version of the embedding function.
+If False, uses the original version. Defaults to True.
 * **save_logs** (`bool, optional`): Whether to save logs. Defaults to True.
 
 **Returns**

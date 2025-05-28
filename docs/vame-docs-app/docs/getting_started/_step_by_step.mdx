@@ -190,12 +190,19 @@ from vame.visualization import visualize_preprocessing_timeseries
 visualize_preprocessing_timeseries(config=config_data)
 ```
 
-For the model training step, you can visualize the evolution of the loss values:
+For the VAME model, you can visualize the evolution of the loss values during training and the recontruction evaluation:
 
 ```python
 from vame.visualization import plot_loss
 
 plot_loss(config=config_data)
+```
+
+```python
+from IPython.display import Image, display
+
+eval_plot_path = Path(config_data["project_path"]) / "model" / "evaluate" / "future_reconstruction.png"
+display(Image(filename=eval_plot_path))
 ```
 
 After creating community clusters for your project, you can visualize the hierarchical tree:
