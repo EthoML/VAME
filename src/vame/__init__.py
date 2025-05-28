@@ -2,6 +2,9 @@ import sys
 
 sys.dont_write_bytecode = True
 
+# Import netCDF4 before h5py to avoid conflicts when reading netCDF files
+import netCDF4
+
 from vame.initialize_project import init_new_project
 from vame.model import create_trainset
 from vame.model import train_model
@@ -19,6 +22,3 @@ from vame.util.auxiliary import *
 
 from vame.preprocessing import preprocessing
 from vame import visualization
-
-
-import netCDF4
