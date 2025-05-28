@@ -19,3 +19,6 @@ from vame.util.auxiliary import *
 
 from vame.preprocessing import preprocessing
 from vame import visualization
+
+
+import netCDF4
