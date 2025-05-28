@@ -77,7 +77,7 @@ def embed_latent_vectors(
                 logger.info(f"Latent vector for {session} already exists, but will be overwritten.")
         logger.info(f"Embedding of latent vector for file {session}")
 
-        # Load the model, if not already loaded
+        # Load the model, if not yet loaded
         if model is None:
             use_gpu = check_torch_device()
             model = load_model(config, model_name, fixed)
@@ -132,8 +132,6 @@ def embed_latent_vectors_optimized(
     - GPU memory optimization with pre-allocated tensors
     - Model optimizations for faster inference
 
-    Expected speedup: 15-90x depending on data size and hardware.
-
     Parameters
     ----------
     config : dict
@@ -183,7 +181,7 @@ def embed_latent_vectors_optimized(
 
         logger.info(f"Embedding of latent vector for file {session}")
 
-        # Load the model, if not already loaded
+        # Load the model, if not yet loaded
         if model is None:
             use_gpu = check_torch_device()
             model = load_model(config, model_name, fixed)
@@ -554,7 +552,7 @@ def segment_session(
     overwrite_segmentation: bool = False,
     overwrite_embeddings: bool = False,
     save_logs: bool = True,
-    optimized: bool = False,
+    optimized: bool = True,
 ) -> None:
     """
     Perform pose segmentation using the VAME model.
@@ -592,6 +590,9 @@ def segment_session(
     overwrite_embeddings : bool, optional
         If True, runs embedding function and re-creates embeddings files, even if they already exist.
         Defaults to False.
+    optimized : bool, optional
+        If True, uses the optimized version of the embedding function.
+        If False, uses the original version. Defaults to True.
     save_logs : bool, optional
         Whether to save logs. Defaults to True.
 
