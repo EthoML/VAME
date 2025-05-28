@@ -446,6 +446,8 @@ def same_segmentation(
                 n_components=n_clusters,
                 covariance_type="full",
                 n_iter=100,
+                random_state=42,
+                verbose=True,
             )
             hmm_model.fit(latent_vector_cat)
             label = hmm_model.predict(latent_vector_cat)
