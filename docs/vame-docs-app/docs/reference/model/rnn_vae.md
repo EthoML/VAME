@@ -269,7 +269,7 @@ Creates files at:
         - pretrained_model/
     - logs/
         - tensorboard/
-            - model_name_timestamp/
+            - model_name/
                 - events.out.tfevents...
 
 **Parameters**
