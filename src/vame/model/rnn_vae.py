@@ -542,7 +542,7 @@ def train_model(
             - pretrained_model/
         - logs/
             - tensorboard/
-                - model_name_timestamp/
+                - model_name/
                     - events.out.tfevents...
 
 
@@ -579,12 +579,11 @@ def train_model(
 
         # TensorBoard setup
         if TENSORBOARD_ENABLED:
-            timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
             tb_log_dir = os.path.join(
                 config["project_path"],
                 "logs",
                 "tensorboard",
-                f"{model_name}_{timestamp}"
+                f"{model_name}"
             )
             os.makedirs(tb_log_dir, exist_ok=True)
             writer = SummaryWriter(tb_log_dir)
