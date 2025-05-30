@@ -21,6 +21,134 @@ logger_config = VameLogger(__name__)
 logger = logger_config.logger
 
 
+def create_cluster_videos_optimized(
+    config: dict,
+    path_to_file: str,
+    session: str,
+    n_clusters: int,
+    video_type: str,
+    flag: str,
+    segmentation_algorithm: SegmentationAlgorithms,
+    output_video_type: str = ".mp4",
+    tqdm_logger_stream: Union[TqdmToLogger, None] = None,
+) -> None:
+    """
+    Generate cluster videos and save them to filesystem on project folder.
+
+    Parameters
+    ----------
+    config : dict
+        Configuration parameters.
+    path_to_file : str
+        Path to the file.
+    session : str
+        Name of the session.
+    n_clusters : int
+        Number of clusters.
+    video_type : str
+        Type of input video.
+    flag : str
+        Flag indicating the type of video (motif or community).
+    segmentation_algorithm : SegmentationAlgorithms
+        Which segmentation algorithm to use. Options are 'hmm' or 'kmeans'.
+    output_video_type : str, optional
+        Type of output video. Default is '.mp4'.
+    tqdm_logger_stream : TqdmToLogger, optional
+        Tqdm logger stream. Default is None.
+
+    Returns
+    -------
+    None
+    """
+    if output_video_type not in [".mp4", ".avi"]:
+        raise ValueError("Output video type must be either '.avi' or '.mp4'.")
+
+    if flag == "motif":
+        logger.info("Motif videos getting created for " + session + " ...")
+        labels = np.load(
+            os.path.join(
+                path_to_file,
+                str(n_clusters) + "_" + segmentation_algorithm + "_label_" + session + ".npy",
+            )
+        )
+    if flag == "community":
+        logger.info("Community videos getting created for " + session + " ...")
+        labels = np.load(
+            os.path.join(
+                path_to_file,
+                "community",
+                "cohort_community_label_" + session + ".npy",
+            )
+        )
+
+    video_file_path = os.path.join(
+        config["project_path"],
+        "data",
+        "raw",
+        session + video_type,
+    )
+    capture = cv.VideoCapture(video_file_path)
+    if not capture.isOpened():
+        raise ValueError(f"Video capture could not be opened. Ensure the video file is valid.\n {video_file_path}")
+    width = capture.get(cv.CAP_PROP_FRAME_WIDTH)
+    height = capture.get(cv.CAP_PROP_FRAME_HEIGHT)
+    fps = 25  # capture.get(cv.CAP_PROP_FPS)
+
+    offset_frame = config["time_window"] / 2
+    unique_labels, count_labels = np.unique(labels, return_counts=True)
+
+    for cluster in unique_labels:
+        logger.info("Cluster: %d" % (cluster))
+        cluster_indexes = np.where(labels == cluster)[0]
+        if not cluster_indexes.size:
+            logger.info("Cluster is empty")
+            continue
+
+        if flag == "motif":
+            output_path = os.path.join(
+                path_to_file,
+                "cluster_videos",
+                session + f"-motif_{cluster}{output_video_type}",
+            )
+        if flag == "community":
+            output_path = os.path.join(
+                path_to_file,
+                "community_videos",
+                session + f"-community_{cluster}{output_video_type}",
+            )
+
+        if len(cluster_indexes) < config.get("length_of_motif_video", 1000):
+            vid_length = len(cluster_indexes)
+        else:
+            vid_length = config.get("length_of_motif_video", 1000)
+
+        cluster_frames = []
+        for num in range(vid_length):
+            idx = cluster_indexes[num]
+            capture.set(cv.CAP_PROP_POS_FRAMES, offset_frame + idx)
+            _, frame = capture.read()
+            cluster_frames.append(frame)
+
+        if output_video_type == ".avi":
+            codec = cv.VideoWriter_fourcc("M", "J", "P", "G")
+            video_writer = cv.VideoWriter(output_path, codec, fps, (int(width), int(height)))
+            video_writer.write(frame)
+            video_writer.release()
+        elif output_video_type == ".mp4":
+            # shape → (N, H, W, 3), dtype uint8
+            stack = np.stack(
+                [cv.cvtColor(f, cv.COLOR_BGR2RGB) for f in cluster_frames], axis=0
+            )
+            imageio.v3.imwrite(
+                output_path,
+                stack,
+                fps=fps,
+                codec="libx264",
+                macro_block_size=None
+            )
+    capture.release()
+
+
 def create_cluster_videos(
     config: dict,
     path_to_file: str,
@@ -224,7 +352,7 @@ def motif_videos(
                 if not os.path.exists(os.path.join(path_to_file, "cluster_videos")):
                     os.mkdir(os.path.join(path_to_file, "cluster_videos"))
 
-                create_cluster_videos(
+                create_cluster_videos_optimized(
                     config=config,
                     path_to_file=path_to_file,
                     session=session,
@@ -315,7 +443,7 @@ def community_videos(
                 if not os.path.exists(os.path.join(path_to_file, "community_videos")):
                     os.mkdir(os.path.join(path_to_file, "community_videos"))
 
-                create_cluster_videos(
+                create_cluster_videos_optimized(
                     config=config,
                     path_to_file=path_to_file,
                     session=session,
