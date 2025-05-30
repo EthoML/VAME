@@ -115,3 +115,6 @@ venv_docs/
 
 # Others
 **/pipeline_example/**
+**/iframe_figures/**
+**/luiz-tests.ipynb
+examples/projects/**

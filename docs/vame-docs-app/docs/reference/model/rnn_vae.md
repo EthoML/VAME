@@ -9,6 +9,16 @@ title: model.rnn_vae
 
 #### tqdm\_to\_logger
 
+#### TENSORBOARD\_ENABLED
+
+#### TENSORBOARD\_LOG\_FREQUENCY
+
+Log every N batches
+
+#### TENSORBOARD\_LOG\_HISTOGRAMS
+
+Set to True to log parameter histograms
+
 #### use\_gpu
 
 #### reconstruction\_loss
@@ -136,12 +146,29 @@ Add Gaussian noise to the input data.
 #### train
 
 ```python
-def train(train_loader: Data.DataLoader, epoch: int, model: nn.Module,
-          optimizer: torch.optim.Optimizer, anneal_function: str, BETA: float,
-          kl_start: int, annealtime: int, seq_len: int, future_decoder: bool,
-          future_steps: int, scheduler: torch.optim.lr_scheduler._LRScheduler,
-          mse_red: str, mse_pred: str, kloss: int, klmbda: float, bsize: int,
-          noise: bool) -> Tuple[float, float, float, float, float, float]
+def train(
+    train_loader: Data.DataLoader,
+    epoch: int,
+    model: nn.Module,
+    optimizer: torch.optim.Optimizer,
+    anneal_function: str,
+    BETA: float,
+    kl_start: int,
+    annealtime: int,
+    seq_len: int,
+    future_decoder: bool,
+    future_steps: int,
+    scheduler: Union[torch.optim.lr_scheduler._LRScheduler, ReduceLROnPlateau,
+                     StepLR],
+    mse_red: str,
+    mse_pred: str,
+    kloss: int,
+    klmbda: float,
+    bsize: int,
+    noise: bool,
+    writer: Optional[SummaryWriter] = None,
+    global_step: int = 0
+) -> Tuple[float, float, float, float, float, float, int]
 ```
 
 Train the model.
@@ -159,26 +186,36 @@ Train the model.
 * **seq_len** (`int`): Length of the sequence.
 * **future_decoder** (`bool`): Whether a future decoder is used.
 * **future_steps** (`int`): Number of future steps to predict.
-* **scheduler** (`lr_scheduler._LRScheduler`): Learning rate scheduler.
+* **scheduler** (`Union[_LRScheduler, ReduceLROnPlateau]`): Learning rate scheduler.
 * **mse_red** (`str`): Reduction type for MSE reconstruction loss.
 * **mse_pred** (`str`): Reduction type for MSE prediction loss.
 * **kloss** (`int`): Number of clusters for cluster loss.
 * **klmbda** (`float`): Lambda value for cluster loss.
 * **bsize** (`int`): Size of the batch.
 * **noise** (`bool`): Whether to add Gaussian noise to the input.
+* **writer** (`Optional[SummaryWriter]`): TensorBoard writer for logging.
+* **global_step** (`int`): Global step counter for TensorBoard logging.
 
 **Returns**
 
-* `Tuple[float, float, float, float, float, float]`: Kullback-Leibler weight, train loss, K-means loss, KL loss,
-MSE loss, future loss.
+* `Tuple[float, float, float, float, float, float, int]`: Kullback-Leibler weight, train loss, K-means loss, KL loss,
+MSE loss, future loss, updated global step.
 
 #### test
 
 ```python
-def test(test_loader: Data.DataLoader, model: nn.Module, BETA: float,
-         kl_weight: float, seq_len: int, mse_red: str, kloss: str,
-         klmbda: float, future_decoder: bool,
-         bsize: int) -> Tuple[float, float, float]
+def test(test_loader: Data.DataLoader,
+         model: nn.Module,
+         BETA: float,
+         kl_weight: float,
+         seq_len: int,
+         mse_red: str,
+         kloss: int,
+         klmbda: float,
+         future_decoder: bool,
+         bsize: int,
+         writer: Optional[SummaryWriter] = None,
+         epoch: int = 0) -> Tuple[float, float, float]
 ```
 
 Evaluate the model on the test dataset.
@@ -191,10 +228,12 @@ Evaluate the model on the test dataset.
 * **kl_weight** (`float`): Weighting factor for the KL divergence loss.
 * **seq_len** (`int`): Length of the sequence.
 * **mse_red** (`str`): Reduction method for the MSE loss.
-* **kloss** (`str`): Loss function for K-means clustering.
+* **kloss** (`int`): Loss function for K-means clustering.
 * **klmbda** (`float`): Lambda value for K-means loss.
 * **future_decoder** (`bool`): Flag indicating whether to use a future decoder.
-* **bsize :int**: Batch size.
+* **bsize** (`int`): Batch size.
+* **writer** (`Optional[SummaryWriter]`): TensorBoard writer for logging.
+* **epoch** (`int`): Current epoch number.
 
 **Returns**
 
@@ -228,6 +267,10 @@ Creates files at:
             - train_losses_VAME.npy
             - weight_values_VAME.npy
         - pretrained_model/
+    - logs/
+        - tensorboard/
+            - model_name/
+                - events.out.tfevents...
 
 **Parameters**
 

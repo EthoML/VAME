@@ -22,7 +22,7 @@ def preprocessing(
     run_savgol_filtering: bool = True,
     run_rescaling: bool = False,
     save_logs: bool = True,
-) -> None:
+) -> str:
     """
     Preprocess the data by:
         - Cleaning low confidence data points
@@ -54,21 +54,24 @@ def preprocessing(
 
     Returns
     -------
-    None
+    variable name of the last-executed preprocessing step output
     """
     if save_logs:
         log_path = Path(config["project_path"]) / "logs" / "preprocessing.log"
         logger_config.add_file_handler(str(log_path))
+
+    latest_output = "position"
 
     # Low-confidence cleaning
     if run_lowconf_cleaning:
         logger.info("Cleaning low confidence data points...")
         lowconf_cleaning(
             config=config,
-            read_from_variable="position",
+            read_from_variable=latest_output,
             save_to_variable="position_cleaned_lowconf",
             save_logs=save_logs,
         )
+        latest_output = "position_cleaned_lowconf"
 
     # Egocentric alignment
     if run_egocentric_alignment:
@@ -77,37 +80,43 @@ def preprocessing(
             config=config,
             centered_reference_keypoint=centered_reference_keypoint,
             orientation_reference_keypoint=orientation_reference_keypoint,
-            read_from_variable="position_cleaned_lowconf",
+            read_from_variable=latest_output,
             save_to_variable="position_egocentric_aligned",
             save_logs=save_logs,
         )
+        latest_output = "position_egocentric_aligned"
 
     # Outlier cleaning
     if run_outlier_cleaning:
         logger.info("Cleaning outliers using IQR method...")
         outlier_cleaning(
             config=config,
-            read_from_variable="position_egocentric_aligned",
+            read_from_variable=latest_output,
             save_to_variable="position_processed",
             save_logs=save_logs,
         )
+        latest_output = "position_processed"
 
     # Savgol filtering
     if run_savgol_filtering:
         logger.info("Applying Savitzky-Golay filter...")
         savgol_filtering(
             config=config,
-            read_from_variable="position_processed",
+            read_from_variable=latest_output,
             save_to_variable="position_processed",
             save_logs=save_logs,
         )
+        latest_output = "position_processed"
 
     # Rescaling
     if run_rescaling:
         logger.info("Rescaling...")
         rescaling(
             config=config,
-            read_from_variable="position_processed",
+            read_from_variable=latest_output,
             save_to_variable="position_scaled",
             save_logs=save_logs,
         )
+        latest_output = "position_scaled"
+
+    return latest_output

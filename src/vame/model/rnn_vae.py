@@ -3,11 +3,13 @@ from torch import nn
 import torch.utils.data as Data
 from torch.autograd import Variable
 from torch.optim.lr_scheduler import StepLR, ReduceLROnPlateau
+from torch.utils.tensorboard.writer import SummaryWriter
 import os
 import numpy as np
 from pathlib import Path
 from tqdm import tqdm
-from typing import Tuple
+from typing import Tuple, Union, Optional
+import datetime
 
 from vame.model.dataloader import SEQUENCE_DATASET
 from vame.model.rnn_model import RNN_VAE
@@ -18,6 +20,11 @@ from vame.logging.logger import VameLogger, TqdmToLogger
 logger_config = VameLogger(__name__)
 logger = logger_config.logger
 tqdm_to_logger = TqdmToLogger(logger)
+
+# TensorBoard configuration (hardcoded)
+TENSORBOARD_ENABLED = True
+TENSORBOARD_LOG_FREQUENCY = 1  # Log every N batches
+TENSORBOARD_LOG_HISTOGRAMS = False  # Set to True to log parameter histograms
 
 # make sure torch uses cuda for GPU computing
 use_gpu = torch.cuda.is_available()
@@ -229,14 +236,16 @@ def train(
     seq_len: int,
     future_decoder: bool,
     future_steps: int,
-    scheduler: torch.optim.lr_scheduler._LRScheduler,
+    scheduler: Union[torch.optim.lr_scheduler._LRScheduler, ReduceLROnPlateau, StepLR],
     mse_red: str,
     mse_pred: str,
     kloss: int,
     klmbda: float,
     bsize: int,
     noise: bool,
-) -> Tuple[float, float, float, float, float, float]:
+    writer: Optional[SummaryWriter] = None,
+    global_step: int = 0,
+) -> Tuple[float, float, float, float, float, float, int]:
     """
     Train the model.
 
@@ -264,7 +273,7 @@ def train(
         Whether a future decoder is used.
     future_steps : int
         Number of future steps to predict.
-    scheduler : lr_scheduler._LRScheduler
+    scheduler : Union[_LRScheduler, ReduceLROnPlateau]
         Learning rate scheduler.
     mse_red : str
         Reduction type for MSE reconstruction loss.
@@ -278,12 +287,16 @@ def train(
         Size of the batch.
     noise : bool
         Whether to add Gaussian noise to the input.
+    writer : Optional[SummaryWriter]
+        TensorBoard writer for logging.
+    global_step : int
+        Global step counter for TensorBoard logging.
 
     Returns
     -------
-    Tuple[float, float, float, float, float, float]
+    Tuple[float, float, float, float, float, float, int]
         Kullback-Leibler weight, train loss, K-means loss, KL loss,
-        MSE loss, future loss.
+        MSE loss, future loss, updated global step.
     """
     # toggle model to train mode
     model.train()
@@ -331,6 +344,19 @@ def train(
         loss.backward()
         optimizer.step()
 
+        # TensorBoard logging every N batches
+        if writer and idx % TENSORBOARD_LOG_FREQUENCY == 0:
+            step = global_step + idx
+            writer.add_scalar('batch/train_loss', loss.item(), step)
+            writer.add_scalar('batch/mse_loss', rec_loss.item(), step)
+            writer.add_scalar('batch/kl_loss', kl_loss.item(), step)
+            writer.add_scalar('batch/kmeans_loss', kmeans_loss.item(), step)
+            writer.add_scalar('batch/kl_weight', kl_weight, step)
+            writer.add_scalar('batch/learning_rate', optimizer.param_groups[0]['lr'], step)
+
+            if future_decoder:
+                writer.add_scalar('batch/future_loss', fut_rec_loss.item(), step)
+
         # torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm = 5)
 
         train_loss += loss.item()
@@ -342,7 +368,10 @@ def train(
         #     print('Epoch: %d.  loss: %.4f' %(epoch, loss.item()))
 
     # be sure scheduler is called before optimizer in >1.1 pytorch
-    scheduler.step(loss)
+    if isinstance(scheduler, ReduceLROnPlateau):
+        scheduler.step(loss)
+    else:
+        scheduler.step()
 
     if future_decoder:
         logger.info(
@@ -373,6 +402,7 @@ def train(
         kullback_loss / idx,
         mse_loss / idx,
         fut_loss / idx,
+        global_step + len(train_loader),
     )
 
 
@@ -383,10 +413,12 @@ def test(
     kl_weight: float,
     seq_len: int,
     mse_red: str,
-    kloss: str,
+    kloss: int,
     klmbda: float,
     future_decoder: bool,
     bsize: int,
+    writer: Optional[SummaryWriter] = None,
+    epoch: int = 0,
 ) -> Tuple[float, float, float]:
     """
     Evaluate the model on the test dataset.
@@ -405,14 +437,18 @@ def test(
         Length of the sequence.
     mse_red : str
         Reduction method for the MSE loss.
-    kloss : str
+    kloss : int
         Loss function for K-means clustering.
     klmbda : float
         Lambda value for K-means loss.
     future_decoder : bool
         Flag indicating whether to use a future decoder.
-    bsize :int
+    bsize : int
         Batch size.
+    writer : Optional[SummaryWriter]
+        TensorBoard writer for logging.
+    epoch : int
+        Current epoch number.
 
     Returns
     -------
@@ -459,6 +495,14 @@ def test(
             mse_loss += rec_loss.item()
             kullback_loss += kl_loss.item()
             kmeans_losses += kmeans_loss.item()
+
+    # TensorBoard logging for test metrics
+    if writer:
+        writer.add_scalar('epoch/test_loss', test_loss / idx, epoch)
+        writer.add_scalar('epoch/test_mse', mse_loss / idx, epoch)
+        writer.add_scalar('epoch/test_kl', BETA * kl_weight * kullback_loss / idx, epoch)
+        writer.add_scalar('epoch/test_kmeans', kl_weight * kmeans_losses / idx, epoch)
+
     logger.info(
         "Test loss: {:.3f}, MSE-Loss: {:.3f}, KL-Loss: {:.3f}, Kmeans-Loss: {:.3f}".format(
             test_loss / idx,
@@ -496,6 +540,10 @@ def train_model(
                 - train_losses_VAME.npy
                 - weight_values_VAME.npy
             - pretrained_model/
+        - logs/
+            - tensorboard/
+                - model_name/
+                    - events.out.tfevents...
 
 
     Parameters
@@ -510,6 +558,7 @@ def train_model(
     None
     """
     config = config
+    writer = None
     try:
         tqdm_logger_stream = None
         if save_logs:
@@ -527,6 +576,19 @@ def train_model(
             os.mkdir(os.path.join(config["project_path"], "model", "best_model", ""))
             os.mkdir(os.path.join(config["project_path"], "model", "best_model", "snapshots", ""))
             os.mkdir(os.path.join(config["project_path"], "model", "model_losses", ""))
+
+        # TensorBoard setup
+        if TENSORBOARD_ENABLED:
+            tb_log_dir = os.path.join(
+                config["project_path"],
+                "logs",
+                "tensorboard",
+                f"{model_name}"
+            )
+            os.makedirs(tb_log_dir, exist_ok=True)
+            writer = SummaryWriter(tb_log_dir)
+            logger.info(f"TensorBoard logging enabled. Log directory: {tb_log_dir}")
+            logger.info("To view logs, run: tensorboard --logdir=%s --port=6006" % os.path.join(config["project_path"], "logs", "tensorboard"))
 
         # make sure torch uses cuda for GPU computing
         use_gpu = torch.cuda.is_available()
@@ -632,6 +694,17 @@ def train_model(
                 softplus,
             ).to()
 
+        # Log model graph to TensorBoard
+        if writer:
+            try:
+                dummy_input = torch.randn(1, TEMPORAL_WINDOW // 2, NUM_FEATURES)
+                if CUDA:
+                    dummy_input = dummy_input.cuda()
+                writer.add_graph(model, dummy_input)
+                logger.info("Model graph logged to TensorBoard")
+            except Exception as e:
+                logger.warning(f"Could not log model graph to TensorBoard: {e}")
+
         if pretrained_weights:
             try:
                 logger.info(
@@ -704,11 +777,11 @@ def train_model(
                 patience=config["scheduler_step_size"],
                 threshold=1e-3,
                 threshold_mode="rel",
-                verbose=True,
             )
         else:
             scheduler = StepLR(optimizer, step_size=scheduler_step_size, gamma=1, last_epoch=-1)
 
+        global_step = 0
         logger.info("Start training... ")
         for epoch in tqdm(
             range(1, EPOCHS),
@@ -717,7 +790,7 @@ def train_model(
             file=tqdm_logger_stream,
         ):
             # print("Epoch: %d" %epoch)
-            weight, train_loss, km_loss, kl_loss, mse_loss, fut_loss = train(
+            weight, train_loss, km_loss, kl_loss, mse_loss, fut_loss, global_step = train(
                 train_loader,
                 epoch,
                 model,
@@ -736,6 +809,8 @@ def train_model(
                 KMEANS_LAMBDA,
                 TRAIN_BATCH_SIZE,
                 noise,
+                writer,
+                global_step,
             )
             current_loss, test_loss, test_list = test(
                 test_loader,
@@ -748,7 +823,28 @@ def train_model(
                 KMEANS_LAMBDA,
                 FUTURE_DECODER,
                 TEST_BATCH_SIZE,
+                writer,
+                epoch,
             )
+
+            # TensorBoard epoch-level logging
+            if writer:
+                writer.add_scalar('epoch/train_loss', train_loss, epoch)
+                writer.add_scalar('epoch/train_mse', mse_loss, epoch)
+                writer.add_scalar('epoch/train_kl', kl_loss, epoch)
+                writer.add_scalar('epoch/train_kmeans', km_loss, epoch)
+                writer.add_scalar('epoch/kl_weight', weight, epoch)
+                writer.add_scalar('epoch/learning_rate', optimizer.param_groups[0]['lr'], epoch)
+
+                if FUTURE_DECODER:
+                    writer.add_scalar('epoch/train_future', fut_loss, epoch)
+
+                # Log parameter histograms (optional)
+                if TENSORBOARD_LOG_HISTOGRAMS:
+                    for name, param in model.named_parameters():
+                        if param.grad is not None:
+                            writer.add_histogram(f'parameters/{name}', param, epoch)
+                            writer.add_histogram(f'gradients/{name}', param.grad, epoch)
 
             # logging losses
             train_losses.append(train_loss)
@@ -891,4 +987,7 @@ def train_model(
         logger.exception(f"An error occurred: {e}")
         raise e
     finally:
+        if writer:
+            writer.close()
+            logger.info("TensorBoard writer closed")
         logger_config.remove_file_handler()

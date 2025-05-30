@@ -96,7 +96,7 @@ def preprocessing(centered_reference_keypoint: str = "snout",
                   run_egocentric_alignment: bool = True,
                   run_outlier_cleaning: bool = True,
                   run_savgol_filtering: bool = True,
-                  run_rescaling: bool = False) -> None
+                  run_rescaling: bool = False) -> str
 ```
 
 Preprocesses the data.
@@ -113,14 +113,15 @@ Preprocesses the data.
 
 **Returns**
 
-* `None`
+* `variable name of the last-executed preprocessing step output`
 
 #### create\_training\_set
 
 ```python
 def create_training_set(
         test_fraction: float = 0.1,
-        split_mode: Literal["mode_1", "mode_2"] = "mode_2") -> None
+        split_mode: Literal["mode_1", "mode_2"] = "mode_2",
+        read_from_variable: str = "position_processed") -> None
 ```
 
 Creates the training set.
