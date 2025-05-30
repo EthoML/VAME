@@ -143,33 +143,30 @@ def umap_embedding(
                 )
                 continue
 
+    data_vars = {
+        "umap_embeddings": (("points", "components"), umap_embeddings),
+        "session_names": ("points", all_session_names_selected.astype(str)),
+    }
+
     if len(all_motifs["hmm"]) > 0:
         motifs_selected_hmm = all_motifs["hmm"][indices]
-    else:
-        motifs_selected_hmm = np.array([])
+        data_vars["motifs_hmm"] = ("points", motifs_selected_hmm)
+
     if len(all_motifs["kmeans"]) > 0:
         motifs_selected_kmeans = all_motifs["kmeans"][indices]
-    else:
-        motifs_selected_kmeans = np.array([])
+        data_vars["motifs_kmeans"] = ("points", motifs_selected_kmeans)
+
     if len(all_communities["hmm"]) > 0:
         communities_selected_hmm = all_communities["hmm"][indices]
-    else:
-        communities_selected_hmm = np.array([])
+        data_vars["communities_hmm"] = ("points", communities_selected_hmm)
+
     if len(all_communities["kmeans"]) > 0:
         communities_selected_kmeans = all_communities["kmeans"][indices]
-    else:
-        communities_selected_kmeans = np.array([])
+        data_vars["communities_kmeans"] = ("points", communities_selected_kmeans)
 
     # Build an xarray.Dataset
     ds = xr.Dataset(
-        data_vars={
-            "umap_embeddings": (("points", "components"), umap_embeddings),
-            "session_names": ("points", all_session_names_selected.astype(str)),
-            "motifs_hmm": ("points", motifs_selected_hmm),
-            "motifs_kmeans": ("points", motifs_selected_kmeans),
-            "communities_hmm": ("points", communities_selected_hmm),
-            "communities_kmeans": ("points", communities_selected_kmeans),
-        },
+        data_vars=data_vars,
         coords={
             "points": indices,
             "components": ["UMAP_1", "UMAP_2"],
@@ -688,24 +685,26 @@ def visualize_umap(
         # Extract data from xarray dataset
         embeddings = umap_ds.umap_embeddings.values
         session_names = umap_ds.session_names.values
-        motifs_hmm = (
-            umap_ds.motifs_hmm.values if len(umap_ds.motifs_hmm.values) > 0 else None
-        )
-        motifs_kmeans = (
-            umap_ds.motifs_kmeans.values
-            if len(umap_ds.motifs_kmeans.values) > 0
-            else None
-        )
-        communities_hmm = (
-            umap_ds.communities_hmm.values
-            if len(umap_ds.communities_hmm.values) > 0
-            else None
-        )
-        communities_kmeans = (
-            umap_ds.communities_kmeans.values
-            if len(umap_ds.communities_kmeans.values) > 0
-            else None
-        )
+
+        if "motifs_hmm" in umap_ds and len(umap_ds.motifs_hmm.values) > 0:
+            motifs_hmm = umap_ds.motifs_hmm.values
+        else:
+            motifs_hmm = None
+
+        if "motifs_kmeans" in umap_ds and len(umap_ds.motifs_kmeans.values) > 0:
+            motifs_kmeans = umap_ds.motifs_kmeans.values
+        else:
+            motifs_kmeans = None
+
+        if "communities_hmm" in umap_ds and len(umap_ds.communities_hmm.values) > 0:
+            communities_hmm = umap_ds.communities_hmm.values
+        else:
+            communities_hmm = None
+
+        if "communities_kmeans" in umap_ds and len(umap_ds.communities_kmeans.values) > 0:
+            communities_kmeans = umap_ds.communities_kmeans.values
+        else:
+            communities_kmeans = None
 
         # Create label dictionaries organized by segmentation algorithm
         motif_labels = {}
