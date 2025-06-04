@@ -8,6 +8,8 @@ from vame.io.load_poses import read_pose_estimation_file
 def pose_estimation_inspection(
     config,
     read_from_variable: str = "position_raw",
+    save_to_file: bool = False,
+    show_figure: bool = True,
 ) -> None:
     """
     Inspect pose estimation data for quality and completeness.
@@ -55,6 +57,8 @@ def pose_estimation_inspection(
             config=config,
             confidence_data=all_confidence_values,
             keypoint_names=keypoints,
+            save_to_file=save_to_file,
+            show_figure=show_figure,
         )
 
 
@@ -62,6 +66,8 @@ def plot_pose_estimation_inspection_matplotlib(
     config,
     confidence_data: np.ndarray,
     keypoint_names: np.ndarray,
+    save_to_file: bool = False,
+    show_figure: bool = True,
 ) -> None:
     """
     Plot pose estimation inspection results using matplotlib with multiple subplots.
@@ -154,4 +160,13 @@ def plot_pose_estimation_inspection_matplotlib(
     # Adjust layout
     plt.tight_layout()
     plt.subplots_adjust(top=0.93)  # Make room for suptitle
-    plt.show()
+
+    if save_to_file:
+        save_fig_path = Path(project_path) / "reports" / "figures" / "pose_estimation_confidence_distribution.png"
+        save_fig_path.parent.mkdir(parents=True, exist_ok=True)
+        plt.savefig(str(save_fig_path))
+
+    if show_figure:
+        plt.show()
+    else:
+        plt.close(fig)
