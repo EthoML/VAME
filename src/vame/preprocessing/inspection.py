@@ -1,6 +1,5 @@
 from pathlib import Path
 import numpy as np
-import plotly.graph_objects as go
 import matplotlib.pyplot as plt
 
 from vame.io.load_poses import read_pose_estimation_file
