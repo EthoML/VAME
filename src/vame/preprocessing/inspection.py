@@ -109,11 +109,14 @@ def plot_pose_estimation_inspection_matplotlib(
         total_samples = len(confidence_array)
         percentage_below = (below_reference / total_samples) * 100
 
-        # Create histogram
+        # Create histogram with percentage normalization
+        total_samples = len(confidence_array)
+        weights = np.full(total_samples, 100.0 / total_samples)
+
         ax.hist(
             confidence_array,
             bins=50,
-            density=True,
+            weights=weights,
             color="#8d93b5",
             edgecolor="black",
             linewidth=0.5,
@@ -138,7 +141,7 @@ def plot_pose_estimation_inspection_matplotlib(
 
         # Set labels and formatting
         ax.set_xlabel("Confidence", fontsize=10)
-        ax.set_ylabel("Density", fontsize=10)
+        ax.set_ylabel("Percentage (%)", fontsize=10)
         ax.set_xlim(0, 1)
         ax.set_xticks([0, 0.2, 0.4, 0.6, 0.8, 1.0])
         ax.grid(True, alpha=0.3, axis='y')
