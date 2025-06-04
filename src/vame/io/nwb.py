@@ -1,67 +1,242 @@
-# from pynwb import NWBHDF5IO
-# from pynwb.file import NWBFile
-# from hdmf.utils import LabelledDict
-# import pandas as pd
+from typing import Optional
+from datetime import datetime, timezone
+from pathlib import Path
+import json
+import numpy as np
+import xarray as xr
+import pynwb
+import ndx_pose
+import ndx_vame
+
+from vame.logging.logger import VameLogger
+from vame.io import load_vame_dataset
 
 
-# def get_pose_data_from_nwb_file(
-#     nwbfile: NWBFile,
-#     path_to_pose_nwb_series_data: str,
-# ) -> LabelledDict:
-#     """
-#     Get pose data from nwb file using a inside path to the nwb data.
-
-#     Parameters
-#     ---------
-#     nwbfile : NWBFile)
-#         NWB file object.
-#     path_to_pose_nwb_series_data : str
-#         Path to the pose data inside the nwb file.
-
-#     Returns
-#     -------
-#     LabelledDict
-#         Pose data.
-#     """
-#     if not path_to_pose_nwb_series_data:
-#         raise ValueError("Path to pose nwb series data is required.")
-#     pose_data = nwbfile
-#     for key in path_to_pose_nwb_series_data.split("/"):
-#         if isinstance(pose_data, dict):
-#             pose_data = pose_data.get(key)
-#             continue
-#         pose_data = getattr(pose_data, key)
-#     return pose_data
+logger_config = VameLogger(__name__)
+logger = logger_config.logger
 
 
-# def get_dataframe_from_pose_nwb_file(
-#     file_path: str,
-#     path_to_pose_nwb_series_data: str,
-# ) -> pd.DataFrame:
-#     """
-#     Get pose data from nwb file and return it as a pandas DataFrame.
+def get_base_nwbfile(
+    session_name: str,
+    ds: xr.Dataset,
+    nwbfile_kwargs: dict,
+    subject_kwargs: dict,
+):
+    """
+    Create base NWBFile object.
+    """
+    subject_id = subject_kwargs.pop("subject_id", session_name)
+    subject = pynwb.file.Subject(
+        subject_id=subject_id,
+        **subject_kwargs,
+    )
+    nwbfile = pynwb.NWBFile(
+        session_description=nwbfile_kwargs.pop("session_description", "session_description"),
+        identifier=nwbfile_kwargs.pop("identifier", session_name),
+        session_start_time=nwbfile_kwargs.pop("session_start_time", datetime.now(timezone.utc)),
+        subject=subject,
+    )
+    camera = nwbfile.create_device(
+        name="camera",
+        description="camera for recording behavior",
+        manufacturer="my manufacturer",
+    )
 
-#     Parameters
-#     ---------
-#     file_path : str
-#         Path to the nwb file.
-#     path_to_pose_nwb_series_data : str
-#         Path to the pose data inside the nwb file.
+    # Create pose estimation and skeletons objects
+    individuals = ds.individuals.values
+    if len(individuals) > 1:
+        raise ValueError("Multiple individuals are not supported yet.")
+    keypoints = ds.keypoints.values
+    pose_estimation_series_kwargs = {}
+    if getattr(ds, "fps", None):
+        pose_estimation_series_kwargs["rate"] = ds.fps
+        pose_estimation_series_kwargs["starting_time"] = 0.
+    else:
+        pose_estimation_series_kwargs["timestamps"] = ds.sel(keypoints=keypoints[0]).time.values
+    pose_estimation_series_kwargs["reference_frame"] = "(0,0,0) corresponds to ..."
 
-#     Returns
-#     -------
-#     pd.DataFrame
-#         Pose data as a pandas DataFrame.
-#     """
-#     with NWBHDF5IO(file_path, "r") as io:
-#         nwbfile = io.read()
-#         pose = get_pose_data_from_nwb_file(nwbfile, path_to_pose_nwb_series_data)
-#         dataframes = []
-#         for label, pose_series in pose.items():
-#             data = pose_series.data[:]
-#             confidence = pose_series.confidence[:]
-#             df = pd.DataFrame(data, columns=[f"{label}_x", f"{label}_y"])
-#             df[f"likelihood_{label}"] = confidence
-#             dataframes.append(df)
-#         final_df = pd.concat(dataframes, axis=1)
-#     return final_df
+    pose_estimation_series_list = []
+    for keypoint in keypoints:
+        pose_estimation_series_list.append(
+            ndx_pose.PoseEstimationSeries(
+                name=keypoint,
+                data=ds.sel(keypoints=keypoint, individuals=individuals[0]).position.values,
+                confidence=ds.sel(keypoints=keypoint, individuals=individuals[0]).confidence.values,
+                unit="pixels",
+                **pose_estimation_series_kwargs,
+            )
+        )
+
+    skeleton = ndx_pose.Skeleton(
+        name=f"{subject_id}_skeleton",
+        nodes=keypoints,
+        subject=subject,
+    )
+    skeletons = ndx_pose.Skeletons(skeletons=[skeleton])
+
+    source_software = getattr(ds, "source_software", "Unknown Software")
+    video_path = getattr(ds, "video_path", None)
+    pose_estimation = ndx_pose.PoseEstimation(
+        name="PoseEstimation",
+        pose_estimation_series=pose_estimation_series_list,
+        description=f"Estimated positions using {source_software}.",
+        original_videos=[video_path],
+        devices=[camera],
+        source_software=source_software,
+        skeleton=skeleton,
+    )
+
+    # Create behavior processing module
+    behavior_pm = nwbfile.create_processing_module(
+        name="behavior",
+        description="processed behavioral data",
+    )
+    behavior_pm.add(skeletons)
+    behavior_pm.add(pose_estimation)
+
+    return nwbfile
+
+
+def export_to_nwb(
+    config: dict,
+    nwbfile_kwargs: Optional[list[dict]] = None,
+    subject_kwargs: Optional[list[dict]] = None,
+):
+    """
+    Export VAME project to NWB format.
+    """
+    session_names = config.get("session_names")
+    if not session_names:
+        raise ValueError("No session names provided in the config.")
+
+    if nwbfile_kwargs is None:
+        nwbfile_kwargs = [{}] * len(session_names)
+    if len(nwbfile_kwargs) != len(session_names):
+        raise ValueError("Number of nwbfile_kwargs must match number of sessions.")
+
+    if subject_kwargs is None:
+        subject_kwargs = [{}] * len(session_names)
+    if len(subject_kwargs) != len(session_names):
+        raise ValueError("Number of subject_kwargs must match number of sessions.")
+
+    model_time_window = config["time_window"]
+    vame_starting_sample_offset = int(model_time_window / 2)
+
+    for session_name, sub, nwbmeta in zip(session_names, subject_kwargs, nwbfile_kwargs):
+        # Load session data
+        data_path = (Path(config["project_path"]) / "data" / "processed" / f"{session_name}_processed.nc").resolve()
+        ds = load_vame_dataset(ds_path=data_path)
+        if ds is None:
+            raise ValueError(f"Dataset not found for session: {session_name}")
+
+        keypoints = ds.keypoints.values
+        vame_series_kwargs = {}
+        if getattr(ds, "fps", None):
+            vame_series_kwargs["rate"] = ds.fps
+            vame_series_kwargs["starting_time"] = vame_starting_sample_offset / ds.fps
+        else:
+            # If using timestamps, we need to crop the timestamps to match the model time window
+            timestamps = ds.sel(keypoints=keypoints[0]).time.values
+            vame_series_kwargs["timestamps"] = timestamps[vame_starting_sample_offset:-vame_starting_sample_offset]
+
+        # VAME content
+        model_name = config.get("model_name")
+        n_clusters = config.get("n_clusters")
+        segmentation_algorithms = config.get("segmentation_algorithms", [])
+        if not segmentation_algorithms:
+            raise ValueError("No segmentation algorithms provided in the config.")
+
+        # Latent space data
+        latent_path = (
+            Path(config["project_path"]) /
+            "results" /
+            session_name /
+            model_name /
+            "latent_vectors.npy"
+        ).resolve()
+        if not latent_path.exists():
+            raise ValueError(f"Latent space data not found at: {latent_path}. Make sure to run vame.segment_session() first.")
+        latent_data = np.load(latent_path)
+
+        for seg in segmentation_algorithms:
+            # Base NWB file
+            nwbfile = get_base_nwbfile(
+                session_name=session_name,
+                ds=ds,
+                nwbfile_kwargs=nwbmeta,
+                subject_kwargs=sub,
+            )
+            behavior_pm = nwbfile.processing["behavior"]
+            pose_estimation = behavior_pm["PoseEstimation"]
+
+            # Latent space data
+            latent_space_series = ndx_vame.LatentSpaceSeries(
+                name="LatentSpaceSeries",
+                data=latent_data,
+                **vame_series_kwargs,
+            )
+
+            # Motif data
+            motifs_path = (
+                Path(config["project_path"]) /
+                "results" /
+                session_name /
+                model_name /
+                f"{seg}-{n_clusters}" /
+                f"{n_clusters}_{seg}_label_{session_name}.npy"
+            ).resolve()
+            if not motifs_path.exists():
+                raise ValueError(f"Motif data not found at: {motifs_path}. Make sure to run vame.segment_session() first.")
+            motif_labels = np.load(motifs_path)
+            motif_series = ndx_vame.MotifSeries(
+                name="MotifSeries",
+                data=motif_labels,
+                algorithm=seg,
+                latent_space_series=latent_space_series,
+                **vame_series_kwargs,
+            )
+
+            # Community data
+            community_path = (
+                Path(config["project_path"]) /
+                "results" /
+                session_name /
+                model_name /
+                f"{seg}-{n_clusters}" /
+                "community" /
+                f"cohort_community_label_{session_name}.npy"
+            ).resolve()
+            if not community_path.exists():
+                raise ValueError(f"Community data not found at: {community_path}. Make sure to run vame.community() first.")
+            data_communities = np.load(community_path)
+            community_series = ndx_vame.CommunitySeries(
+                name="CommunitySeries",
+                data=data_communities,
+                motif_series=motif_series,
+                algorithm="hierarchical_clustering",
+                **vame_series_kwargs,
+            )
+
+            vame_project = ndx_vame.VAMEProject(
+                name="VAMEProject",
+                pose_estimation=pose_estimation,
+                latent_space_series=latent_space_series,
+                motif_series=motif_series,
+                community_series=community_series,
+                vame_config=json.dumps(config),
+            )
+
+            behavior_pm.add(vame_project)
+
+            # Save NWB file
+            nwbfile_path = (
+                Path(config["project_path"]) /
+                "results" /
+                session_name /
+                model_name /
+                f"{seg}-{n_clusters}" /
+                f"{session_name}.nwb"
+            ).resolve()
+            with pynwb.NWBHDF5IO(str(nwbfile_path), "w") as io:
+                io.write(nwbfile)
+            logger.info(f"{session_name} saved to NWB file at: {nwbfile_path}.")

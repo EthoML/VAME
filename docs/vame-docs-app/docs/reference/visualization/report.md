@@ -11,7 +11,10 @@ title: visualization.report
 
 ```python
 @save_state(model=GenerateReportsFunctionSchema)
-def generate_reports(config: dict, save_logs: bool = True) -> None
+def generate_reports(config: dict,
+                     show_figure: bool = True,
+                     save_to_file: bool = True,
+                     save_logs: bool = True) -> None
 ```
 
 Generate reports and UMAP for all sessions in the project.
@@ -56,8 +59,9 @@ def plot_community_motifs(motif_labels,
                           community_labels,
                           community_bag,
                           title: str = "Community and Motif Counts",
+                          show_figure: bool = True,
                           save_to_file: bool = False,
-                          save_path: str = "")
+                          save_path: str = "") -> None
 ```
 
 Generates a bar plot to represent community and motif counts with percentages.

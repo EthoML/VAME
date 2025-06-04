@@ -41,13 +41,9 @@ class ProjectSchema(BaseModel):
         title="Paths to pose series data in nwb files",
         default=None,
     )
-    n_clusters: int = Field(
-        default=15,
-        title="Number of clusters",
-    )
-    pose_confidence: float = Field(
-        default=0.99,
-        title="Pose confidence",
+    project_random_state: int = Field(
+        title="Project random state",
+        default=42,
     )
 
     # Data
@@ -63,6 +59,10 @@ class ProjectSchema(BaseModel):
     egocentric_data: bool = Field(
         default=False,
         title="Egocentric data",
+    )
+    pose_confidence: float = Field(
+        default=0.99,
+        title="Pose confidence",
     )
     robust: bool = Field(
         default=True,
@@ -180,6 +180,10 @@ class ProjectSchema(BaseModel):
     )
 
     # Segmentation
+    n_clusters: int = Field(
+        default=15,
+        title="Number of clusters",
+    )
     segmentation_algorithms: List[SegmentationAlgorithms] = Field(
         title="Segmentation algorithms",
         default_factory=lambda: ["hmm", "kmeans"],
@@ -188,6 +192,10 @@ class ProjectSchema(BaseModel):
         default=False,
         title="HMM trained",
     )
+    hmm_n_iter: int = Field(
+        title="Number of iterations for HMM",
+        default=100,
+    )
     load_data: str = Field(
         default="-PE-seq-clean",
         title="Load data",
@@ -195,10 +203,6 @@ class ProjectSchema(BaseModel):
     individual_segmentation: bool = Field(
         default=False,
         title="Individual segmentation",
-    )
-    random_state_kmeans: int = Field(
-        default=42,
-        title="Random state kmeans",
     )
     n_init_kmeans: int = Field(
         default=15,
@@ -219,10 +223,6 @@ class ProjectSchema(BaseModel):
     n_neighbors: int = Field(
         default=200,
         title="N neighbors",
-    )
-    random_state: int = Field(
-        default=42,
-        title="Random state",
     )
     num_points: int = Field(
         default=30000,

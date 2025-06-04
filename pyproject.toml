@@ -1,10 +1,11 @@
 [project]
 name = "vame-py"
-version = '0.10.0'
+version = '0.11.0'
 description = "Variational Animal Motion Embedding."
 authors = [{ name = "K. Luxem & " }, { name = "P. Bauer" }]
 requires-python = ">=3.11"
 keywords = ["vame", "auto-encoder"]
+readme = { file = 'README.md', content-type = 'text/markdown' }
 dependencies = [
     "PyYAML>=6.0.0",
     "ruamel.yaml>=0.18.0",
@@ -12,9 +13,12 @@ dependencies = [
     "pandas>=2.2.0",
     "scipy>=1.13.0",
     "matplotlib>=3.9.0",
+    "plotly>=6.0.0",
+    "nbformat>=5.10.0",
     "torch==2.2.2; platform_system == 'Darwin' and platform_machine == 'x86_64'", # Intel Macs
-    "torch==2.5.1; platform_system == 'Darwin' and platform_machine == 'arm64'",  # M1/M2 Macs
-    "torch==2.5.1; platform_system != 'Darwin'",                                  # All other systems
+    "torch>=2.3.1; platform_system == 'Darwin' and platform_machine == 'arm64'",  # M1/M2 Macs
+    "torch>=2.3.1; platform_system != 'Darwin'",                                  # All other systems
+    "tensorboard",
     "tqdm>=4.66.0",
     "hmmlearn>=0.3.0",
     "opencv-python-headless>=4.9.0.0",
@@ -23,13 +27,13 @@ dependencies = [
     "pydantic==2.7.4",
     "imageio==2.34.1",
     "imageio-ffmpeg==0.5.1",
-    "pynwb==2.8.3",
-    "ndx-pose==0.2.1",
+    "pynwb==3.0.0",
+    "ndx-pose==0.2.2",
+    "ndx-vame==0.2.2",
     "tables>=3.10.0",
-    "movement==0.5.0",
+    "movement==0.6.1",
     "netCDF4==1.7.2",
 ]
-readme = { file = 'README.md', content-type = 'text/markdown' }
 
 [project.urls]
 homepage = "https://github.com/EthoML/VAME/"

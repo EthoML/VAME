@@ -15,7 +15,7 @@ def traindata_aligned(
         sessions: List[str] | None = None,
         test_fraction: float = 0.1,
         read_from_variable: str = "position_processed",
-        split_mode: Literal["mode_1", "mode_2"] = "mode_1") -> None
+        split_mode: Literal["mode_1", "mode_2"] = "mode_2") -> None
 ```
 
 Create training dataset for aligned data.
@@ -32,7 +32,7 @@ Save numpy arrays with the test/train info to the project folder.
          for testing and the rest for training.
 - mode_2: Takes random continuous chunks from each session proportional to test_fraction
          for testing and uses the remaining parts for training.
-Defaults to &quot;mode_1&quot;.
+Defaults to &quot;mode_2&quot;.
 
 **Returns**
 
