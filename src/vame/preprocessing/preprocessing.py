@@ -1,6 +1,5 @@
 from pathlib import Path
 from vame.logging.logger import VameLogger
-from vame.preprocessing.inspection import pose_estimation_inspection
 from vame.preprocessing.cleaning import lowconf_cleaning, outlier_cleaning
 from vame.preprocessing.alignment import egocentrically_align_and_center
 from vame.preprocessing.filter import savgol_filtering
