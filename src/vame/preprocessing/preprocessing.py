@@ -1,5 +1,6 @@
 from pathlib import Path
 from vame.logging.logger import VameLogger
+from vame.preprocessing.inspection import pose_estimation_inspection
 from vame.preprocessing.cleaning import lowconf_cleaning, outlier_cleaning
 from vame.preprocessing.alignment import egocentrically_align_and_center
 from vame.preprocessing.filter import savgol_filtering
@@ -61,6 +62,15 @@ def preprocessing(
         logger_config.add_file_handler(str(log_path))
 
     latest_output = "position"
+
+    # Pose Estimation inspection
+    if run_pose_estimation_inspections:
+        logger.info("Running pose estimation inspection...")
+        pose_estimation_inspection(
+            config=config,
+            read_from_variable=latest_output,
+            save_logs=save_logs,
+        )
 
     # Low-confidence cleaning
     if run_lowconf_cleaning:
