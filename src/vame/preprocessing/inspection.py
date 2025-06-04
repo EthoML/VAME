@@ -1,6 +1,7 @@
 from pathlib import Path
 import numpy as np
 import plotly.graph_objects as go
+import matplotlib.pyplot as plt
 
 from vame.io.load_poses import read_pose_estimation_file
 
@@ -37,106 +38,118 @@ def pose_estimation_inspection(
         keypoints = ds["keypoints"].values
 
         if all_confidence_values is None:
-            all_confidence_values = confidence.copy()
+            all_confidence_values = confidence.values.copy()
         else:
             all_confidence_values = np.concatenate(
-                (all_confidence_values, confidence),
+                (all_confidence_values, confidence.values),
                 axis=0,
             )
 
-        for individual in individuals:
-            for keypoint in keypoints:
-                # Get confidence values for this keypoint and individual
-                conf_series = confidence.sel(
-                    individuals=individual,
-                    keypoints=keypoint,
-                ).values
+    for i in range(len(individuals)):
+        for k in range(len(keypoints)):
+            perc = (all_confidence_values[:, k, i] < pose_confidence).mean() * 100
+            print(f"{individuals[i]} | {keypoints[k]} - samples below confidence reference: {perc:.1f}%")
 
     # Plot pose estimation inspection results
-    plot_pose_estimation_inspection(
-        config=config,
-        confidence_array=all_confidence_values[:, 0, 0],
-    )
-    return ds
+    if all_confidence_values is not None:
+        plot_pose_estimation_inspection_matplotlib(
+            config=config,
+            confidence_data=all_confidence_values,
+            keypoint_names=keypoints,
+        )
 
 
-def plot_pose_estimation_inspection(
+def plot_pose_estimation_inspection_matplotlib(
     config,
-    confidence_array: np.ndarray,
+    confidence_data: np.ndarray,
+    keypoint_names: np.ndarray,
 ) -> None:
     """
-    Plot pose estimation inspection results.
+    Plot pose estimation inspection results using matplotlib with multiple subplots.
 
     Parameters
     ----------
     config : dict
         Configuration parameters.
-    ds : xarray.Dataset
-        Dataset containing the pose estimation data.
+    confidence_data : np.ndarray
+        Confidence data array with shape (time, keypoints, individuals).
+    keypoint_names : np.ndarray
+        Array of keypoint names.
 
     Returns
     -------
     None
     """
     confidence_reference = config["pose_confidence"]
+    n_keypoints = len(keypoint_names)
 
-    # Histogram trace (probability histogram)
-    hist = go.Histogram(
-        x=confidence_array,
-        nbinsx=50,                   # tweak or drop for automatic bin count
-        histnorm="probability",      # makes bar heights sum to 1
-        marker_line_width=.5,
-        marker_line_color="black",
-        marker_color="#8d93b5",
-        name="confidence scores",
-    )
+    # Calculate subplot layout: 2 columns, variable rows
+    n_cols = 2
+    n_rows = (n_keypoints + n_cols - 1) // n_cols  # Ceiling division
 
-    # Layout with vertical reference line (shape) and annotation
-    layout = go.Layout(
-        title="Confidence-score distribution",
-        bargap=0.05,
-        width=800,
-        height=600,
-        plot_bgcolor="white",
-        xaxis=dict(
-            title="confidence",
-            range=[0, 1],
-            tickvals=[0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0],
-            ticktext=["0", "0.1", "0.2", "0.3", "0.4", "0.5", "0.6", "0.7", "0.8", "0.9", "1"],
-            showgrid=False,
-            zeroline=True,
-            zerolinecolor="black"
-        ),
-        yaxis=dict(
-            title="probability",
-            showgrid=True,
-            gridcolor="lightgray",
-            zeroline=True,
-            zerolinecolor="black"
-        ),
-        shapes=[
-            # vertical dashed line
-            dict(
-                type="line",
-                x0=confidence_reference,
-                x1=confidence_reference,
-                y0=0,
-                y1=1,
-                yref="paper",  # full plot height
-                line=dict(color="black", width=2, dash="dot")
-            )
-        ],
-        annotations=[
-            dict(
-                x=confidence_reference,
-                y=1.05,
-                yref="paper",
-                text=f"reference = {confidence_reference:.2f}",
-                showarrow=False,
-                font=dict(color="black", size=12, family="Arial")
-            )
-        ]
-    )
+    # Calculate figure height based on number of rows
+    fig_height = max(6, n_rows * 3)  # Minimum 6 inches, 3 inches per row
 
-    fig = go.Figure(data=[hist], layout=layout)
-    fig.show()
+    # Create figure and subplots
+    fig, axes = plt.subplots(n_rows, n_cols, figsize=(12, fig_height))
+    fig.suptitle("Confidence Score Distributions", fontsize=16, y=0.98)
+
+    # Flatten axes array for easier indexing
+    if n_rows == 1:
+        axes = axes.reshape(1, -1)
+    axes_flat = axes.flatten()
+
+    for i, keypoint in enumerate(keypoint_names):
+        ax = axes_flat[i]
+
+        # Extract confidence values for this keypoint (first individual)
+        confidence_array = confidence_data[:, i, 0]
+
+        # Calculate percentage below reference
+        below_reference = np.sum(confidence_array < confidence_reference)
+        total_samples = len(confidence_array)
+        percentage_below = (below_reference / total_samples) * 100
+
+        # Create histogram
+        ax.hist(
+            confidence_array,
+            bins=50,
+            density=True,
+            color="#8d93b5",
+            edgecolor="black",
+            linewidth=0.5,
+            alpha=0.7
+        )
+
+        # Add reference line
+        ax.axvline(
+            confidence_reference,
+            color="black",
+            linestyle="--",
+            linewidth=1.5,
+            label=f"Reference = {confidence_reference:.2f}"
+        )
+
+        # Set title with keypoint name and percentage
+        ax.set_title(
+            f"{keypoint}\n{percentage_below:.1f}% below reference",
+            fontsize=12,
+            pad=10
+        )
+
+        # Set labels and formatting
+        ax.set_xlabel("Confidence", fontsize=10)
+        ax.set_ylabel("Density", fontsize=10)
+        ax.set_xlim(0, 1)
+        ax.set_xticks([0, 0.2, 0.4, 0.6, 0.8, 1.0])
+        ax.grid(True, alpha=0.3, axis='y')
+        ax.legend(fontsize=8)
+
+    # Hide unused subplots
+    for i in range(n_keypoints, len(axes_flat)):
+        axes_flat[i].set_visible(False)
+
+    # Adjust layout
+    plt.tight_layout()
+    plt.subplots_adjust(top=0.93)  # Make room for suptitle
+    plt.show()

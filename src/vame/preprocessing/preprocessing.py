@@ -63,15 +63,6 @@ def preprocessing(
 
     latest_output = "position"
 
-    # Pose Estimation inspection
-    if run_pose_estimation_inspections:
-        logger.info("Running pose estimation inspection...")
-        pose_estimation_inspection(
-            config=config,
-            read_from_variable=latest_output,
-            save_logs=save_logs,
-        )
-
     # Low-confidence cleaning
     if run_lowconf_cleaning:
         logger.info("Cleaning low confidence data points...")
