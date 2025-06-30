@@ -19,6 +19,8 @@ def traindata_aligned(
     test_fraction: float = 0.1,
     read_from_variable: str = "position_processed",
     split_mode: Literal["mode_1", "mode_2"] = "mode_2",
+    keypoints_to_include: List[str] | None = None,
+    keypoints_to_exclude: List[str] | None = None,
 ) -> None:
     """
     Create training dataset for aligned data.
@@ -55,6 +57,9 @@ def traindata_aligned(
     if not sessions:
         raise ValueError("No sessions provided for training data creation")
 
+    if keypoints_to_include and keypoints_to_exclude:
+        raise ValueError("Cannot specify both keypoints_to_include and keypoints_to_exclude. Choose one.")
+
     # Ensure test_fraction has a valid value
     if test_fraction <= 0 or test_fraction >= 1:
         raise ValueError("test_fraction must be a float between 0 and 1")
@@ -65,10 +70,21 @@ def traindata_aligned(
         file_path = str(Path(project_path) / "data" / "processed" / f"{session}_processed.nc")
         _, _, ds = read_pose_estimation_file(file_path=file_path)
 
+        keypoints = ds.keypoints.values
+        if keypoints_to_include is not None:
+            if any(k not in keypoints for k in keypoints_to_include):
+                raise ValueError("Some keypoints in `keypoints_to_include` are not present in the dataset.")
+            keypoints = keypoints_to_include
+        elif keypoints_to_exclude is not None:
+            if any(k not in keypoints for k in keypoints_to_exclude):
+                raise ValueError("Some keypoints in `keypoints_to_exclude` are not present in the dataset.")
+            keypoints = [k for k in keypoints if k not in keypoints_to_exclude]
+
         # Format the data for the RNN model
         session_array = format_xarray_for_rnn(
             ds=ds,
             read_from_variable=read_from_variable,
+            keypoints=keypoints,
         )
         all_data_list.append(session_array)
 
@@ -129,165 +145,14 @@ def traindata_aligned(
     logger.info(f"Length of test data: {data_test.shape[1]}")
 
 
-# def traindata_fixed(
-#     config: dict,
-#     sessions: List[str],
-#     testfraction: float,
-#     num_features: int,
-#     savgol_filter: bool,
-#     check_parameter: bool,
-#     pose_ref_index: Optional[List[int]],
-# ) -> None:
-#     """
-#     Create training dataset for fixed data.
-
-#     Parameters
-#     ---------
-#     config : dict
-#         Configuration parameters.
-#     sessions : List[str]
-#         List of sessions.
-#     testfraction : float
-#         Fraction of data to use as test data.
-#     num_features : int
-#         Number of features.
-#     savgol_filter : bool
-#         Flag indicating whether to apply Savitzky-Golay filter.
-#     check_parameter : bool
-#         If True, the function will plot the z-scored data and the filtered data.
-#     pose_ref_index : Optional[List[int]]
-#         List of reference coordinate indices for alignment.
-
-#     Returns
-#         None
-#             Save numpy arrays with the test/train info to the project folder.
-#     """
-#     X_train = []
-#     pos = []
-#     pos_temp = 0
-#     pos.append(0)
-
-#     if check_parameter:
-#         X_true = []
-#         sessions = [sessions[0]]
-
-#     for session in sessions:
-#         logger.info("z-scoring of file %s" % session)
-#         path_to_file = os.path.join(
-#             config["project_path"],
-#             "data",
-#             "processed",
-#             session,
-#             session + "-PE-seq.npy",
-#         )
-#         data = np.load(path_to_file)
-
-#         X_mean = np.mean(data, axis=None)
-#         X_std = np.std(data, axis=None)
-#         X_z = (data.T - X_mean) / X_std
-
-#         if check_parameter:
-#             X_z_copy = X_z.copy()
-#             X_true.append(X_z_copy)
-
-#         if config["robust"]:
-#             iqr_val = iqr(X_z)
-#             logger.info("IQR value: %.2f, IQR cutoff: %.2f" % (iqr_val, config["iqr_factor"] * iqr_val))
-#             for i in range(X_z.shape[0]):
-#                 for marker in range(X_z.shape[1]):
-#                     if X_z[i, marker] > config["iqr_factor"] * iqr_val:
-#                         X_z[i, marker] = np.nan
-
-#                     elif X_z[i, marker] < -config["iqr_factor"] * iqr_val:
-#                         X_z[i, marker] = np.nan
-
-#                 X_z[i, :] = interpol_all_nans(X_z[i, :])
-
-#         X_len = len(data.T)
-#         pos_temp += X_len
-#         pos.append(pos_temp)
-#         X_train.append(X_z)
-
-#     X = np.concatenate(X_train, axis=0).T
-
-#     if savgol_filter:
-#         X_med = scipy.signal.savgol_filter(X, config["savgol_length"], config["savgol_order"])
-#     else:
-#         X_med = X
-
-#     num_frames = len(X_med.T)
-#     test = int(num_frames * testfraction)
-
-#     z_test = X_med[:, :test]
-#     z_train = X_med[:, test:]
-
-#     if check_parameter:
-#         plot_check_parameter(
-#             config,
-#             iqr_val,
-#             num_frames,
-#             X_true,
-#             X_med,
-#         )
-
-#     else:
-#         if pose_ref_index is None:
-#             raise ValueError("Please provide a pose reference index for training on fixed data. E.g. [0,5]")
-#         # save numpy arrays the the test/train info:
-#         np.save(
-#             os.path.join(
-#                 config["project_path"],
-#                 "data",
-#                 "train",
-#                 "train_seq.npy",
-#             ),
-#             z_train,
-#         )
-#         np.save(
-#             os.path.join(
-#                 config["project_path"],
-#                 "data",
-#                 "train",
-#                 "test_seq.npy",
-#             ),
-#             z_test,
-#         )
-
-#         y_shifted_indices = np.arange(0, num_features, 2)
-#         x_shifted_indices = np.arange(1, num_features, 2)
-#         belly_Y_ind = pose_ref_index[0] * 2
-#         belly_X_ind = (pose_ref_index[0] * 2) + 1
-
-#         for i, session in enumerate(sessions):
-#             # Shifting section added 2/29/2024 PN
-#             X_med_shifted_file = X_med[:, pos[i] : pos[i + 1]]
-#             belly_Y_shift = X_med[belly_Y_ind, pos[i] : pos[i + 1]]
-#             belly_X_shift = X_med[belly_X_ind, pos[i] : pos[i + 1]]
-
-#             X_med_shifted_file[y_shifted_indices, :] -= belly_Y_shift
-#             X_med_shifted_file[x_shifted_indices, :] -= belly_X_shift
-
-#             np.save(
-#                 os.path.join(
-#                     config["project_path"],
-#                     "data",
-#                     "processed",
-#                     session,
-#                     session + "-PE-seq-clean.npy",
-#                 ),
-#                 X_med_shifted_file,
-#             )  # saving new shifted file
-
-#         logger.info("Lenght of train data: %d" % len(z_train.T))
-#         logger.info("Lenght of test data: %d" % len(z_test.T))
-
-
 @save_state(model=CreateTrainsetFunctionSchema)
 def create_trainset(
     config: dict,
     test_fraction: float = 0.1,
     read_from_variable: str = "position_processed",
     split_mode: Literal["mode_1", "mode_2"] = "mode_2",
+    keypoints_to_include: List[str] | None = None,
+    keypoints_to_exclude: List[str] | None = None,
     save_logs: bool = True,
 ) -> None:
     """
@@ -296,20 +161,12 @@ def create_trainset(
     Creates the training dataset for VAME at:
     - project_name/
         - data/
-            - session00/
-                - session00-PE-seq-clean.npy
-            - session01/
-                - session01-PE-seq-clean.npy
             - train/
                 - test_seq.npy
                 - train_seq.npy
 
-    The produced -clean.npy files contain the aligned time series data in the
-    shape of (num_dlc_features - 2, num_video_frames).
-
-    The produced test_seq.npy contains the combined data in the shape of (num_dlc_features - 2, num_video_frames * test_fraction).
-
-    The produced train_seq.npy contains the combined data in the shape of (num_dlc_features - 2, num_video_frames * (1 - test_fraction)).
+    The produced test_seq.npy contains the combined data in the shape of (num_features - 3, num_video_frames * test_fraction).
+    The produced train_seq.npy contains the combined data in the shape of (num_features - 3, num_video_frames * (1 - test_fraction)).
 
     Parameters
     ----------
@@ -338,9 +195,6 @@ def create_trainset(
             log_path = Path(config["project_path"]) / "logs" / "create_trainset.log"
             logger_config.add_file_handler(str(log_path))
 
-        if not os.path.exists(os.path.join(config["project_path"], "data", "train", "")):
-            os.mkdir(os.path.join(config["project_path"], "data", "train", ""))
-
         fixed = config["egocentric_data"]
 
         sessions = []
@@ -357,26 +211,17 @@ def create_trainset(
         logger.info("Creating training dataset...")
 
         if not fixed:
-            logger.info("Creating trainset from the vame.egocentrical_alignment() output ")
             traindata_aligned(
                 config=config,
                 sessions=sessions,
                 test_fraction=test_fraction,
                 read_from_variable=read_from_variable,
                 split_mode=split_mode,
+                keypoints_to_include=keypoints_to_include,
+                keypoints_to_exclude=keypoints_to_exclude,
             )
         else:
             raise NotImplementedError("Fixed data training is not implemented yet")
-            # logger.info("Creating trainset from the vame.pose_to_numpy() output ")
-            # traindata_fixed(
-            #     config,
-            #     sessions,
-            #     config["test_fraction"],
-            #     config["num_features"],
-            #     config["savgol_filter"],
-            #     check_parameter,
-            #     pose_ref_index,
-            # )
 
         logger.info("A training and test set has been created. Next step: vame.train_model()")
 

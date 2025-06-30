@@ -1,10 +1,12 @@
 import xarray as xr
+import numpy as np
 
 
 def format_xarray_for_rnn(
     ds: xr.Dataset,
     read_from_variable: str = "position_processed",
-):
+    keypoints: list[str] | None = None,
+) -> np.ndarray:
     """
     Formats the xarray dataset for use VAME's RNN model:
     - The x and y coordinates of the centered_reference_keypoint are excluded.
@@ -17,6 +19,9 @@ def format_xarray_for_rnn(
         The xarray dataset to format.
     read_from_variable : str, default="position_processed"
         The variable to read from the dataset.
+    keypoints : list[str] | None, optional
+        A list of keypoints to include in the output. If None, all keypoints are
+        included. If provided, only the specified keypoints will be included in the output.
 
     Returns
     -------
@@ -28,26 +33,27 @@ def format_xarray_for_rnn(
     centered_reference_keypoint = ds.attrs["centered_reference_keypoint"]
     orientation_reference_keypoint = ds.attrs["orientation_reference_keypoint"]
 
-    # Get the coordinates
+    # Select the first individual
     individuals = data.coords["individuals"].values
-    keypoints = data.coords["keypoints"].values
+    data = data.sel(individuals=individuals[0])
+
+    # Extract spaces and keypoints from the dataset
     spaces = data.coords["space"].values
+    if keypoints is None:
+        keypoints = data.coords["keypoints"].values
+    else:
+        data = data.sel(keypoints=keypoints)
 
-    # Create a flattened array and infer column indices
-    flattened_array = data.values.reshape(data.shape[0], -1)
-    columns = [f"{ind}_{kp}_{sp}" for ind in individuals for kp in keypoints for sp in spaces]
+    # Create an array with filtered data (n_samples, n_features - 3)
+    filtered_array = []
+    for kp in keypoints:
+        if kp == centered_reference_keypoint:
+            continue
+        for sp in spaces:
+            if sp == "x" and kp == orientation_reference_keypoint:
+                continue
+            column_data = data.sel(keypoints=kp, space=sp).values.reshape(-1)
+            filtered_array.append(column_data)
+    filtered_array = np.array(filtered_array).T
 
-    # Identify columns to exclude
-    excluded_columns = []
-    for ind in individuals:
-        # Exclude both x and y for centered_reference_keypoint
-        excluded_columns.append(f"{ind}_{centered_reference_keypoint}_x")
-        excluded_columns.append(f"{ind}_{centered_reference_keypoint}_y")
-        # Exclude only x for orientation_reference_keypoint
-        excluded_columns.append(f"{ind}_{orientation_reference_keypoint}_x")
-
-    # Filter out the excluded columns
-    included_indices = [i for i, col in enumerate(columns) if col not in excluded_columns]
-    filtered_array = flattened_array[:, included_indices]
-
-    return filtered_array.T
+    return filtered_array
