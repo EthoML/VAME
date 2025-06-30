@@ -7,52 +7,68 @@ title: analysis.pose_segmentation
 
 #### logger
 
-#### embedd\_latent\_vectors
+#### embed\_latent\_vectors
 
 ```python
-def embedd_latent_vectors(
+def embed_latent_vectors(
         config: dict,
         sessions: List[str],
-        model: RNN_VAE,
         fixed: bool,
         read_from_variable: str = "position_processed",
+        overwrite: bool = False,
         tqdm_stream: Union[TqdmToLogger, None] = None) -> List[np.ndarray]
 ```
 
-Embed latent vectors for the given files using the VAME model.
+Embed latent vectors for the given sessions using the VAME model.
 
 **Parameters**
 
 * **config** (`dict`): Configuration dictionary.
 * **sessions** (`List[str]`): List of session names.
-* **model** (`RNN_VAE`): VAME model.
 * **fixed** (`bool`): Whether the model is fixed.
+* **read_from_variable** (`str, optional`): Variable to read from the dataset. Defaults to &quot;position_processed&quot;.
+* **overwrite** (`bool, optional`): Whether to overwrite existing latent vector files. Defaults to False.
 * **tqdm_stream** (`TqdmToLogger, optional`): TQDM Stream to redirect the tqdm output to logger.
 
 **Returns**
 
-* `List[np.ndarray]`: List of latent vectors for each file.
+* `List[np.ndarray]`: List of latent vectors for all sessions.
 
-#### get\_latent\_vectors
+#### embed\_latent\_vectors\_optimized
 
 ```python
-def get_latent_vectors(project_path: str, sessions: list, model_name: str, seg,
-                       n_clusters: int) -> List
+def embed_latent_vectors_optimized(
+        config: dict,
+        sessions: List[str],
+        fixed: bool,
+        read_from_variable: str = "position_processed",
+        overwrite: bool = False,
+        batch_size: int = 64,
+        tqdm_stream: Union[TqdmToLogger, None] = None) -> List[np.ndarray]
 ```
 
-Gets all the latent vectors from each session into one list
+Optimized version of embed_latent_vectors with batch processing and vectorized operations.
+
+This function provides significant performance improvements over the original implementation:
+- Vectorized sliding window creation (no data copying)
+- Batch processing of multiple windows simultaneously
+- GPU memory optimization with pre-allocated tensors
+- Model optimizations for faster inference
 
 **Parameters**
 
-* **project_path: str**: Path to vame project folder
-* **session: list**: List of sessions
-* **model_name: str**: Name of model
-* **seg: str**: Type of segmentation algorithm
-* **n_clusters** (`int`): Number of clusters.
+* **config** (`dict`): Configuration dictionary.
+* **sessions** (`List[str]`): List of session names.
+* **fixed** (`bool`): Whether the model is fixed.
+* **read_from_variable** (`str, optional`): Variable to read from the dataset. Defaults to &quot;position_processed&quot;.
+* **overwrite** (`bool, optional`): Whether to overwrite existing latent vector files. Defaults to False.
+* **batch_size** (`int, optional`): Number of windows to process simultaneously. Defaults to 64.
+Larger values use more GPU memory but may be faster.
+* **tqdm_stream** (`TqdmToLogger, optional`): TQDM Stream to redirect the tqdm output to logger.
 
 **Returns**
 
-* `List`: List of session latent vectors
+* `List[np.ndarray]`: List of latent vectors for all sessions.
 
 #### get\_motif\_usage
 
@@ -74,10 +90,10 @@ Count motif usage from session label array.
 #### save\_session\_data
 
 ```python
-def save_session_data(project_path: str, session: int, model_name: str,
-                      label: np.ndarray, cluster_center: np.ndarray,
-                      latent_vector: np.ndarray, motif_usage: np.ndarray,
-                      n_clusters: int, segmentation_algorithm: str)
+def save_session_data(project_path: str, session: str, model_name: str,
+                      label: np.ndarray, cluster_centers: np.ndarray,
+                      motif_usage: np.ndarray, n_clusters: int,
+                      segmentation_algorithm: str)
 ```
 
 Saves pose segmentation data for given session.
@@ -85,11 +101,10 @@ Saves pose segmentation data for given session.
 **Parameters**
 
 * **project_path: str**: Path to the vame project folder.
-* **session: int**: Session of interest to segment.
+* **session: str**: Session name.
 * **model_name: str**: Name of model
 * **label: np.ndarray**: Array of the session&#x27;s motif labels.
-* **cluster_center: np.ndarray**: Array of the session&#x27;s kmeans cluster centers location in the latent space.
-* **latent_vector: np.ndarray,**: Array of the session&#x27;s latent vectors.
+* **cluster_centers: np.ndarray**: Array of the session&#x27;s kmeans cluster centers location in the latent space.
 * **motif_usage: np.ndarray**: Array of the session&#x27;s motif usage counts.
 * **n_clusters** (`int`): Number of clusters.
 * **segmentation_algorithm: str**: Type of segmentation method, either &#x27;kmeans or &#x27;hmm&#x27;.
@@ -146,8 +161,10 @@ Apply individual segmentation to each session.
 ```python
 @save_state(model=SegmentSessionFunctionSchema)
 def segment_session(config: dict,
-                    overwrite: bool = False,
-                    save_logs: bool = True) -> None
+                    overwrite_segmentation: bool = False,
+                    overwrite_embeddings: bool = False,
+                    save_logs: bool = True,
+                    optimized: bool = True) -> None
 ```
 
 Perform pose segmentation using the VAME model.
@@ -158,17 +175,16 @@ Creates files at:
         - hmm_trained.pkl
         - session/
             - model_name/
+                - latent_vectors.npy
                 - hmm-n_clusters/
-                    - latent_vector_session.npy
                     - motif_usage_session.npy
                     - n_cluster_label_session.npy
                 - kmeans-n_clusters/
-                    - latent_vector_session.npy
                     - motif_usage_session.npy
                     - n_cluster_label_session.npy
                     - cluster_center_session.npy
 
-latent_vector_session.npy contains the projection of the data into the latent space,
+latent_vectors.npy contains the projection of the data into the latent space,
 for each frame of the video. Dimmentions: (n_frames, n_latent_features)
 
 motif_usage_session.npy contains the number of times each motif was used in the video.
@@ -180,7 +196,11 @@ Dimmentions: (n_frames,)
 **Parameters**
 
 * **config** (`dict`): Configuration dictionary.
-* **overwrite** (`bool, optional`): Whether to overwrite existing segmentation results. Defaults to False.
+* **overwrite_segmentation** (`bool, optional`): Whether to overwrite existing segmentation results. Defaults to False.
+* **overwrite_embeddings** (`bool, optional`): If True, runs embedding function and re-creates embeddings files, even if they already exist.
+Defaults to False.
+* **optimized** (`bool, optional`): If True, uses the optimized version of the embedding function.
+If False, uses the original version. Defaults to True.
 * **save_logs** (`bool, optional`): Whether to save logs. Defaults to True.
 
 **Returns**

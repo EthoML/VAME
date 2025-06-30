@@ -3,12 +3,12 @@ import torch
 from pathlib import Path
 import torch.utils.data as Data
 from typing import Optional
+import matplotlib.pyplot as plt
 
 from vame.schemas.states import EvaluateModelFunctionSchema, save_state
 from vame.model.rnn_vae import RNN_VAE
 from vame.model.dataloader import SEQUENCE_DATASET
 from vame.logging.logger import VameLogger
-from vame.visualization.model import plot_reconstruction
 
 
 logger_config = VameLogger(__name__)
@@ -19,6 +19,118 @@ if use_gpu:
     pass
 else:
     torch.device("cpu")
+
+
+def create_reconstruction_plot(
+    filepath: str,
+    test_loader: Data.DataLoader,
+    seq_len_half: int,
+    model: RNN_VAE,
+    model_name: str,
+    FUTURE_DECODER: bool,
+    FUTURE_STEPS: int,
+    suffix: Optional[str] = None,
+) -> None:
+    """
+    Plot the reconstruction and future prediction of the input sequence.
+    Saves the plot to:
+    - project_name/
+        - model/
+            - evaluate/
+                - Reconstruction_model_name.png
+
+    Parameters
+    ----------
+    filepath : str
+        Path to save the plot.
+    test_loader : Data.DataLoader
+        DataLoader for the test dataset.
+    seq_len_half : int
+        Half of the temporal window size.
+    model : RNN_VAE
+        Trained VAE model.
+    model_name : str
+        Name of the model.
+    FUTURE_DECODER : bool
+        Flag indicating whether the model has a future prediction decoder.
+    FUTURE_STEPS : int
+        Number of future steps to predict.
+    suffix : str, optional
+        Suffix for the saved plot filename. Defaults to None.
+
+    Returns
+    -------
+    None
+    """
+    # x = test_loader.__iter__().next()
+    dataiter = iter(test_loader)
+    x = next(dataiter)
+    x = x.permute(0, 2, 1)
+    if use_gpu:
+        data = x[:, :seq_len_half, :].type("torch.FloatTensor").cuda()
+        data_fut = x[:, seq_len_half : seq_len_half + FUTURE_STEPS, :].type("torch.FloatTensor").cuda()
+    else:
+        data = x[:, :seq_len_half, :].type("torch.FloatTensor").to()
+        data_fut = x[:, seq_len_half : seq_len_half + FUTURE_STEPS, :].type("torch.FloatTensor").to()
+    if FUTURE_DECODER:
+        x_tilde, future, latent, mu, logvar = model(data)
+
+        fut_orig = data_fut.cpu()
+        fut_orig = fut_orig.data.numpy()
+        fut = future.cpu()
+        fut = fut.detach().numpy()
+
+    else:
+        x_tilde, latent, mu, logvar = model(data)
+
+    data_orig = data.cpu()
+    data_orig = data_orig.data.numpy()
+    data_tilde = x_tilde.cpu()
+    data_tilde = data_tilde.detach().numpy()
+
+    if FUTURE_DECODER:
+        fig, axs = plt.subplots(2, 5)
+        fig.suptitle("Reconstruction [top] and future prediction [bottom] of input sequence")
+        for i in range(5):
+            axs[0, i].plot(data_orig[i, ...], color="k", label="Sequence Data")
+            axs[0, i].plot(
+                data_tilde[i, ...],
+                color="r",
+                linestyle="dashed",
+                label="Sequence Reconstruction",
+            )
+            axs[1, i].plot(fut_orig[i, ...], color="k")
+            axs[1, i].plot(fut[i, ...], color="r", linestyle="dashed")
+        axs[0, 0].set(xlabel="time steps", ylabel="reconstruction")
+        axs[1, 0].set(xlabel="time steps", ylabel="predction")
+        fig.savefig(os.path.join(filepath, "evaluate", "future_reconstruction.png"))
+    else:
+        fig, ax1 = plt.subplots(1, 5)
+        for i in range(5):
+            fig.suptitle("Reconstruction of input sequence")
+            ax1[i].plot(data_orig[i, ...], color="k", label="Sequence Data")
+            ax1[i].plot(
+                data_tilde[i, ...],
+                color="r",
+                linestyle="dashed",
+                label="Sequence Reconstruction",
+            )
+        fig.tight_layout()
+        if not suffix:
+            fig.savefig(
+                os.path.join(filepath, "evaluate", "Reconstruction_" + model_name + ".png"),
+                bbox_inches="tight",
+            )
+        elif suffix:
+            fig.savefig(
+                os.path.join(
+                    filepath,
+                    "evaluate",
+                    "Reconstruction_" + model_name + "_" + suffix + ".png",
+                ),
+                bbox_inches="tight",
+            )
+    plt.close(fig)
 
 
 def eval_temporal(
@@ -141,41 +253,26 @@ def eval_temporal(
     test_loader = Data.DataLoader(testset, batch_size=TEST_BATCH_SIZE, shuffle=True, drop_last=True)
 
     if not snapshot:
-        plot_reconstruction(
-            filepath,
-            test_loader,
-            seq_len_half,
-            model,
-            model_name,
-            FUTURE_DECODER,
-            FUTURE_STEPS,
-        )  # , suffix=suffix
+        create_reconstruction_plot(
+            filepath=filepath,
+            test_loader=test_loader,
+            seq_len_half=seq_len_half,
+            model=model,
+            model_name=model_name,
+            FUTURE_DECODER=FUTURE_DECODER,
+            FUTURE_STEPS=FUTURE_STEPS,
+        )
     elif snapshot:
-        plot_reconstruction(
-            filepath,
-            test_loader,
-            seq_len_half,
-            model,
-            model_name,
-            FUTURE_DECODER,
-            FUTURE_STEPS,
+        create_reconstruction_plot(
+            filepath=filepath,
+            test_loader=test_loader,
+            seq_len_half=seq_len_half,
+            model=model,
+            model_name=model_name,
+            FUTURE_DECODER=FUTURE_DECODER,
+            FUTURE_STEPS=FUTURE_STEPS,
             suffix=suffix,
-        )  # ,
-    # if use_gpu:
-    #     plot_loss(
-    #         config=config,
-    #         filepath=filepath,
-    #         model_name=model_name,
-    #         show_figure=False,
-    #     )
-    # else:
-    #     plot_loss(
-    #         config=config,
-    #         filepath=filepath,
-    #         model_name=model_name,
-    #         show_figure=False,
-    #     )
-    #     # pass #note, loading of losses needs to be adapted for CPU use #TODO
+        )
 
 
 @save_state(model=EvaluateModelFunctionSchema)
@@ -245,11 +342,10 @@ def evaluate_model(
                     suffix="snapshot" + str(epoch),
                 )
 
-        logger.info(
-            f"You can find the results of the evaluation in '{project_path}/model/evaluate/' \n"
-            "OPTIONS:\n"
-            "- vame.segment_session() to identify behavioral motifs.\n"
-            "- re-run the model for further fine tuning. Check again with vame.evaluate_model()"
+        logger.info(f"Evaluation finished successfully! You can find the results in: '{project_path}/model/evaluate/'")
+        logger.info("""Next steps:
+            - vame.segment_session() to identify behavioral motifs.
+            - re-run the model for further fine tuning. Check again with vame.evaluate_model()"""
         )
     except Exception as e:
         logger.exception(f"An error occurred during model evaluation: {e}")

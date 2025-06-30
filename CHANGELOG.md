@@ -1,3 +1,30 @@
+# v0.11.0
+
+### Fixes
+
+- Loose torch version `torch>=2.3.1`
+- Updated `pynwb==3.0.0`
+- Updated `movement==0.6.1`
+- Updated `ndx-pose==0.2.2`
+- Updated `ndx-vame==0.2.2`
+- Remove deprecated `verbose` argument for `ReduceLROnPlateau`
+- Fix gpu usage ([Issue #173](https://github.com/EthoML/VAME/issues/173))
+- Fix redundant inference when estimating motifs ([Issue #176](https://github.com/EthoML/VAME/issues/176))
+- Fix UMAP, now it uses all sessions (cohort) ([Issue #177](https://github.com/EthoML/VAME/issues/177))
+- Fix preprocessing ([Issue #180](https://github.com/EthoML/VAME/issues/180))
+
+
+### Features
+
+- Export Project results to NWB files ([Issue #171](https://github.com/EthoML/VAME/issues/171))
+- UMAP figures with proper labels and colors
+- Interactive UMAP figures with Plotly
+- tensorboard tracking during model training
+- Batch processing speed up latent space embeddings
+- Project-wide random state with `project_random_state` in config
+- Creates `pose_estimation_inspection` function for quick inspection of useful information
+
+
 # v0.10.0
 
 ### Fixes

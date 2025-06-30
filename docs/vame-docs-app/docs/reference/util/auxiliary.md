@@ -3,6 +3,10 @@ sidebar_label: auxiliary
 title: util.auxiliary
 ---
 
+#### logger\_config
+
+#### logger
+
 #### get\_version
 
 ```python
@@ -14,6 +18,12 @@ Gets the VAME package version from pyproject.toml.
 **Returns**
 
 * `str`: The version string.
+
+#### check\_torch\_device
+
+```python
+def check_torch_device() -> bool
+```
 
 #### \_convert\_enums\_to\_values
 

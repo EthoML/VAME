@@ -1,0 +1,300 @@
+If you haven't yet, please install VAME:
+
+```python
+pip install vame-py
+```
+
+The VAME workflow consists of four main steps, plus optional analysis:
+
+1. **Initialize project**: In this step we will start the project and get your pose estimation data into the `movement` format
+2. **Preprocess**: This step will perform cleaning, filtering and alignment of the raw pose estimation data
+3. **Train the VAME model**:
+    - Split the input data into training and test datasets.
+    - Train the VAME model to embed behavioural dynamics.
+    - Evaluate the performance of the trained model based on its reconstruction capabilities.
+4. **Segment behavior**:
+    - Segment pose estimation time series into behavioral motifs, using HMM or K-means.
+    - Group similar motifs into communities, using hierarchical clustering.
+5. **Vizualization, analysis and export [Optional]**:
+    - Visualization and projection of latent vectors onto a 2D plane via UMAP.
+    - Create motif and community videos.
+    - Use the generative model (reconstruction decoder) to sample from the learned data distribution.
+    - Export your VAME project to NWB files
+
+Let's start by importing the necessary libraries:
+
+```python
+import vame
+from vame.util.sample_data import download_sample_data
+from pathlib import Path
+```
+
+## Input data
+
+To quickly try VAME, you can download sample data and use it as input. If you want to work with your own data, all you need to do is to provide the paths to the pose estimation files as lists of strings. You can also optionally provide the paths to the corresponding video files.
+
+```python
+# You can run VAME with data from different sources:
+# "DeepLabCut", "SLEAP" or "LightningPose"
+source_software = "DeepLabCut"
+
+# Download sample data
+sample = download_sample_data(source_software)
+videos = [sample["video"]]
+poses_estimations = [sample["poses"]]
+fps = sample["fps"]
+
+print(videos)
+print(poses_estimations)
+print(fps)
+```
+
+## Step 1: Initialize your project
+
+VAME organizes around projects. To start a new project, you need to define some basic things:
+- the project's name
+- the paths to the pose estimation files
+- the source software used to produce the pose estimation data
+
+```python
+config_file, config_data = vame.init_new_project(
+    project_name="my_vame_project",
+    poses_estimations=poses_estimations,
+    source_software="DeepLabCut",
+    fps=fps,
+)
+```
+
+This command will create a project folder in the defined working directory with the project name you defined.
+In this folder you can find a config file called [config.yaml](/docs/project-config) which holds the main parameters for the VAME workflow.
+
+The videos and pose estimation files will be linked or copied to the project folder.
+
+Let's take a look at the project's configuration:
+
+```python
+print(config_data)
+```
+
+Now let's take a look at the formatted input dataset:
+
+```python
+ds_path = Path(config_data["project_path"]) / "data" / "raw" / f"{config_data['session_names'][0]}.nc"
+vame.io.load_poses.load_vame_dataset(ds_path)
+```
+
+## Step 2: Preprocess the raw pose estimation data
+The preprocessing step includes:
+
+#### Cleaning low confidence data points
+Pose estimation data points with confidence below the threshold will be cleared and interpolated.
+
+#### Egocentric alignment using key reference points
+Based on two reference keypoints, the data will be aligned to an egocentric coordinate system:
+- `centered_reference_keypoint`: The keypoint that will be centered in the frame.
+- `orientation_reference_keypoint`: The keypoint that will be used to determine the rotation of the frame.
+
+By consequence, the `x` and `y` coordinates of the `centered_reference_keypoint` and the `x` coordinate of the `orientation_reference_keypoint` will be set to an array of zeros, and further removed from the dataset.
+
+#### Outlier cleaning
+Outliers will be removed based on the interquartile range (IQR) method. This means that data points that are below `Q1 - iqr_factor * IQR` or above `Q3 + iqr_factor * IQR` will be cleared and interpolated.
+
+#### Savitzky-Golay filtering
+The data will be further smoothed using a Savitzky-Golay filter.
+
+```python
+vame.preprocessing(
+    config=config_data,
+    centered_reference_keypoint="snout",
+    orientation_reference_keypoint="tailbase",
+)
+```
+
+## Step 3: Train the VAME model
+
+At this point, we will prepare the data for training the VAME model, run the training and evaluate the model.
+
+We start by splitting the input data into train and test sets:
+
+```python
+vame.create_trainset(config=config_data)
+```
+
+Now we can train the VAME model. This migth take a while, depending on dataset size and your hardware.
+
+```python
+vame.train_model(config=config_data)
+```
+
+The model evaluation produces two plots, one showing the loss of the model during training and the other showing the reconstruction and future prediction of input sequence.
+
+```python
+vame.evaluate_model(config=config_data)
+```
+
+## Step 4: Segment behavior
+
+Behavioral segmentation in VAME is done in two steps: 
+1. Segmentation of pose estimation data into motifs
+2. Clustering motifs in communities
+
+Let's start by running pose segmentation using two different algorithms: HMM and K-means. The results will be saved in the project folder.
+
+`segment_session` accepts the following optional arguments:
+- `overwrite_segmentation`: re-runs segmentation, overwriting previous results. Defaults to False.
+- `overwrite_embeddings`: re-runs the generation of the embeddings values, overwriting previous results. Defaults to False.
+
+```python
+vame.segment_session(
+    config=config_data,
+    overwrite_segmentation=False,
+    overwrite_embeddings=False,
+)
+```
+
+Community clustering is done by grouping similar motifs into communities using hierarchical clustering. For that you must choose `cut_tree`, which is the cut level for the hierarchical clustering
+
+```python
+vame.community(
+    config=config_data,
+    cut_tree=2,
+)
+```
+
+## Step 5: Vizualization and analysis
+
+### Visualizations
+
+VAME comes with several builtin visualizations to investigate the results throughout the project steps.
+
+For the preprocessing step, we can look at the pose estimation keypoints after each transformation with:
+- scatter plots
+- point cloud plots
+- time series plots
+
+```python
+from vame.visualization import visualize_preprocessing_scatter
+
+visualize_preprocessing_scatter(config=config_data)
+```
+
+```python
+from vame.visualization import visualize_preprocessing_cloud
+
+visualize_preprocessing_cloud(config=config_data)
+```
+
+```python
+from vame.visualization import visualize_preprocessing_timeseries
+
+visualize_preprocessing_timeseries(config=config_data)
+```
+
+For the VAME model, you can visualize the evolution of the loss values during training and the recontruction evaluation:
+
+```python
+from vame.visualization import plot_loss
+
+plot_loss(config=config_data)
+```
+
+```python
+from IPython.display import Image, display
+
+eval_plot_path = Path(config_data["project_path"]) / "model" / "evaluate" / "future_reconstruction.png"
+display(Image(filename=eval_plot_path))
+```
+
+After creating community clusters for your project, you can visualize the hierarchical tree:
+
+```python
+from vame.visualization import visualize_hierarchical_tree
+
+visualize_hierarchical_tree(
+    config=config_data,
+    segmentation_algorithm="hmm",
+)
+```
+
+UMAP visualization:
+
+```python
+## Uncomment  the lines below if you can't see the plotly figures in the Jupyter Notebook
+# import plotly.io as pio
+# pio.renderers.default = 'iframe'
+from vame.visualization import visualize_umap
+
+visualize_umap(
+    config=config_data,
+    show_figure="plotly",
+)
+```
+
+### Create motif and community videos
+
+VAME only needs the pose estimation data to generate motifs and communities. But it provides auxiliary functions to split original videos into motifs or communities videos.
+
+```python
+from vame.video import add_videos_to_project
+
+add_videos_to_project(config=config_data, videos=videos)
+```
+
+Create motif videos to get insights about the fine grained poses:
+
+```python
+vame.motif_videos(config=config_data)
+```
+
+Create community videos to get insights about behavior on a hierarchical scale:
+
+```python
+vame.community_videos(config=config_data)
+```
+
+### Export VAME results to NWB
+
+You can easily export the results from your VAME project to a NWB file, which will include:
+- [NWBFile](https://pynwb.readthedocs.io/en/latest/pynwb.file.html#pynwb.file.NWBFile) metadata
+- [Subject](https://pynwb.readthedocs.io/en/stable/pynwb.file.html#pynwb.file.Subject) metadata
+- Pose estimation data, using the [ndx-pose](https://github.com/rly/ndx-pose) extension
+- VAME project data, using the [ndx-vame](https://github.com/catalystneuro/ndx-vame) extension
+
+NWBFile and Subject metadata dictionaries are unique for each session in your project. These values are optional, but it is highly recommended that you fill them if you plan on sharing your data.
+
+```python
+from vame.io import export_to_nwb
+from datetime import datetime, timezone
+
+nwbfile_kwargs = {
+    "session_description": "The description of this experimental session.",
+    "identifier": "id123",
+    "session_start_time": datetime.fromisoformat("2025-05-21T14:30:00+02:00"),
+}
+
+subject_kwargs = {
+    "age": "P90D",
+    "description": "mouse A10",
+    "sex": "M",
+    "species": "Mus musculus",
+}
+
+export_to_nwb(
+    config=config_data,
+    nwbfile_kwargs=[nwbfile_kwargs],
+    subject_kwargs=[subject_kwargs],
+)
+```
+
+```python
+from pathlib import Path
+from pynwb import read_nwb
+
+
+session = config_data["session_names"][0]
+model = config_data["model_name"]
+nwbfile_path = Path(config_data["project_path"]) / "results" / session / model / f"hmm-{config_data['n_clusters']}" / f"{session}.nwb"
+
+nwbfile = read_nwb(nwbfile_path)
+nwbfile
+```
