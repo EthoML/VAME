@@ -127,7 +127,6 @@ def create_config_template() -> Tuple[dict, ruamel.yaml.YAML]:
     segmentation_algorithms:
     hmm_trained:
     hmm_n_iter:
-    load_data:
     individual_segmentation:
     n_init_kmeans:
     \n
