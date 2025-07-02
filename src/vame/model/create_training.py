@@ -1,7 +1,8 @@
-import os
+import json
 import numpy as np
 from pathlib import Path
 from typing import List, Literal
+import datetime
 
 from vame.logging.logger import VameLogger
 from vame.schemas.states import CreateTrainsetFunctionSchema, save_state
@@ -65,6 +66,8 @@ def traindata_aligned(
         raise ValueError("test_fraction must be a float between 0 and 1")
 
     all_data_list = []
+    session_metadata = None
+
     for session in sessions:
         # Read session data
         file_path = str(Path(project_path) / "data" / "processed" / f"{session}_processed.nc")
@@ -80,13 +83,24 @@ def traindata_aligned(
                 raise ValueError("Some keypoints in `keypoints_to_exclude` are not present in the dataset.")
             keypoints = [k for k in keypoints if k not in keypoints_to_exclude]
 
-        # Format the data for the RNN model
-        session_array = format_xarray_for_rnn(
+        # Format the data for the RNN model and get metadata
+        session_array, metadata = format_xarray_for_rnn(
             ds=ds,
             read_from_variable=read_from_variable,
             keypoints=keypoints,
         )
         all_data_list.append(session_array)
+
+        # Store metadata from first session (should be consistent across sessions)
+        if session_metadata is None:
+            session_metadata = metadata
+
+    # Ensure we have metadata
+    if session_metadata is None:
+        raise ValueError("No metadata collected from sessions")
+
+    # Track split details for metadata
+    split_details = {}
 
     if split_mode == "mode_1":
         # Original mode: Take initial portion of combined data
@@ -94,12 +108,34 @@ def traindata_aligned(
         test_size = int(all_data_array.shape[1] * test_fraction)
         data_test = all_data_array[:, :test_size]
         data_train = all_data_array[:, test_size:]
+
+        # Track split details
+        split_details = {
+            "method": "sequential_split",
+            "split_index": test_size,
+            "total_length": all_data_array.shape[1],
+            "session_boundaries": []
+        }
+
+        # Calculate session boundaries in concatenated array
+        cumulative_length = 0
+        for i, session_array in enumerate(all_data_list):
+            session_length = session_array.shape[1]
+            split_details["session_boundaries"].append({
+                "session": sessions[i],
+                "start": cumulative_length,
+                "end": cumulative_length + session_length,
+                "length": session_length
+            })
+            cumulative_length += session_length
+
         logger.info(f"Mode 1 split - Initial {test_fraction:.1%} of combined data used for testing")
 
     else:  # mode_2
         # New mode: Take random continuous chunks from each session
         test_chunks: List[np.ndarray] = []
         train_chunks: List[np.ndarray] = []
+        session_splits = []
 
         for session_idx, session_array in enumerate(all_data_list):
             session_name = sessions[session_idx]
@@ -117,6 +153,20 @@ def traindata_aligned(
             train_chunk_1 = session_array[:, :test_start]
             train_chunk_2 = session_array[:, test_end:]
 
+            # Track split details for this session
+            train_chunks_info = []
+            if train_chunk_1.shape[1] > 0:
+                train_chunks_info.append({"start": 0, "end": test_start})
+            if train_chunk_2.shape[1] > 0:
+                train_chunks_info.append({"start": test_end, "end": session_length})
+
+            session_splits.append({
+                "session": session_name,
+                "session_length": session_length,
+                "test_chunk": {"start": test_start, "end": test_end},
+                "train_chunks": train_chunks_info
+            })
+
             # Add to respective lists
             test_chunks.append(test_chunk)
             if train_chunk_1.shape[1] > 0:  # Only append non-empty chunks
@@ -130,6 +180,11 @@ def traindata_aligned(
         data_test = np.concatenate(test_chunks, axis=1)
         data_train = np.concatenate(train_chunks, axis=1)
 
+        split_details = {
+            "method": "random_continuous_chunks",
+            "session_splits": session_splits
+        }
+
     # Create train directory if it doesn't exist
     train_dir = Path(project_path) / "data" / "train"
     train_dir.mkdir(parents=True, exist_ok=True)
@@ -140,6 +195,40 @@ def traindata_aligned(
 
     test_data_path = train_dir / "test_seq.npy"
     np.save(str(test_data_path), data_test)
+
+    # Create and save single metadata file for provenance tracking
+    metadata = {
+        "feature_mapping": session_metadata["feature_mapping"],
+        "parameters": session_metadata["parameters"],
+        "split_information": {
+            "split_mode": split_mode,
+            "test_fraction": test_fraction,
+            "sessions_used": sessions,
+            "split_details": split_details
+        },
+        "data_info": {
+            "train": {
+                "shape": data_train.shape,
+                "total_samples": data_train.shape[0],
+                "features": data_train.shape[1]
+            },
+            "test": {
+                "shape": data_test.shape,
+                "total_samples": data_test.shape[0],
+                "features": data_test.shape[1]
+            }
+        },
+        "creation_timestamp": datetime.datetime.now().isoformat(),
+        "vame_version": config["vame_version"],
+    }
+
+    # Save single metadata file
+    metadata_path = train_dir / "metadata.json"
+    with open(metadata_path, "w") as f:
+        json.dump(metadata, f, indent=2)
+
+    logger.info("Metadata file saved for feature provenance tracking")
+    logger.info(f"Metadata: {metadata_path}")
 
     logger.info(f"Length of train data: {data_train.shape[1]}")
     logger.info(f"Length of test data: {data_test.shape[1]}")
@@ -164,9 +253,12 @@ def create_trainset(
             - train/
                 - test_seq.npy
                 - train_seq.npy
+                - metadata.json
 
     The produced test_seq.npy contains the combined data in the shape of (num_features - 3, num_video_frames * test_fraction).
     The produced train_seq.npy contains the combined data in the shape of (num_features - 3, num_video_frames * (1 - test_fraction)).
+    The metadata.json file contains feature provenance information for tracking which keypoints and coordinates
+    correspond to each feature in the numpy arrays, along with detailed split information for full reproducibility.
 
     Parameters
     ----------
