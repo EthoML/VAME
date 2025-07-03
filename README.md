@@ -62,8 +62,3 @@ Pereira & Silveira: [Learning Representations from Healthcare Time Series Data f
 See the [LICENSE file](https://github.com/LINCellularNeuroscience/VAME/blob/master/LICENSE) for the full statement.
 
 ## Code Reference (DOI)
-
-## User Guide (Advanced)
-Starting in VAME 0.12, we have added a default that the communities are assigned by cutting the dendrogram at node level 3. In a purely bifurcating dendrogram, this would result in 8 communities (A-H).
-See [image] example of a dendrogram before and after node-3 cut.
-This approach is recommended for VAME analysis of murine exploration of an open field for >20 minutes. Other species or behavioral conditions may result in dendrogram that are differently structured than the above example. In those cases, users may consider selecting a higher or lower cut level (passed as an argument), or making custom motif->community assignments (post-VAME, done manually).
