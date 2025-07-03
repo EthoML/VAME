@@ -380,7 +380,7 @@ def save_cohort_community_labels_per_session(
 @save_state(model=CommunityFunctionSchema)
 def community(
     config: dict,
-    cut_tree: int | None = None,
+    cut_tree: int = 3,
     save_logs: bool = True,
 ) -> None:
     """
