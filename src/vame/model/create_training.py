@@ -65,6 +65,9 @@ def traindata_aligned(
     if test_fraction <= 0 or test_fraction >= 1:
         raise ValueError("test_fraction must be a float between 0 and 1")
 
+    # Set random seed for reproducibility
+    np.random.seed(config["project_random_state"])
+
     all_data_list = []
     session_metadata = None
 
@@ -209,13 +212,13 @@ def traindata_aligned(
         "data_info": {
             "train": {
                 "shape": data_train.shape,
-                "total_samples": data_train.shape[0],
-                "features": data_train.shape[1]
+                "total_samples": data_train.shape[1],
+                "features": data_train.shape[0]
             },
             "test": {
                 "shape": data_test.shape,
-                "total_samples": data_test.shape[0],
-                "features": data_test.shape[1]
+                "total_samples": data_test.shape[1],
+                "features": data_test.shape[0]
             }
         },
         "creation_timestamp": datetime.datetime.now().isoformat(),
