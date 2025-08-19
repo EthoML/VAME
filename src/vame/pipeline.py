@@ -429,20 +429,25 @@ class VAMEPipeline:
 
     def visualize_umap(
         self,
-        label: Literal["community", "motif"] = "community",
-        segmentation_algorithm: Literal["hmm", "kmeans"] = "hmm",
-        show_figure: bool = False,
+        num_points: int = 30_000,
         save_to_file: bool = True,
+        show_figure: Literal["none", "matplotlib", "plotly", "all"] = "none",
     ) -> None:
         """
         Visualizes the UMAP plot.
 
         Parameters
         ----------
-        label : Literal["community", "motif"], optional
-            Label to visualize, by default "community".
-        segmentation_algorithm : Literal["hmm", "kmeans"], optional
-            Segmentation algorithm, by default "hmm".
+        num_points : int, optional
+            Number of data points to visualize. Default is 30,000.
+        save_to_file : bool, optional
+            Save the figure to file. Default is True.
+        show_figure : Literal["none", "matplotlib", "plotly", "all"], optional
+            Show the figure. Default is "none".
+            - "none": do not show
+            - "matplotlib": show with matplotlib
+            - "plotly": show with plotly
+            - "all": show with both matplotlib and plotly
 
         Returns
         -------
@@ -450,8 +455,9 @@ class VAMEPipeline:
         """
         visualize_umap(
             config=self.config,
-            label=label,
-            segmentation_algorithm=segmentation_algorithm,
+            num_points=num_points,
+            save_to_file=save_to_file,
+            show_figure=show_figure,
         )
 
     def report(self) -> None:

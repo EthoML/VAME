@@ -57,8 +57,6 @@ def embed_latent_vectors(
     model_name = config["model_name"]
     temp_win = config["time_window"]
     num_features = config["num_features"]
-    if not fixed:
-        num_features = num_features - 3
     model = None
 
     logger.info("---------------------------------------------------------------------")
@@ -87,7 +85,7 @@ def embed_latent_vectors(
         _, _, ds = read_pose_estimation_file(file_path=file_path)
 
         # Format the data for the RNN model
-        data = format_xarray_for_rnn(
+        data, _ = format_xarray_for_rnn(
             ds=ds,
             read_from_variable=read_from_variable,
         )
@@ -159,8 +157,6 @@ def embed_latent_vectors_optimized(
     model_name = config["model_name"]
     temp_win = config["time_window"]
     num_features = config["num_features"]
-    if not fixed:
-        num_features = num_features - 3
     model = None
 
     logger.info("---------------------------------------------------------------------")
@@ -196,7 +192,7 @@ def embed_latent_vectors_optimized(
         _, _, ds = read_pose_estimation_file(file_path=file_path)
 
         # Format the data for the RNN model
-        data = format_xarray_for_rnn(
+        data, _ = format_xarray_for_rnn(
             ds=ds,
             read_from_variable=read_from_variable,
         )

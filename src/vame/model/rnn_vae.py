@@ -9,7 +9,6 @@ import numpy as np
 from pathlib import Path
 from tqdm import tqdm
 from typing import Tuple, Union, Optional
-import datetime
 
 from vame.model.dataloader import SEQUENCE_DATASET
 from vame.model.rnn_model import RNN_VAE
@@ -569,7 +568,6 @@ def train_model(
         model_name = config["model_name"]
         pretrained_weights = config["pretrained_weights"]
         pretrained_model = config["pretrained_model"]
-        fixed = config["egocentric_data"]
 
         logger.info("Train Variational Autoencoder - model name: %s \n" % model_name)
         if not os.path.exists(os.path.join(config["project_path"], "model", "best_model", "")):
@@ -599,12 +597,11 @@ def train_model(
         else:
             torch.device("cpu")
             logger.info("warning, a GPU was not found... proceeding with CPU (slow!) \n")
-            # raise NotImplementedError('GPU Computing is required!')
 
         # HYPERPARAMETERS
         # General
         CUDA = use_gpu
-        SEED = 19
+        SEED = config["project_random_state"]
         TRAIN_BATCH_SIZE = config["batch_size"]
         TEST_BATCH_SIZE = int(config["batch_size"] / 4)
         EPOCHS = config["max_epochs"]
@@ -613,8 +610,6 @@ def train_model(
         SNAPSHOT = config["model_snapshot"]
         LEARNING_RATE = config["learning_rate"]
         NUM_FEATURES = config["num_features"]
-        if not fixed:
-            NUM_FEATURES = NUM_FEATURES - 3
         TEMPORAL_WINDOW = config["time_window"] * 2
         FUTURE_DECODER = config["prediction_decoder"]
         FUTURE_STEPS = config["prediction_steps"]
