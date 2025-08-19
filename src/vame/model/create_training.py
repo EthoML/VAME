@@ -266,8 +266,8 @@ def create_trainset(
                 - train_seq.npy
                 - metadata.json
 
-    The produced test_seq.npy contains the combined data in the shape of (num_features - 3, num_video_frames * test_fraction).
-    The produced train_seq.npy contains the combined data in the shape of (num_features - 3, num_video_frames * (1 - test_fraction)).
+    The produced test_seq.npy contains the combined data in the shape of (num_features, num_video_frames * test_fraction).
+    The produced train_seq.npy contains the combined data in the shape of (num_features, num_video_frames * (1 - test_fraction)).
     The metadata.json file contains feature provenance information for tracking which keypoints and coordinates
     correspond to each feature in the numpy arrays, along with detailed split information for full reproducibility.
 

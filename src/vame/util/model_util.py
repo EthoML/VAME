@@ -25,9 +25,6 @@ def load_model(config: dict, model_name: str, fixed: bool = True) -> RNN_VAE:
     TEMPORAL_WINDOW = config["time_window"] * 2
     FUTURE_STEPS = config["prediction_steps"]
     NUM_FEATURES = config["num_features"]
-
-    if not fixed:
-        NUM_FEATURES = NUM_FEATURES - 3
     hidden_size_layer_1 = config["hidden_size_layer_1"]
     hidden_size_layer_2 = config["hidden_size_layer_2"]
     hidden_size_rec = config["hidden_size_rec"]

@@ -57,8 +57,6 @@ def embed_latent_vectors(
     model_name = config["model_name"]
     temp_win = config["time_window"]
     num_features = config["num_features"]
-    if not fixed:
-        num_features = num_features - 3
     model = None
 
     logger.info("---------------------------------------------------------------------")
@@ -159,8 +157,6 @@ def embed_latent_vectors_optimized(
     model_name = config["model_name"]
     temp_win = config["time_window"]
     num_features = config["num_features"]
-    if not fixed:
-        num_features = num_features - 3
     model = None
 
     logger.info("---------------------------------------------------------------------")
