@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import List, Literal
 import datetime
 
+from vame.util.auxiliary import update_config
 from vame.logging.logger import VameLogger
 from vame.schemas.states import CreateTrainsetFunctionSchema, save_state
 from vame.io.load_poses import read_pose_estimation_file
@@ -235,6 +236,13 @@ def traindata_aligned(
 
     logger.info(f"Length of train data: {data_train.shape[1]}")
     logger.info(f"Length of test data: {data_test.shape[1]}")
+    logger.info(f"Number of features: {data_train.shape[0]}")
+
+    # Update Project's config
+    config = update_config(
+        config=config,
+        config_update={"num_features": data_train.shape[0]},
+    )
 
 
 @save_state(model=CreateTrainsetFunctionSchema)
