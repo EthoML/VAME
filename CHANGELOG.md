@@ -1,3 +1,16 @@
+# v0.12.0
+
+### Fixes
+
+### Features
+
+- Optional to remove body parts from training ([Issue #168](https://github.com/EthoML/VAME/issues/168))
+
+### Others
+
+- Dropped support for MacOS 13 and older, due to dependencies incompatibility (pytorch, numpy and numba).
+
+
 # v0.11.0
 
 ### Fixes
