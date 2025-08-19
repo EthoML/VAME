@@ -114,10 +114,13 @@ vame.preprocessing(
 
 At this point, we will prepare the data for training the VAME model, run the training and evaluate the model.
 
-We start by splitting the input data into train and test sets:
+We start by splitting the input data into train and test sets, and excluding any keypoints we don't want to use for model training:
 
 ```python
-vame.create_trainset(config=config_data)
+vame.create_trainset(
+    config=config_data,
+    keypoints_to_exclude=["tail_end"],
+)
 ```
 
 Now we can train the VAME model. This migth take a while, depending on dataset size and your hardware.
