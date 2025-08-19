@@ -10,12 +10,13 @@ title: model.create_training
 #### traindata\_aligned
 
 ```python
-def traindata_aligned(
-        config: dict,
-        sessions: List[str] | None = None,
-        test_fraction: float = 0.1,
-        read_from_variable: str = "position_processed",
-        split_mode: Literal["mode_1", "mode_2"] = "mode_2") -> None
+def traindata_aligned(config: dict,
+                      sessions: List[str] | None = None,
+                      test_fraction: float = 0.1,
+                      read_from_variable: str = "position_processed",
+                      split_mode: Literal["mode_1", "mode_2"] = "mode_2",
+                      keypoints_to_include: List[str] | None = None,
+                      keypoints_to_exclude: List[str] | None = None) -> None
 ```
 
 Create training dataset for aligned data.
@@ -46,6 +47,8 @@ def create_trainset(config: dict,
                     test_fraction: float = 0.1,
                     read_from_variable: str = "position_processed",
                     split_mode: Literal["mode_1", "mode_2"] = "mode_2",
+                    keypoints_to_include: List[str] | None = None,
+                    keypoints_to_exclude: List[str] | None = None,
                     save_logs: bool = True) -> None
 ```
 
@@ -54,20 +57,15 @@ Fills in the values in the &quot;create_trainset&quot; key of the states.json fi
 Creates the training dataset for VAME at:
 - project_name/
     - data/
-        - session00/
-            - session00-PE-seq-clean.npy
-        - session01/
-            - session01-PE-seq-clean.npy
         - train/
             - test_seq.npy
             - train_seq.npy
+            - metadata.json
 
-The produced -clean.npy files contain the aligned time series data in the
-shape of (num_dlc_features - 2, num_video_frames).
-
-The produced test_seq.npy contains the combined data in the shape of (num_dlc_features - 2, num_video_frames * test_fraction).
-
-The produced train_seq.npy contains the combined data in the shape of (num_dlc_features - 2, num_video_frames * (1 - test_fraction)).
+The produced test_seq.npy contains the combined data in the shape of (num_features, num_video_frames * test_fraction).
+The produced train_seq.npy contains the combined data in the shape of (num_features, num_video_frames * (1 - test_fraction)).
+The metadata.json file contains feature provenance information for tracking which keypoints and coordinates
+correspond to each feature in the numpy arrays, along with detailed split information for full reproducibility.
 
 **Parameters**
 

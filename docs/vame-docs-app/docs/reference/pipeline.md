@@ -293,18 +293,24 @@ Visualizes the hierarchical tree.
 #### visualize\_umap
 
 ```python
-def visualize_umap(label: Literal["community", "motif"] = "community",
-                   segmentation_algorithm: Literal["hmm", "kmeans"] = "hmm",
-                   show_figure: bool = False,
-                   save_to_file: bool = True) -> None
+def visualize_umap(
+    num_points: int = 30_000,
+    save_to_file: bool = True,
+    show_figure: Literal["none", "matplotlib", "plotly",
+                         "all"] = "none") -> None
 ```
 
 Visualizes the UMAP plot.
 
 **Parameters**
 
-* **label** (`Literal["community", "motif"], optional`): Label to visualize, by default &quot;community&quot;.
-* **segmentation_algorithm** (`Literal["hmm", "kmeans"], optional`): Segmentation algorithm, by default &quot;hmm&quot;.
+* **num_points** (`int, optional`): Number of data points to visualize. Default is 30,000.
+* **save_to_file** (`bool, optional`): Save the figure to file. Default is True.
+* **show_figure** (`Literal["none", "matplotlib", "plotly", "all"], optional`): Show the figure. Default is &quot;none&quot;.
+- &quot;none&quot;: do not show
+- &quot;matplotlib&quot;: show with matplotlib
+- &quot;plotly&quot;: show with plotly
+- &quot;all&quot;: show with both matplotlib and plotly
 
 **Returns**
 
