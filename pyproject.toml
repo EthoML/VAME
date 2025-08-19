@@ -15,9 +15,10 @@ dependencies = [
     "matplotlib>=3.9.0",
     "plotly>=6.0.0",
     "nbformat>=5.10.0",
-    "torch==2.2.2; platform_system == 'Darwin' and platform_machine == 'x86_64'", # Intel Macs
-    "torch>=2.3.1; platform_system == 'Darwin' and platform_machine == 'arm64'",  # M1/M2 Macs
-    "torch>=2.3.1; platform_system != 'Darwin'",                                  # All other systems
+    # Pausing tests on MacOS Intel due to incapability with torch + numpy versions
+    # "torch==2.2.2; platform_system == 'Darwin' and platform_machine == 'x86_64'", # Intel Macs
+    "torch>=2.3.1; platform_system == 'Darwin' and platform_machine == 'arm64'", # M1/M2 Macs
+    "torch>=2.3.1; platform_system != 'Darwin'",                                 # All other systems
     "tensorboard",
     "tqdm>=4.66.0",
     "hmmlearn>=0.3.0",

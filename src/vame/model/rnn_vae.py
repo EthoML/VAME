@@ -568,7 +568,6 @@ def train_model(
         model_name = config["model_name"]
         pretrained_weights = config["pretrained_weights"]
         pretrained_model = config["pretrained_model"]
-        fixed = config["egocentric_data"]
 
         logger.info("Train Variational Autoencoder - model name: %s \n" % model_name)
         if not os.path.exists(os.path.join(config["project_path"], "model", "best_model", "")):
