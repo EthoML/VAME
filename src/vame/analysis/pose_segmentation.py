@@ -85,7 +85,7 @@ def embed_latent_vectors(
         _, _, ds = read_pose_estimation_file(file_path=file_path)
 
         # Format the data for the RNN model
-        data = format_xarray_for_rnn(
+        data, _ = format_xarray_for_rnn(
             ds=ds,
             read_from_variable=read_from_variable,
         )
@@ -192,7 +192,7 @@ def embed_latent_vectors_optimized(
         _, _, ds = read_pose_estimation_file(file_path=file_path)
 
         # Format the data for the RNN model
-        data = format_xarray_for_rnn(
+        data, _ = format_xarray_for_rnn(
             ds=ds,
             read_from_variable=read_from_variable,
         )
