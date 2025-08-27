@@ -279,12 +279,14 @@ def create_cohort_community_bag(
         while flag_1 == "no":
             cutline = int(input("Where do you want to cut the Tree? 0/1/2/3/..."))
             # community_bag = traverse_tree_cutline(T, cutline=cutline)
-            community_bag = bag_nodes_by_cutline(
+            communities_all = bag_nodes_by_cutline(
                 tree=T,
                 cutline=cutline,
                 root="Root",
             )
-            logger.info(community_bag)
+            logger.info("Communities bag:")
+            for ci, comm in enumerate(communities_all):
+                logger.info(f"Community {ci}: {comm}")
             flag_2 = input("\nAre all motifs in the list? (yes/no/restart)")
             if flag_2 == "no":
                 while flag_2 == "no":
@@ -292,16 +294,17 @@ def create_cohort_community_bag(
                     if add == "ext":
                         motif_idx = int(input("Which motif number? "))
                         list_idx = int(input("At which position in the list? (pythonic indexing starts at 0) "))
-                        community_bag[list_idx].append(motif_idx)
+                        communities_all[list_idx].append(motif_idx)
                     if add == "end":
                         motif_idx = int(input("Which motif number? "))
-                        community_bag.append([motif_idx])
-                        logger.info(community_bag)
+                        communities_all.append([motif_idx])
+                        logger.info("Communities bag:")
+                        for ci, comm in enumerate(communities_all):
+                            logger.info(f"Community {ci}: {comm}")
                     flag_2 = input("\nAre all motifs in the list? (yes/no/restart)")
             if flag_2 == "restart":
                 continue
             if flag_2 == "yes":
-                communities_all = community_bag
                 flag_1 = "yes"
     return communities_all
 

@@ -426,4 +426,4 @@ def bag_nodes_by_cutline(
             ancestor_at_cutline = leaf  # Each leaf in its own bag
         bags.setdefault(ancestor_at_cutline, []).append(leaf)
 
-    return list(bags.values())
+    return [[int(x) for x in sublist] for sublist in bags.values()]
