@@ -23,3 +23,12 @@ sidebar_position: 4
     <a href="https://www.biorxiv.org/content/10.1101/2020.05.14.095430v2">VAME</a>
   </p>
 </details>
+
+<details>
+  <summary>[Advanced][Community Analysis] Why is the default value of 'cut_tree' set to 3?</summary>
+  <p>
+    Starting in VAME 0.12, we have added a default that the communities are assigned by cutting the dendrogram at node level 3. In a purely bifurcating dendrogram, this would result in 8 communities (A-H).<br>
+    See [image] example of a dendrogram before and after node-3 cut.<br>
+    This approach is recommended for VAME analysis of murine exploration of an open field for >20 minutes. Other species or behavioral conditions may result in dendrogram that are differently structured than the above     example. In those cases, users may consider selectin a higher or lower cut level (passed as an argument), or making custom motif->community assignments (post-VAME, done manually).
+  </p>
+</details>
