@@ -144,9 +144,7 @@ def save_cohort_community_labels_per_session(
 
 ```python
 @save_state(model=CommunityFunctionSchema)
-def community(config: dict,
-              cut_tree: int | None = None,
-              save_logs: bool = True) -> None
+def community(config: dict, cut_tree: int = 3, save_logs: bool = True) -> None
 ```
 
 Perform community analysis.
