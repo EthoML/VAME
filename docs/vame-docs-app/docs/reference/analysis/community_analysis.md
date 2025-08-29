@@ -87,6 +87,23 @@ Compute transition matrices for given files and labels.
 
 * `List[np.ndarray]:`: List of transition matrices.
 
+#### sort\_communities\_by\_position
+
+```python
+def sort_communities_by_position(tree: nx.Graph, communities: list) -> list
+```
+
+Sort communities by their left-to-right position in the tree visualization.
+
+**Parameters**
+
+* **tree** (`nx.Graph`): The hierarchical tree.
+* **communities** (`list`): List of community bags (each containing motif indices).
+
+**Returns**
+
+* `list`: Communities sorted by their leftmost x-coordinate in the tree layout.
+
 #### create\_cohort\_community\_bag
 
 ```python
