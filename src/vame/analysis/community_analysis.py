@@ -11,7 +11,7 @@ from vame.analysis.tree_hierarchy import (
     bag_nodes_by_cutline,
 )
 from vame.util.cli import get_sessions_from_user_input
-from vame.visualization.community import draw_tree
+from vame.visualization.community import draw_tree, hierarchy_pos
 from vame.schemas.states import save_state, CommunityFunctionSchema
 from vame.schemas.project import SegmentationAlgorithms
 from vame.logging.logger import VameLogger
@@ -203,6 +203,48 @@ def compute_transition_matrices(
     return transition_matrices
 
 
+def sort_communities_by_position(tree: nx.Graph, communities: list) -> list:
+    """
+    Sort communities by their left-to-right position in the tree visualization.
+
+    Parameters
+    ----------
+    tree : nx.Graph
+        The hierarchical tree.
+    communities : list
+        List of community bags (each containing motif indices).
+
+    Returns
+    -------
+    list
+        Communities sorted by their leftmost x-coordinate in the tree layout.
+    """
+    # Get node positions using the same layout as visualization
+    pos = hierarchy_pos(
+        G=tree,
+        root="Root",
+        width=10.0,
+        vert_gap=0.1,
+        vert_loc=0,
+        xcenter=50,
+    )
+
+    # Calculate leftmost x-coordinate for each community
+    community_positions = []
+    for i, community in enumerate(communities):
+        # Find x-coordinates of all nodes in this community
+        x_coords = [pos[node][0] for node in community if node in pos]
+        if x_coords:
+            leftmost_x = min(x_coords)
+            community_positions.append((leftmost_x, i, community))
+
+    # Sort by x-coordinate (left to right)
+    community_positions.sort(key=lambda x: x[0])
+
+    # Return sorted communities
+    return [community for _, _, community in community_positions]
+
+
 def create_cohort_community_bag(
     config: dict,
     motif_labels: List[np.ndarray],
@@ -270,6 +312,8 @@ def create_cohort_community_bag(
             cutline=cut_tree,
             root="Root",
         )
+        # Sort communities by their left-to-right position in the tree visualization
+        communities_all = sort_communities_by_position(T, communities_all)
         logger.info("Communities bag:")
         for ci, comm in enumerate(communities_all):
             logger.info(f"Community {ci}: {comm}")
@@ -284,6 +328,8 @@ def create_cohort_community_bag(
                 cutline=cutline,
                 root="Root",
             )
+            # Sort communities by their left-to-right position in the tree visualization
+            communities_all = sort_communities_by_position(T, communities_all)
             logger.info("Communities bag:")
             for ci, comm in enumerate(communities_all):
                 logger.info(f"Community {ci}: {comm}")
