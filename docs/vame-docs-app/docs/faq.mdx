@@ -8,10 +8,10 @@ sidebar_position: 4
 <details>
   <summary>What is VAME?</summary>
   <p>
-    VAME is a framework to cluster behavioral signals obtained from pose-estimation tools. 
-    It is a [PyTorch](https://pytorch.org/)-based deep learning framework which leverages the power 
-    of recurrent neural networks (RNN) to model sequential data. 
-    In order to learn the underlying complex data distribution, we use the RNN in a variational autoencoder 
+    VAME is a framework to cluster behavioral signals obtained from pose-estimation tools.
+    It is a [PyTorch](https://pytorch.org/)-based deep learning framework which leverages the power
+    of recurrent neural networks (RNN) to model sequential data.
+    In order to learn the underlying complex data distribution, we use the RNN in a variational autoencoder
     setting to extract the latent state of the animal in every step of the input time series.
   </p>
 </details>
@@ -27,8 +27,8 @@ sidebar_position: 4
 <details>
   <summary>[Advanced][Community Analysis] Why is the default value of 'cut_tree' set to 3?</summary>
   <p>
-    Starting in VAME 0.12, we have added a default that the communities are assigned by cutting the dendrogram at node level 3. In a purely bifurcating dendrogram, this would result in 8 communities (A-H).<br>
-    See [image] example of a dendrogram before and after node-3 cut.<br>
-    This approach is recommended for VAME analysis of murine exploration of an open field for >20 minutes. Other species or behavioral conditions may result in dendrogram that are differently structured than the above     example. In those cases, users may consider selectin a higher or lower cut level (passed as an argument), or making custom motif->community assignments (post-VAME, done manually).
+    Starting in VAME 0.12, we have added a default that the communities are assigned by cutting the dendrogram at node level 3. In a purely bifurcating dendrogram, this would result in 8 communities (A-H).<br />
+    See [image] example of a dendrogram before and after node-3 cut.<br />
+    This approach is recommended for VAME analysis of murine exploration of an open field for >20 minutes. Other species or behavioral conditions may result in dendrogram that are differently structured than the above example. In those cases, users may consider selecting a higher or lower cut level (passed as an argument), or making custom motif->community assignments (post-VAME, done manually).
   </p>
 </details>
