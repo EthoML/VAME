@@ -8,6 +8,7 @@ def plot_motif_thresholding(
     config: dict,
     segmentation_algorithm: Literal["hmm", "kmeans"] = "hmm",
     n_clusters: int | None = None,
+    threshold: float = 1.0
 ) -> None:
     results_path = Path(config["project_path"]) / 'results'
 
@@ -29,7 +30,7 @@ def plot_motif_thresholding(
 
     plt.plot([], [], color='blue', label='Session sorted motif')  # single blue line key
     plt.plot(mean_session_m_counts, color='r', label="Sorted motif mean")  # red mean line
-    plt.axhline(y=1, color='black', linestyle='--', label="1% Threshold")  # threshold line
+    plt.axhline(y=threshold, color='black', linestyle='--', label=f"{threshold}% threshold")  # threshold line
     plt.xlabel("Sorted Session Index")
     plt.ylabel("Motif Percentage (%)")
     plt.title("Motif Count as Percentage")
