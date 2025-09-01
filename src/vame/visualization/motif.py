@@ -1,15 +1,22 @@
 from pathlib import Path
+from typing import Literal
 import numpy as np
 import matplotlib.pyplot as plt
 
 
 def plot_motif_thresholding(
-    config: dict
+    config: dict,
+    segmentation_algorithm: Literal["hmm", "kmeans"] = "hmm",
+    n_clusters: int | None = None,
 ) -> None:
     results_path = Path(config["project_path"]) / 'results'
+
+    if n_clusters is None:
+        n_clusters = config["n_clusters"]
+
     all_session_m_counts = []
     for s in config["session_names"]:
-        motif_usage_file = Path(results_path) / s / config["model_name"] / "kmeans-30" / f"motif_usage_{s}.npy"
+        motif_usage_file = Path(results_path) / s / config["model_name"] / f"{segmentation_algorithm}-{n_clusters}" / f"motif_usage_{s}.npy"
         session_motif_count = np.load(motif_usage_file)
         session_motif_count_desc = np.sort(session_motif_count)[::-1]  # sort by descending order
         total_motifs = np.sum(session_motif_count_desc)
