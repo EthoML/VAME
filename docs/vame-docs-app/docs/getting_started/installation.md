@@ -26,9 +26,9 @@ cd VAME
 
 2. Installing VAME from local source
 
-**Option 1:** Using VAME.yaml file to create a conda environment and install VAME in it by running
+**Option 1:** Using `environment-<os>.yaml` file to create a conda environment and install VAME in it by running
 ```bash
-conda env create -f VAME.yaml
+conda env create -f environment-<os>.yaml
 ```
 
 **Option 2:**  Installing local VAME with pip in your active virtual environment by running

@@ -1,18 +1,19 @@
 from typing import List, Optional, Literal
 from pathlib import Path
-import matplotlib.pyplot as plt
 import xarray as xr
 
 import vame
 from vame.util.auxiliary import read_states
 from vame.io.load_poses import load_vame_dataset
-from vame.visualization.motif import visualize_motif_tree
-from vame.visualization.umap import visualize_umap
-from vame.visualization.preprocessing import (
+from vame.visualization import (
     visualize_preprocessing_scatter,
     visualize_preprocessing_timeseries,
+    visualize_preprocessing_cloud,
+    plot_loss,
+    visualize_hierarchical_tree,
+    visualize_umap,
+    generate_reports,
 )
-from vame.visualization.model import plot_loss
 from vame.logging.logger import VameLogger
 
 
@@ -26,15 +27,16 @@ class VAMEPipeline:
     def __init__(
         self,
         project_name: str,
-        videos: List[str],
         poses_estimations: List[str],
         source_software: Literal["DeepLabCut", "SLEAP", "LightningPose"],
         working_directory: str = ".",
+        videos: Optional[List[str]] = None,
         video_type: str = ".mp4",
-        fps: int | None = None,
+        fps: Optional[float] = None,
         copy_videos: bool = False,
         paths_to_pose_nwb_series_data: Optional[str] = None,
         config_kwargs: Optional[dict] = None,
+        save_logs=True,
     ) -> None:
         """
         Initializes the VAME pipeline.
@@ -61,11 +63,14 @@ class VAMEPipeline:
             Path to pose NWB series data, by default None.
         config_kwargs : Optional[dict], optional
             Additional configuration keyword arguments, by default None.
+        save_logs : bool, optional
+            Flag indicating whether to save logs. Defaults to True.
 
         Returns
         -------
         None
         """
+        self.save_logs = save_logs
         self.config_path, self.config = vame.init_new_project(
             project_name=project_name,
             poses_estimations=poses_estimations,
@@ -140,7 +145,12 @@ class VAMEPipeline:
         self,
         centered_reference_keypoint: str = "snout",
         orientation_reference_keypoint: str = "tailbase",
-    ) -> None:
+        run_lowconf_cleaning: bool = True,
+        run_egocentric_alignment: bool = True,
+        run_outlier_cleaning: bool = True,
+        run_savgol_filtering: bool = True,
+        run_rescaling: bool = False,
+    ) -> str:
         """
         Preprocesses the data.
 
@@ -150,28 +160,62 @@ class VAMEPipeline:
             Key point to center the data, by default "snout".
         orientation_reference_keypoint : str, optional
             Key point to orient the data, by default "tailbase".
+        run_lowconf_cleaning : bool, optional
+            Whether to run low confidence cleaning, by default True.
+        run_egocentric_alignment : bool, optional
+            Whether to run egocentric alignment, by default True.
+        run_outlier_cleaning : bool, optional
+            Whether to run outlier cleaning, by default True.
+        run_savgol_filtering : bool, optional
+            Whether to run Savitzky-Golay filtering, by default True.
+        run_rescaling : bool, optional
+            Whether to run rescaling, by default False.
 
         Returns
         -------
-        None
+        variable name of the last-executed preprocessing step output
         """
         self.centered_reference_keypoint = centered_reference_keypoint
         self.orientation_reference_keypoint = orientation_reference_keypoint
-        vame.preprocessing(
+        return vame.preprocessing(
             config=self.config,
             centered_reference_keypoint=centered_reference_keypoint,
             orientation_reference_keypoint=orientation_reference_keypoint,
+            run_lowconf_cleaning=run_lowconf_cleaning,
+            run_egocentric_alignment=run_egocentric_alignment,
+            run_outlier_cleaning=run_outlier_cleaning,
+            run_savgol_filtering=run_savgol_filtering,
+            run_rescaling=run_rescaling,
+            save_logs=self.save_logs,
         )
 
-    def create_training_set(self) -> None:
+    def create_training_set(
+        self,
+        test_fraction: float = 0.1,
+        split_mode: Literal["mode_1", "mode_2"] = "mode_2",
+        read_from_variable: str = "position_processed",
+    ) -> None:
         """
         Creates the training set.
+
+        Parameters
+        ----------
+        test_fraction : float
+            Test fraction.
+        split_mode : str, optional
+            Split mode, by default "mode_2".
 
         Returns
         -------
         None
         """
-        vame.create_trainset(config=self.config)
+        vame.create_trainset(
+            config=self.config,
+            test_fraction=test_fraction,
+            read_from_variable=read_from_variable,
+            split_mode=split_mode,
+            save_logs=self.save_logs,
+        )
 
     def train_model(self) -> None:
         """
@@ -181,7 +225,10 @@ class VAMEPipeline:
         -------
         None
         """
-        vame.train_model(config=self.config)
+        vame.train_model(
+            config=self.config,
+            save_logs=self.save_logs,
+        )
 
     def evaluate_model(self) -> None:
         """
@@ -191,7 +238,10 @@ class VAMEPipeline:
         -------
         None
         """
-        vame.evaluate_model(config=self.config)
+        vame.evaluate_model(
+            config=self.config,
+            save_logs=self.save_logs,
+        )
 
     def run_segmentation(self) -> None:
         """
@@ -201,7 +251,10 @@ class VAMEPipeline:
         -------
         None
         """
-        vame.segment_session(config=self.config)
+        vame.segment_session(
+            config=self.config,
+            save_logs=self.save_logs,
+        )
 
     def run_community_clustering(self) -> None:
         """
@@ -213,15 +266,13 @@ class VAMEPipeline:
         """
         vame.community(
             config=self.config,
-            segmentation_algorithm="hmm",
-            cohort=True,
             cut_tree=2,
+            save_logs=self.save_logs,
         )
 
     def generate_motif_videos(
         self,
         video_type: str = ".mp4",
-        segmentation_algorithm: Literal["hmm", "kmeans"] = "hmm",
     ) -> None:
         """
         Generates motif videos.
@@ -230,8 +281,6 @@ class VAMEPipeline:
         ----------
         video_type : str, optional
             Video type, by default ".mp4".
-        segmentation_algorithm : Literal["hmm", "kmeans"], optional
-            Segmentation algorithm, by default "hmm".
 
         Returns
         -------
@@ -240,13 +289,12 @@ class VAMEPipeline:
         vame.motif_videos(
             config=self.config,
             video_type=video_type,
-            segmentation_algorithm=segmentation_algorithm,
+            save_logs=self.save_logs,
         )
 
     def generate_community_videos(
         self,
         video_type: str = ".mp4",
-        segmentation_algorithm: Literal["hmm", "kmeans"] = "hmm",
     ) -> None:
         """
         Generates community videos.
@@ -255,8 +303,6 @@ class VAMEPipeline:
         ----------
         video_type : str, optional
             Video type, by default ".mp4".
-        segmentation_algorithm : Literal["hmm", "kmeans"], optional
-            Segmentation algorithm, by default "hmm".
 
         Returns
         -------
@@ -265,13 +311,12 @@ class VAMEPipeline:
         vame.community_videos(
             config=self.config,
             video_type=video_type,
-            segmentation_algorithm=segmentation_algorithm,
+            save_logs=self.save_logs,
         )
 
     def generate_videos(
         self,
         video_type: str = ".mp4",
-        segmentation_algorithm: Literal["hmm", "kmeans"] = "hmm",
     ) -> None:
         """
         Generates motif and community videos.
@@ -280,26 +325,19 @@ class VAMEPipeline:
         ----------
         video_type : str, optional
             Video type, by default ".mp4".
-        segmentation_algorithm : Literal["hmm", "kmeans"], optional
-            Segmentation algorithm, by default "hmm".
 
         Returns
         -------
         None
         """
-        self.generate_motif_videos(
-            video_type=video_type,
-            segmentation_algorithm=segmentation_algorithm,
-        )
-        self.generate_community_videos(
-            video_type=video_type,
-            segmentation_algorithm=segmentation_algorithm,
-        )
+        self.generate_motif_videos(video_type=video_type)
+        self.generate_community_videos(video_type=video_type)
 
     def visualize_preprocessing(
         self,
         scatter: bool = True,
         timeseries: bool = True,
+        cloud: bool = True,
         show_figure: bool = False,
         save_to_file: bool = True,
     ) -> None:
@@ -312,6 +350,8 @@ class VAMEPipeline:
             Visualize scatter plot, by default True.
         timeseries : bool, optional
             Visualize timeseries plot, by default True.
+        cloud : bool, optional
+            Visualize cloud plot, by default True.
         show_figure : bool, optional
             Show the figure, by default False.
         save_to_file : bool, optional
@@ -329,6 +369,12 @@ class VAMEPipeline:
             )
         if timeseries:
             visualize_preprocessing_timeseries(
+                config=self.config,
+                show_figure=show_figure,
+                save_to_file=save_to_file,
+            )
+        if cloud:
+            visualize_preprocessing_cloud(
                 config=self.config,
                 show_figure=show_figure,
                 save_to_file=save_to_file,
@@ -354,18 +400,18 @@ class VAMEPipeline:
         None
         """
         plot_loss(
-            cfg=self.config,
+            config=self.config,
             model_name="VAME",
             save_to_file=save_to_file,
             show_figure=show_figure,
         )
 
-    def visualize_motif_tree(
+    def visualize_hierarchical_tree(
         self,
         segmentation_algorithm: Literal["hmm", "kmeans"],
     ) -> None:
         """
-        Visualizes the motif tree.
+        Visualizes the hierarchical tree.
 
         Parameters
         ----------
@@ -376,27 +422,32 @@ class VAMEPipeline:
         -------
         None
         """
-        visualize_motif_tree(
+        visualize_hierarchical_tree(
             config=self.config,
             segmentation_algorithm=segmentation_algorithm,
         )
 
     def visualize_umap(
         self,
-        label: Literal["community", "motif"] = "community",
-        segmentation_algorithm: Literal["hmm", "kmeans"] = "hmm",
-        show_figure: bool = False,
+        num_points: int = 30_000,
         save_to_file: bool = True,
+        show_figure: Literal["none", "matplotlib", "plotly", "all"] = "none",
     ) -> None:
         """
         Visualizes the UMAP plot.
 
         Parameters
         ----------
-        label : Literal["community", "motif"], optional
-            Label to visualize, by default "community".
-        segmentation_algorithm : Literal["hmm", "kmeans"], optional
-            Segmentation algorithm, by default "hmm".
+        num_points : int, optional
+            Number of data points to visualize. Default is 30,000.
+        save_to_file : bool, optional
+            Save the figure to file. Default is True.
+        show_figure : Literal["none", "matplotlib", "plotly", "all"], optional
+            Show the figure. Default is "none".
+            - "none": do not show
+            - "matplotlib": show with matplotlib
+            - "plotly": show with plotly
+            - "all": show with both matplotlib and plotly
 
         Returns
         -------
@@ -404,14 +455,12 @@ class VAMEPipeline:
         """
         visualize_umap(
             config=self.config,
-            label=label,
-            segmentation_algorithm=segmentation_algorithm,
+            num_points=num_points,
+            save_to_file=save_to_file,
+            show_figure=show_figure,
         )
 
-    def report(
-        self,
-        segmentation_algorithm: Literal["hmm", "kmeans"] = "hmm",
-    ) -> None:
+    def report(self) -> None:
         """
         Generates the project report.
 
@@ -424,15 +473,13 @@ class VAMEPipeline:
         -------
         None
         """
-        vame.report(
-            config=self.config,
-            segmentation_algorithm=segmentation_algorithm,
-        )
+        generate_reports(config=self.config)
 
     def run_pipeline(
         self,
         from_step: int = 0,
         preprocessing_kwargs: dict = {},
+        trainingset_kwargs: dict = {},
     ) -> None:
         """
         Runs the pipeline.
@@ -443,15 +490,17 @@ class VAMEPipeline:
             Start from step, by default 0.
         preprocessing_kwargs : dict, optional
             Preprocessing keyword arguments, by default {}.
+        trainingset_kwargs : dict, optional
+            Training set keyword arguments, by default {}.
 
         Returns
         -------
         None
         """
         if from_step == 0:
-            self.preprocessing(**preprocessing_kwargs)
+            trainingset_kwargs["read_from_variable"] = self.preprocessing(**preprocessing_kwargs)
         if from_step <= 1:
-            self.create_training_set()
+            self.create_training_set(**trainingset_kwargs)
         if from_step <= 2:
             self.train_model()
         if from_step <= 3:

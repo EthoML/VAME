@@ -10,13 +10,13 @@ title: util.model_util
 #### load\_model
 
 ```python
-def load_model(cfg: dict, model_name: str, fixed: bool = True) -> RNN_VAE
+def load_model(config: dict, model_name: str, fixed: bool = True) -> RNN_VAE
 ```
 
 Load the VAME model.
 
 Args:
-    cfg (dict): Configuration dictionary.
+    config (dict): Configuration dictionary.
     model_name (str): Name of the model.
     fixed (bool): Fixed or variable length sequences.
 

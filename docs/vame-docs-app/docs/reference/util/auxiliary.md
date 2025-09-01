@@ -3,6 +3,10 @@ sidebar_label: auxiliary
 title: util.auxiliary
 ---
 
+#### logger\_config
+
+#### logger
+
 #### get\_version
 
 ```python
@@ -14,6 +18,12 @@ Gets the VAME package version from pyproject.toml.
 **Returns**
 
 * `str`: The version string.
+
+#### check\_torch\_device
+
+```python
+def check_torch_device() -> bool
+```
 
 #### \_convert\_enums\_to\_values
 
@@ -71,6 +81,13 @@ Write structured config file.
 
 * **config_path** (`str`): Path to the config file.
 * **config** (`dict`): Dictionary containing the config data.
+
+#### update\_config
+
+```python
+@save_state(model=UpdateConfigFunctionSchema)
+def update_config(config: dict, config_update: dict) -> dict
+```
 
 #### read\_states
 

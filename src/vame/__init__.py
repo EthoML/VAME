@@ -2,6 +2,9 @@ import sys
 
 sys.dont_write_bytecode = True
 
+# Import netCDF4 before h5py to avoid conflicts when reading netCDF files
+import netCDF4
+
 from vame.initialize_project import init_new_project
 from vame.model import create_trainset
 from vame.model import train_model
@@ -14,9 +17,8 @@ from vame.analysis import generative_model
 from vame.analysis import gif
 from vame.util.csv_to_npy import pose_to_numpy
 
-# from vame.preprocessing.align_egocentrical_legacy import egocentric_alignment_legacy
 from vame.util import model_util
-from vame.util import auxiliary
-from vame.util.report import report
+from vame.util.auxiliary import *
 
 from vame.preprocessing import preprocessing
+from vame import visualization

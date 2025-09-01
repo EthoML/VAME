@@ -1,35 +1,94 @@
 import numpy as np
 import json
 from pathlib import Path
-
-# import matplotlib
 import matplotlib.pyplot as plt
 
-from vame.util.auxiliary import read_config
+from vame.schemas.states import GenerateReportsFunctionSchema, save_state
 from vame.logging.logger import VameLogger
 
 
-# matplotlib.use('Agg')  # For headless rendering
 logger_config = VameLogger(__name__)
 logger = logger_config.logger
+
+
+@save_state(model=GenerateReportsFunctionSchema)
+def generate_reports(
+    config: dict,
+    show_figure: bool = True,
+    save_to_file: bool = True,
+    save_logs: bool = True,
+) -> None:
+    """
+    Generate reports and UMAP for all sessions in the project.
+
+    Parameters
+    ----------
+    config : dict
+        Configuration parameters.
+    save_logs : bool, optional
+        Whether to save logs. Defaults to True.
+
+    Returns
+    -------
+    None
+    """
+    project_path = Path(config["project_path"])
+    segmentation_algorithms = config["segmentation_algorithms"]
+
+    # Create a report folder for the project, if it does not exist
+    report_folder = project_path / "reports"
+    report_folder.mkdir(exist_ok=True)
+
+    # Generate reports for each segmentation algorithm
+    for seg in segmentation_algorithms:
+        logger.info(f"Generating report for algorithm {seg}.")
+        report(
+            config=config,
+            segmentation_algorithm=seg,
+            save_to_file=save_to_file,
+            show_figure=show_figure,
+            save_logs=save_logs,
+        )
 
 
 def report(
     config: dict,
     segmentation_algorithm: str = "hmm",
+    save_to_file: bool = True,
+    show_figure: bool = True,
+    save_logs: bool = True,
 ) -> None:
     """
     Report for a project.
+
+    Parameters
+    ----------
+    config : dict
+        Configuration parameters.
+    segmentation_algorithm : str, optional
+        Segmentation algorithm to use. Defaults to "hmm".
+    save_to_file : bool, optional
+        Whether to save the report to file. Defaults to True.
+    show_figure : bool, optional
+        Whether to show the figure. Defaults to True.
+    save_logs : bool, optional
+        Whether to save logs. Defaults to True.
+
+    Returns
+    -------
+    None
     """
+    if save_logs:
+        log_path = Path(config["project_path"]) / "logs" / "report.log"
+        logger_config.add_file_handler(str(log_path))
+
     project_path = Path(config["project_path"])
+    session_names = config["session_names"]
     n_clusters = config["n_clusters"]
     model_name = config["model_name"]
 
     with open(project_path / "states" / "states.json") as f:
         project_states = json.load(f)
-
-    pose_estimation_files = list((project_path / "data" / "raw").glob("*.nc"))
-    video_files = list((project_path / "data" / "raw").glob("*.mp4"))
 
     # Create a report folder for the project, if it does not exist
     report_folder = project_path / "reports"
@@ -82,21 +141,21 @@ def report(
         for jj in bag:
             logger.info(f"    Motif {jj}: {motif_labels[jj]} counts")
 
-    fig = plot_community_motifs(
-        motif_labels,
-        community_labels,
-        community_bag,
+    # Report for the entire cohort
+    plot_community_motifs(
+        motif_labels=motif_labels,
+        community_labels=community_labels,
+        community_bag=community_bag,
         title=f"Community and Motif Counts - Cohort - {model_name} - {segmentation_algorithm} - {n_clusters}",
-        save_to_file=True,
+        show_figure=show_figure,
+        save_to_file=save_to_file,
         save_path=str(
             report_folder / f"community_motifs_cohort_{model_name}_{segmentation_algorithm}-{n_clusters}.png"
         ),
     )
 
-    # Per session file
-    for f in pose_estimation_files:
-        session = f.name.split(".")[0]
-
+    # Per session
+    for session in session_names:
         fml = np.load(
             project_path
             / "results"
@@ -126,12 +185,13 @@ def report(
         for uu, cc in zip(u, c):
             file_community_labels[uu] = cc
 
-        fig = plot_community_motifs(
-            file_motif_labels,
-            file_community_labels,
-            community_bag,
+        plot_community_motifs(
+            motif_labels=file_motif_labels,
+            community_labels=file_community_labels,
+            community_bag=community_bag,
             title=f"Community and Motif Counts - {session} - {model_name} - {segmentation_algorithm} - {n_clusters}",
-            save_to_file=True,
+            show_figure=show_figure,
+            save_to_file=save_to_file,
             save_path=str(
                 report_folder / f"community_motifs_{session}_{model_name}_{segmentation_algorithm}-{n_clusters}.png"
             ),
@@ -143,9 +203,10 @@ def plot_community_motifs(
     community_labels,
     community_bag,
     title: str = "Community and Motif Counts",
+    show_figure: bool = True,
     save_to_file: bool = False,
     save_path: str = "",
-):
+) -> None:
     """
     Generates a bar plot to represent community and motif counts with percentages.
     """
@@ -263,4 +324,7 @@ def plot_community_motifs(
         plt.savefig(save_path)
         logger.info(f"Saved community / motifs plot to {save_path}")
 
-    return fig
+    if show_figure:
+        plt.show()
+    else:
+        plt.close(fig)

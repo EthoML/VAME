@@ -3,8 +3,6 @@ import numpy as np
 import pandas as pd
 from pathlib import Path
 
-from vame.util.auxiliary import read_config
-from vame.schemas.states import PoseToNumpyFunctionSchema, save_state
 from vame.logging.logger import VameLogger
 from vame.util.data_manipulation import interpol_first_rows_nans
 from vame.io.load_poses import read_pose_estimation_file
@@ -14,7 +12,6 @@ logger_config = VameLogger(__name__)
 logger = logger_config.logger
 
 
-@save_state(model=PoseToNumpyFunctionSchema)
 def pose_to_numpy(
     config: dict,
     save_logs=False,

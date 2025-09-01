@@ -21,6 +21,11 @@ class GenerativeModelModeEnum(str, Enum):
     motifs = "motifs"
 
 
+class SplitModeEnum(str, Enum):
+    mode_1 = "mode_1"
+    mode_2 = "mode_2"
+
+
 class BaseStateSchema(BaseModel):
     config: dict = Field(title="Configuration dictionary")
     execution_state: StatesEnum | None = Field(
@@ -29,35 +34,22 @@ class BaseStateSchema(BaseModel):
     )
 
 
-class EgocentricAlignmentFunctionSchema(BaseStateSchema):
-    pose_ref_index: list = Field(
-        title="Pose reference index",
-        default=[0, 5],
+class UpdateConfigFunctionSchema(BaseStateSchema):
+    config_update: dict = Field(
+        title="Configuration update",
+        default={},
     )
-    crop_size: tuple = Field(
-        title="Crop size",
-        default=(300, 300),
-    )
-    use_video: bool = Field(
-        title="Use video",
-        default=False,
-    )
-    video_format: str = Field(
-        title="Video format",
-        default=".mp4",
-    )
-    check_video: bool = Field(
-        title="Check video",
-        default=False,
-    )
-
-
-class PoseToNumpyFunctionSchema(BaseStateSchema):
-    ...
 
 
 class CreateTrainsetFunctionSchema(BaseStateSchema):
-    ...
+    test_fraction: float = Field(
+        title="Test fraction",
+        default=0.1,
+    )
+    split_mode: SplitModeEnum = Field(
+        title="Split mode",
+        default=SplitModeEnum.mode_1,
+    )
 
 
 class TrainModelFunctionSchema(BaseStateSchema):
@@ -80,7 +72,6 @@ class MotifVideosFunctionSchema(BaseStateSchema):
         title="Type of video",
         default=".mp4",
     )
-    segmentation_algorithm: SegmentationAlgorithms = Field(title="Segmentation algorithm")
     output_video_type: str = Field(
         title="Type of output video",
         default=".mp4",
@@ -88,8 +79,6 @@ class MotifVideosFunctionSchema(BaseStateSchema):
 
 
 class CommunityFunctionSchema(BaseStateSchema):
-    cohort: bool = Field(title="Cohort", default=True)
-    segmentation_algorithm: SegmentationAlgorithms = Field(title="Segmentation algorithm")
     cut_tree: int | None = Field(
         title="Cut tree",
         default=None,
@@ -97,8 +86,6 @@ class CommunityFunctionSchema(BaseStateSchema):
 
 
 class CommunityVideosFunctionSchema(BaseStateSchema):
-    segmentation_algorithm: SegmentationAlgorithms = Field(title="Segmentation algorithm")
-    cohort: bool = Field(title="Cohort", default=True)
     video_type: str = Field(
         title="Type of video",
         default=".mp4",
@@ -109,11 +96,55 @@ class CommunityVideosFunctionSchema(BaseStateSchema):
     )
 
 
-class VisualizeUmapFunctionSchema(BaseStateSchema):
-    segmentation_algorithm: SegmentationAlgorithms = Field(title="Segmentation algorithm")
-    label: Optional[str] = Field(
-        title="Type of labels to visualize",
-        default=None,
+class GenerateReportsFunctionSchema(BaseStateSchema):
+    ...
+
+
+class PreprocessingFunctionSchema(BaseStateSchema):
+    centered_reference_keypoint: str = Field(
+        title="Keypoint to use as centered reference",
+    )
+    orientation_reference_keypoint: str = Field(
+        title="Keypoint to use as orientation reference",
+    )
+    run_lowconf_cleaning: bool = Field(
+        title="Whether to run low confidence cleaning",
+        default=True,
+    )
+    run_egocentric_alignment: bool = Field(
+        title="Whether to run egocentric alignment",
+        default=True,
+    )
+    run_outlier_cleaning: bool = Field(
+        title="Whether to run outlier cleaning",
+        default=True,
+    )
+    run_savgol_filtering: bool = Field(
+        title="Whether to run Savitzky-Golay filtering",
+        default=True,
+    )
+    run_rescaling: bool = Field(
+        title="Whether to run rescaling",
+        default=False,
+    )
+    save_logs: bool = Field(
+        title="Whether to save logs",
+        default=False,
+    )
+
+
+class PreprocessingVisualizationFunctionSchema(BaseStateSchema):
+    session_index: int = Field(
+        title="Index of the session to visualize",
+        default=0,
+    )
+    save_to_file: bool = Field(
+        title="Whether to save the figure to file",
+        default=False,
+    )
+    show_figure: bool = Field(
+        title="Whether to show the figure",
+        default=True,
     )
 
 
@@ -126,12 +157,16 @@ class GenerativeModelFunctionSchema(BaseStateSchema):
 
 
 class VAMEPipelineStatesSchema(BaseModel):
-    egocentric_alignment: Optional[EgocentricAlignmentFunctionSchema | Dict] = Field(
-        title="Egocentric alignment",
+    update_config: Optional[UpdateConfigFunctionSchema | Dict] = Field(
+        title="Update config",
         default={},
     )
-    pose_to_numpy: Optional[PoseToNumpyFunctionSchema | Dict] = Field(
-        title="CSV to numpy",
+    preprocessing: Optional[PreprocessingFunctionSchema | Dict] = Field(
+        title="Preprocessing",
+        default={},
+    )
+    preprocessing_visualization: Optional[PreprocessingVisualizationFunctionSchema | Dict] = Field(
+        title="Preprocessing visualization",
         default={},
     )
     create_trainset: Optional[CreateTrainsetFunctionSchema | Dict] = Field(
@@ -162,8 +197,8 @@ class VAMEPipelineStatesSchema(BaseModel):
         title="Community videos",
         default={},
     )
-    visualize_umap: Optional[VisualizeUmapFunctionSchema | Dict] = Field(
-        title="Visualization",
+    generate_reports: Optional[GenerateReportsFunctionSchema | Dict] = Field(
+        title="Generate reports",
         default={},
     )
     generative_model: Optional[GenerativeModelFunctionSchema | Dict] = Field(
@@ -184,11 +219,16 @@ def _save_state(model: BaseStateSchema, function_name: str, state: StatesEnum) -
     model.execution_state = state
     setattr(pipeline_states, function_name, model.model_dump())
 
+    # Remove "config" from all pipeline step entries before saving
+    pipeline_states_dict = pipeline_states.model_dump()
+    for step, value in pipeline_states_dict.items():
+        if isinstance(value, dict) and "config" in value:
+            value.pop("config")
     with open(states_file_path, "w") as f:
-        json.dump(pipeline_states.model_dump(), f, indent=4)
+        json.dump(pipeline_states_dict, f, indent=4)
 
 
-def save_state(model: BaseModel):
+def save_state(model: type[BaseStateSchema]):
     """
     Decorator responsible for validating function arguments using pydantic and
     saving the state of the called function to the project states json file.

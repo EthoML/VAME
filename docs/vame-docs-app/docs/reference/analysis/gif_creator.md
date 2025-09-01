@@ -37,7 +37,7 @@ Create video frames for the given embedding.
 
 ```python
 def gif(
-    config: str,
+    config_path: str,
     pose_ref_index: list,
     segmentation_algorithm: SegmentationAlgorithms,
     subtract_background: bool = True,
@@ -53,7 +53,7 @@ Create a GIF from the given configuration.
 
 **Parameters**
 
-* **config** (`str`): Path to the configuration file.
+* **config_path** (`str`): Path to the configuration file.
 * **pose_ref_index** (`list`): List of reference coordinate indices for alignment.
 * **segmentation_algorithm** (`SegmentationAlgorithms`): Segmentation algorithm.
 * **subtract_background** (`bool, optional`): Whether to subtract background. Defaults to True.

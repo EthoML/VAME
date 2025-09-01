@@ -3,11 +3,12 @@ from torch import nn
 import torch.utils.data as Data
 from torch.autograd import Variable
 from torch.optim.lr_scheduler import StepLR, ReduceLROnPlateau
+from torch.utils.tensorboard.writer import SummaryWriter
 import os
 import numpy as np
 from pathlib import Path
 from tqdm import tqdm
-from typing import Tuple
+from typing import Tuple, Union, Optional
 
 from vame.model.dataloader import SEQUENCE_DATASET
 from vame.model.rnn_model import RNN_VAE
@@ -18,6 +19,11 @@ from vame.logging.logger import VameLogger, TqdmToLogger
 logger_config = VameLogger(__name__)
 logger = logger_config.logger
 tqdm_to_logger = TqdmToLogger(logger)
+
+# TensorBoard configuration (hardcoded)
+TENSORBOARD_ENABLED = True
+TENSORBOARD_LOG_FREQUENCY = 1  # Log every N batches
+TENSORBOARD_LOG_HISTOGRAMS = False  # Set to True to log parameter histograms
 
 # make sure torch uses cuda for GPU computing
 use_gpu = torch.cuda.is_available()
@@ -229,14 +235,16 @@ def train(
     seq_len: int,
     future_decoder: bool,
     future_steps: int,
-    scheduler: torch.optim.lr_scheduler._LRScheduler,
+    scheduler: Union[torch.optim.lr_scheduler._LRScheduler, ReduceLROnPlateau, StepLR],
     mse_red: str,
     mse_pred: str,
     kloss: int,
     klmbda: float,
     bsize: int,
     noise: bool,
-) -> Tuple[float, float, float, float, float, float]:
+    writer: Optional[SummaryWriter] = None,
+    global_step: int = 0,
+) -> Tuple[float, float, float, float, float, float, int]:
     """
     Train the model.
 
@@ -264,7 +272,7 @@ def train(
         Whether a future decoder is used.
     future_steps : int
         Number of future steps to predict.
-    scheduler : lr_scheduler._LRScheduler
+    scheduler : Union[_LRScheduler, ReduceLROnPlateau]
         Learning rate scheduler.
     mse_red : str
         Reduction type for MSE reconstruction loss.
@@ -278,12 +286,16 @@ def train(
         Size of the batch.
     noise : bool
         Whether to add Gaussian noise to the input.
+    writer : Optional[SummaryWriter]
+        TensorBoard writer for logging.
+    global_step : int
+        Global step counter for TensorBoard logging.
 
     Returns
     -------
-    Tuple[float, float, float, float, float, float]
+    Tuple[float, float, float, float, float, float, int]
         Kullback-Leibler weight, train loss, K-means loss, KL loss,
-        MSE loss, future loss.
+        MSE loss, future loss, updated global step.
     """
     # toggle model to train mode
     model.train()
@@ -331,6 +343,19 @@ def train(
         loss.backward()
         optimizer.step()
 
+        # TensorBoard logging every N batches
+        if writer and idx % TENSORBOARD_LOG_FREQUENCY == 0:
+            step = global_step + idx
+            writer.add_scalar('batch/train_loss', loss.item(), step)
+            writer.add_scalar('batch/mse_loss', rec_loss.item(), step)
+            writer.add_scalar('batch/kl_loss', kl_loss.item(), step)
+            writer.add_scalar('batch/kmeans_loss', kmeans_loss.item(), step)
+            writer.add_scalar('batch/kl_weight', kl_weight, step)
+            writer.add_scalar('batch/learning_rate', optimizer.param_groups[0]['lr'], step)
+
+            if future_decoder:
+                writer.add_scalar('batch/future_loss', fut_rec_loss.item(), step)
+
         # torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm = 5)
 
         train_loss += loss.item()
@@ -342,7 +367,10 @@ def train(
         #     print('Epoch: %d.  loss: %.4f' %(epoch, loss.item()))
 
     # be sure scheduler is called before optimizer in >1.1 pytorch
-    scheduler.step(loss)
+    if isinstance(scheduler, ReduceLROnPlateau):
+        scheduler.step(loss)
+    else:
+        scheduler.step()
 
     if future_decoder:
         logger.info(
@@ -373,6 +401,7 @@ def train(
         kullback_loss / idx,
         mse_loss / idx,
         fut_loss / idx,
+        global_step + len(train_loader),
     )
 
 
@@ -383,10 +412,12 @@ def test(
     kl_weight: float,
     seq_len: int,
     mse_red: str,
-    kloss: str,
+    kloss: int,
     klmbda: float,
     future_decoder: bool,
     bsize: int,
+    writer: Optional[SummaryWriter] = None,
+    epoch: int = 0,
 ) -> Tuple[float, float, float]:
     """
     Evaluate the model on the test dataset.
@@ -405,14 +436,18 @@ def test(
         Length of the sequence.
     mse_red : str
         Reduction method for the MSE loss.
-    kloss : str
+    kloss : int
         Loss function for K-means clustering.
     klmbda : float
         Lambda value for K-means loss.
     future_decoder : bool
         Flag indicating whether to use a future decoder.
-    bsize :int
+    bsize : int
         Batch size.
+    writer : Optional[SummaryWriter]
+        TensorBoard writer for logging.
+    epoch : int
+        Current epoch number.
 
     Returns
     -------
@@ -459,6 +494,14 @@ def test(
             mse_loss += rec_loss.item()
             kullback_loss += kl_loss.item()
             kmeans_losses += kmeans_loss.item()
+
+    # TensorBoard logging for test metrics
+    if writer:
+        writer.add_scalar('epoch/test_loss', test_loss / idx, epoch)
+        writer.add_scalar('epoch/test_mse', mse_loss / idx, epoch)
+        writer.add_scalar('epoch/test_kl', BETA * kl_weight * kullback_loss / idx, epoch)
+        writer.add_scalar('epoch/test_kmeans', kl_weight * kmeans_losses / idx, epoch)
+
     logger.info(
         "Test loss: {:.3f}, MSE-Loss: {:.3f}, KL-Loss: {:.3f}, Kmeans-Loss: {:.3f}".format(
             test_loss / idx,
@@ -473,7 +516,7 @@ def test(
 @save_state(model=TrainModelFunctionSchema)
 def train_model(
     config: dict,
-    save_logs: bool = False,
+    save_logs: bool = True,
 ) -> None:
     """
     Train Variational Autoencoder using the configuration file values.
@@ -496,6 +539,10 @@ def train_model(
                 - train_losses_VAME.npy
                 - weight_values_VAME.npy
             - pretrained_model/
+        - logs/
+            - tensorboard/
+                - model_name/
+                    - events.out.tfevents...
 
 
     Parameters
@@ -503,30 +550,43 @@ def train_model(
     config : dict
         Configuration dictionary.
     save_logs : bool, optional
-        Whether to save the logs, by default False.
+        Whether to save the logs. Default is True.
 
     Returns
     -------
     None
     """
-    cfg = config
+    config = config
+    writer = None
     try:
         tqdm_logger_stream = None
         if save_logs:
             tqdm_logger_stream = TqdmToLogger(logger)
-            log_path = Path(cfg["project_path"]) / "logs" / "train_model.log"
+            log_path = Path(config["project_path"]) / "logs" / "train_model.log"
             logger_config.add_file_handler(str(log_path))
 
-        model_name = cfg["model_name"]
-        pretrained_weights = cfg["pretrained_weights"]
-        pretrained_model = cfg["pretrained_model"]
-        fixed = cfg["egocentric_data"]
+        model_name = config["model_name"]
+        pretrained_weights = config["pretrained_weights"]
+        pretrained_model = config["pretrained_model"]
 
         logger.info("Train Variational Autoencoder - model name: %s \n" % model_name)
-        if not os.path.exists(os.path.join(cfg["project_path"], "model", "best_model", "")):
-            os.mkdir(os.path.join(cfg["project_path"], "model", "best_model", ""))
-            os.mkdir(os.path.join(cfg["project_path"], "model", "best_model", "snapshots", ""))
-            os.mkdir(os.path.join(cfg["project_path"], "model", "model_losses", ""))
+        if not os.path.exists(os.path.join(config["project_path"], "model", "best_model", "")):
+            os.mkdir(os.path.join(config["project_path"], "model", "best_model", ""))
+            os.mkdir(os.path.join(config["project_path"], "model", "best_model", "snapshots", ""))
+            os.mkdir(os.path.join(config["project_path"], "model", "model_losses", ""))
+
+        # TensorBoard setup
+        if TENSORBOARD_ENABLED:
+            tb_log_dir = os.path.join(
+                config["project_path"],
+                "logs",
+                "tensorboard",
+                f"{model_name}"
+            )
+            os.makedirs(tb_log_dir, exist_ok=True)
+            writer = SummaryWriter(tb_log_dir)
+            logger.info(f"TensorBoard logging enabled. Log directory: {tb_log_dir}")
+            logger.info("To view logs, run: tensorboard --logdir=%s --port=6006" % os.path.join(config["project_path"], "logs", "tensorboard"))
 
         # make sure torch uses cuda for GPU computing
         use_gpu = torch.cuda.is_available()
@@ -537,53 +597,50 @@ def train_model(
         else:
             torch.device("cpu")
             logger.info("warning, a GPU was not found... proceeding with CPU (slow!) \n")
-            # raise NotImplementedError('GPU Computing is required!')
 
         # HYPERPARAMETERS
         # General
         CUDA = use_gpu
-        SEED = 19
-        TRAIN_BATCH_SIZE = cfg["batch_size"]
-        TEST_BATCH_SIZE = int(cfg["batch_size"] / 4)
-        EPOCHS = cfg["max_epochs"]
-        ZDIMS = cfg["zdims"]
-        BETA = cfg["beta"]
-        SNAPSHOT = cfg["model_snapshot"]
-        LEARNING_RATE = cfg["learning_rate"]
-        NUM_FEATURES = cfg["num_features"]
-        if not fixed:
-            NUM_FEATURES = NUM_FEATURES - 3
-        TEMPORAL_WINDOW = cfg["time_window"] * 2
-        FUTURE_DECODER = cfg["prediction_decoder"]
-        FUTURE_STEPS = cfg["prediction_steps"]
+        SEED = config["project_random_state"]
+        TRAIN_BATCH_SIZE = config["batch_size"]
+        TEST_BATCH_SIZE = int(config["batch_size"] / 4)
+        EPOCHS = config["max_epochs"]
+        ZDIMS = config["zdims"]
+        BETA = config["beta"]
+        SNAPSHOT = config["model_snapshot"]
+        LEARNING_RATE = config["learning_rate"]
+        NUM_FEATURES = config["num_features"]
+        TEMPORAL_WINDOW = config["time_window"] * 2
+        FUTURE_DECODER = config["prediction_decoder"]
+        FUTURE_STEPS = config["prediction_steps"]
 
         # RNN
-        hidden_size_layer_1 = cfg["hidden_size_layer_1"]
-        hidden_size_layer_2 = cfg["hidden_size_layer_2"]
-        hidden_size_rec = cfg["hidden_size_rec"]
-        hidden_size_pred = cfg["hidden_size_pred"]
-        dropout_encoder = cfg["dropout_encoder"]
-        dropout_rec = cfg["dropout_rec"]
-        dropout_pred = cfg["dropout_pred"]
-        noise = cfg["noise"]
-        scheduler_step_size = cfg["scheduler_step_size"]
-        softplus = cfg["softplus"]
+        hidden_size_layer_1 = config["hidden_size_layer_1"]
+        hidden_size_layer_2 = config["hidden_size_layer_2"]
+        hidden_size_rec = config["hidden_size_rec"]
+        hidden_size_pred = config["hidden_size_pred"]
+        dropout_encoder = config["dropout_encoder"]
+        dropout_rec = config["dropout_rec"]
+        dropout_pred = config["dropout_pred"]
+        noise = config["noise"]
+        scheduler_step_size = config["scheduler_step_size"]
+        softplus = config["softplus"]
 
         # Loss
-        MSE_REC_REDUCTION = cfg["mse_reconstruction_reduction"]
-        MSE_PRED_REDUCTION = cfg["mse_prediction_reduction"]
-        KMEANS_LOSS = cfg["kmeans_loss"]
-        KMEANS_LAMBDA = cfg["kmeans_lambda"]
-        KL_START = cfg["kl_start"]
-        ANNEALTIME = cfg["annealtime"]
-        anneal_function = cfg["anneal_function"]
-        optimizer_scheduler = cfg["scheduler"]
+        MSE_REC_REDUCTION = config["mse_reconstruction_reduction"]
+        MSE_PRED_REDUCTION = config["mse_prediction_reduction"]
+        KMEANS_LOSS = config["kmeans_loss"]
+        KMEANS_LAMBDA = config["kmeans_lambda"]
+        KL_START = config["kl_start"]
+        ANNEALTIME = config["annealtime"]
+        anneal_function = config["anneal_function"]
+        optimizer_scheduler = config["scheduler"]
 
         BEST_LOSS = 999999
         convergence = 0
         logger.info(
             "Latent Dimensions: %d, Time window: %d, Batch Size: %d, Beta: %d, lr: %.4f\n"
-            % (ZDIMS, cfg["time_window"], TRAIN_BATCH_SIZE, BETA, LEARNING_RATE)
+            % (ZDIMS, config["time_window"], TRAIN_BATCH_SIZE, BETA, LEARNING_RATE)
         )
 
         # simple logging of diverse losses
@@ -632,24 +689,35 @@ def train_model(
                 softplus,
             ).to()
 
+        # Log model graph to TensorBoard
+        if writer:
+            try:
+                dummy_input = torch.randn(1, TEMPORAL_WINDOW // 2, NUM_FEATURES)
+                if CUDA:
+                    dummy_input = dummy_input.cuda()
+                writer.add_graph(model, dummy_input)
+                logger.info("Model graph logged to TensorBoard")
+            except Exception as e:
+                logger.warning(f"Could not log model graph to TensorBoard: {e}")
+
         if pretrained_weights:
             try:
                 logger.info(
                     "Loading pretrained weights from model: %s\n"
                     % os.path.join(
-                        cfg["project_path"],
+                        config["project_path"],
                         "model",
                         "best_model",
-                        pretrained_model + "_" + cfg["project_name"] + ".pkl",
+                        pretrained_model + "_" + config["project_name"] + ".pkl",
                     )
                 )
                 model.load_state_dict(
                     torch.load(
                         os.path.join(
-                            cfg["project_path"],
+                            config["project_path"],
                             "model",
                             "best_model",
-                            pretrained_model + "_" + cfg["project_name"] + ".pkl",
+                            pretrained_model + "_" + config["project_name"] + ".pkl",
                         )
                     )
                 )
@@ -659,10 +727,10 @@ def train_model(
                 logger.info(
                     "No file found at %s\n"
                     % os.path.join(
-                        cfg["project_path"],
+                        config["project_path"],
                         "model",
                         "best_model",
-                        pretrained_model + "_" + cfg["project_name"] + ".pkl",
+                        pretrained_model + "_" + config["project_name"] + ".pkl",
                     )
                 )
                 try:
@@ -675,13 +743,13 @@ def train_model(
 
         """ DATASET """
         trainset = SEQUENCE_DATASET(
-            os.path.join(cfg["project_path"], "data", "train", ""),
+            os.path.join(config["project_path"], "data", "train", ""),
             data="train_seq.npy",
             train=True,
             temporal_window=TEMPORAL_WINDOW,
         )
         testset = SEQUENCE_DATASET(
-            os.path.join(cfg["project_path"], "data", "train", ""),
+            os.path.join(config["project_path"], "data", "train", ""),
             data="test_seq.npy",
             train=False,
             temporal_window=TEMPORAL_WINDOW,
@@ -694,21 +762,21 @@ def train_model(
 
         if optimizer_scheduler:
             logger.info(
-                "Scheduler step size: %d, Scheduler gamma: %.2f\n" % (scheduler_step_size, cfg["scheduler_gamma"])
+                "Scheduler step size: %d, Scheduler gamma: %.2f\n" % (scheduler_step_size, config["scheduler_gamma"])
             )
             # Thanks to @alexcwsmith for the optimized scheduler contribution
             scheduler = ReduceLROnPlateau(
                 optimizer,
                 "min",
-                factor=cfg["scheduler_gamma"],
-                patience=cfg["scheduler_step_size"],
+                factor=config["scheduler_gamma"],
+                patience=config["scheduler_step_size"],
                 threshold=1e-3,
                 threshold_mode="rel",
-                verbose=True,
             )
         else:
             scheduler = StepLR(optimizer, step_size=scheduler_step_size, gamma=1, last_epoch=-1)
 
+        global_step = 0
         logger.info("Start training... ")
         for epoch in tqdm(
             range(1, EPOCHS),
@@ -717,7 +785,7 @@ def train_model(
             file=tqdm_logger_stream,
         ):
             # print("Epoch: %d" %epoch)
-            weight, train_loss, km_loss, kl_loss, mse_loss, fut_loss = train(
+            weight, train_loss, km_loss, kl_loss, mse_loss, fut_loss, global_step = train(
                 train_loader,
                 epoch,
                 model,
@@ -736,6 +804,8 @@ def train_model(
                 KMEANS_LAMBDA,
                 TRAIN_BATCH_SIZE,
                 noise,
+                writer,
+                global_step,
             )
             current_loss, test_loss, test_list = test(
                 test_loader,
@@ -748,7 +818,28 @@ def train_model(
                 KMEANS_LAMBDA,
                 FUTURE_DECODER,
                 TEST_BATCH_SIZE,
+                writer,
+                epoch,
             )
+
+            # TensorBoard epoch-level logging
+            if writer:
+                writer.add_scalar('epoch/train_loss', train_loss, epoch)
+                writer.add_scalar('epoch/train_mse', mse_loss, epoch)
+                writer.add_scalar('epoch/train_kl', kl_loss, epoch)
+                writer.add_scalar('epoch/train_kmeans', km_loss, epoch)
+                writer.add_scalar('epoch/kl_weight', weight, epoch)
+                writer.add_scalar('epoch/learning_rate', optimizer.param_groups[0]['lr'], epoch)
+
+                if FUTURE_DECODER:
+                    writer.add_scalar('epoch/train_future', fut_loss, epoch)
+
+                # Log parameter histograms (optional)
+                if TENSORBOARD_LOG_HISTOGRAMS:
+                    for name, param in model.named_parameters():
+                        if param.grad is not None:
+                            writer.add_histogram(f'parameters/{name}', param, epoch)
+                            writer.add_histogram(f'gradients/{name}', param.grad, epoch)
 
             # logging losses
             train_losses.append(train_loss)
@@ -766,10 +857,10 @@ def train_model(
                 torch.save(
                     model.state_dict(),
                     os.path.join(
-                        cfg["project_path"],
+                        config["project_path"],
                         "model",
                         "best_model",
-                        model_name + "_" + cfg["project_name"] + ".pkl",
+                        model_name + "_" + config["project_name"] + ".pkl",
                     ),
                 )
                 convergence = 0
@@ -781,15 +872,15 @@ def train_model(
                 torch.save(
                     model.state_dict(),
                     os.path.join(
-                        cfg["project_path"],
+                        config["project_path"],
                         "model",
                         "best_model",
                         "snapshots",
-                        model_name + "_" + cfg["project_name"] + "_epoch_" + str(epoch) + ".pkl",
+                        model_name + "_" + config["project_name"] + "_epoch_" + str(epoch) + ".pkl",
                     ),
                 )
 
-            if convergence > cfg["model_convergence"]:
+            if convergence > config["model_convergence"]:
                 logger.info("Finished training...")
                 logger.info(
                     "Model converged. Please check your model with vame.evaluate_model(). \n"
@@ -806,7 +897,7 @@ def train_model(
             # save logged losses
             np.save(
                 os.path.join(
-                    cfg["project_path"],
+                    config["project_path"],
                     "model",
                     "model_losses",
                     "train_losses_" + model_name,
@@ -815,7 +906,7 @@ def train_model(
             )
             np.save(
                 os.path.join(
-                    cfg["project_path"],
+                    config["project_path"],
                     "model",
                     "model_losses",
                     "test_losses_" + model_name,
@@ -824,7 +915,7 @@ def train_model(
             )
             np.save(
                 os.path.join(
-                    cfg["project_path"],
+                    config["project_path"],
                     "model",
                     "model_losses",
                     "kmeans_losses_" + model_name,
@@ -833,7 +924,7 @@ def train_model(
             )
             np.save(
                 os.path.join(
-                    cfg["project_path"],
+                    config["project_path"],
                     "model",
                     "model_losses",
                     "kl_losses_" + model_name,
@@ -842,7 +933,7 @@ def train_model(
             )
             np.save(
                 os.path.join(
-                    cfg["project_path"],
+                    config["project_path"],
                     "model",
                     "model_losses",
                     "weight_values_" + model_name,
@@ -851,7 +942,7 @@ def train_model(
             )
             np.save(
                 os.path.join(
-                    cfg["project_path"],
+                    config["project_path"],
                     "model",
                     "model_losses",
                     "mse_train_losses_" + model_name,
@@ -860,7 +951,7 @@ def train_model(
             )
             np.save(
                 os.path.join(
-                    cfg["project_path"],
+                    config["project_path"],
                     "model",
                     "model_losses",
                     "mse_test_losses_" + model_name,
@@ -869,7 +960,7 @@ def train_model(
             )
             np.save(
                 os.path.join(
-                    cfg["project_path"],
+                    config["project_path"],
                     "model",
                     "model_losses",
                     "fut_losses_" + model_name,
@@ -878,7 +969,7 @@ def train_model(
             )
             logger.info("\n")
 
-        if convergence < cfg["model_convergence"]:
+        if convergence < config["model_convergence"]:
             logger.info("Finished training...")
             logger.info(
                 "Model seems to have not reached convergence. You may want to check your model \n"
@@ -891,4 +982,7 @@ def train_model(
         logger.exception(f"An error occurred: {e}")
         raise e
     finally:
+        if writer:
+            writer.close()
+            logger.info("TensorBoard writer closed")
         logger_config.remove_file_handler()

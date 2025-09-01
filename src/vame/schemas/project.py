@@ -22,25 +22,13 @@ class ProjectSchema(BaseModel):
         ...,
         title="Project name",
     )
-    creation_datetime: str = Field(
-        default_factory=lambda: datetime.now(timezone.utc).isoformat(timespec="seconds"),
-        title="Creation datetime",
-    )
-    model_name: str = Field(
-        default="VAME",
-        title="Model name",
-    )
-    n_clusters: int = Field(
-        default=15,
-        title="Number of clusters",
-    )
-    pose_confidence: float = Field(
-        default=0.99,
-        title="Pose confidence",
-    )
     project_path: str = Field(
         ...,
         title="Project path",
+    )
+    creation_datetime: str = Field(
+        default_factory=lambda: datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        title="Creation datetime",
     )
     session_names: List[str] = Field(
         ...,
@@ -53,15 +41,28 @@ class ProjectSchema(BaseModel):
         title="Paths to pose series data in nwb files",
         default=None,
     )
+    project_random_state: int = Field(
+        title="Project random state",
+        default=42,
+    )
 
     # Data
     all_data: str = Field(
         default="yes",
         title="All data",
     )
+    keypoints: Optional[List[str]] = Field(
+        default=None,
+        title="Keypoint names",
+        description="Names of keypoints extracted from pose estimation data",
+    )
     egocentric_data: bool = Field(
         default=False,
         title="Egocentric data",
+    )
+    pose_confidence: float = Field(
+        default=0.99,
+        title="Pose confidence",
     )
     robust: bool = Field(
         default=True,
@@ -70,10 +71,6 @@ class ProjectSchema(BaseModel):
     iqr_factor: int = Field(
         default=4,
         title="IQR factor",
-    )
-    axis: str = Field(
-        default="None",
-        title="Axis",
     )
     savgol_filter: bool = Field(
         default=True,
@@ -93,6 +90,10 @@ class ProjectSchema(BaseModel):
     )
 
     # RNN model general hyperparameters
+    model_name: str = Field(
+        default="VAME",
+        title="Model name",
+    )
     pretrained_model: str = Field(
         default="None",
         title="Pretrained model",
@@ -179,28 +180,25 @@ class ProjectSchema(BaseModel):
     )
 
     # Segmentation
+    n_clusters: int = Field(
+        default=15,
+        title="Number of clusters",
+    )
     segmentation_algorithms: List[SegmentationAlgorithms] = Field(
         title="Segmentation algorithms",
-        default_factory=lambda: [
-            SegmentationAlgorithms.hmm,
-            SegmentationAlgorithms.kmeans,
-        ],
+        default_factory=lambda: ["hmm", "kmeans"],
     )
     hmm_trained: bool = Field(
         default=False,
         title="HMM trained",
     )
-    load_data: str = Field(
-        default="-PE-seq-clean",
-        title="Load data",
+    hmm_n_iter: int = Field(
+        title="Number of iterations for HMM",
+        default=100,
     )
     individual_segmentation: bool = Field(
         default=False,
         title="Individual segmentation",
-    )
-    random_state_kmeans: int = Field(
-        default=42,
-        title="Random state kmeans",
     )
     n_init_kmeans: int = Field(
         default=15,
@@ -221,10 +219,6 @@ class ProjectSchema(BaseModel):
     n_neighbors: int = Field(
         default=200,
         title="N neighbors",
-    )
-    random_state: int = Field(
-        default=42,
-        title="Random state",
     )
     num_points: int = Field(
         default=30000,
