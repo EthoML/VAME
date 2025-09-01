@@ -101,7 +101,7 @@ def get_latent_vectors(
         project_path: str,
         sessions: list,
         model_name: str,
-        seg, 
+        seg,
         n_clusters: int,
 ) -> List:
     """
@@ -138,7 +138,7 @@ def get_latent_vectors(
         )
         latent_vector = np.load(latent_vector_path)
         latent_vectors.append(latent_vector)
-    return latent_vectors    
+    return latent_vectors
 
 
 def get_motif_usage(
@@ -204,7 +204,7 @@ def save_session_data(
         Number of clusters.
     segmentation_algorithm: str
         Type of segmentation method, either 'kmeans or 'hmm'.
-    
+
     Returns
     -------
     None
@@ -242,7 +242,7 @@ def save_session_data(
 
     logger.info(f"Saved {session} segmentation data")
 
-    
+
 
 def same_segmentation(
     cfg: dict,
@@ -323,9 +323,9 @@ def same_segmentation(
         motif_usages.append(motif_usage)
         idx += file_len  # updating the session start index
 
-        save_session_data(cfg["project_path"], 
-                          session, cfg["model_name"], 
-                          session_labels, 
+        save_session_data(cfg["project_path"],
+                          session, cfg["model_name"],
+                          session_labels,
                           cluster_center,
                           latent_vectors[i],
                           motif_usage,
@@ -341,7 +341,7 @@ def individual_segmentation(
     n_clusters: int,
 ) -> Tuple:
     """
-    Apply individual segmentation to each session. 
+    Apply individual segmentation to each session.
 
     Parameters
     ----------
@@ -382,9 +382,9 @@ def individual_segmentation(
         labels.append(label)
         cluster_centers.append(clust_center)
 
-        save_session_data(cfg["project_path"], 
-                          session, cfg["model_name"], 
-                          labels[i], 
+        save_session_data(cfg["project_path"],
+                          session, cfg["model_name"],
+                          labels[i],
                           cluster_centers[i],
                           latent_vectors[i],
                           motif_usages[i],
@@ -400,8 +400,8 @@ def plot_motif_thresholding(
     results_path = os.path.join(config["project_path"], 'results')
     all_session_m_counts = []
     for s in config["session_names"]:
-        session_motif_count = np.load(os.path.join(results_path, 
-                                                   s, 
+        session_motif_count = np.load(os.path.join(results_path,
+                                                   s,
                                                    config["model_name"],
                                                    "kmeans-30",
                                                    "motif_usage_" + s + ".npy"))
@@ -409,7 +409,7 @@ def plot_motif_thresholding(
         total_motifs = np.sum(session_motif_count_desc)
         sess_motif_count_desc_perc = (session_motif_count_desc / total_motifs) * 100
         all_session_m_counts.append(sess_motif_count_desc_perc)
-        
+
         plt.plot(sess_motif_count_desc_perc, color='blue', linewidth=0.5)
 
     all_session_m_counts = np.array(all_session_m_counts)
@@ -423,7 +423,7 @@ def plot_motif_thresholding(
     plt.title("Motif Count as Percentage")
     plt.legend()
     plt.show()
-        
+
 @save_state(model=SegmentSessionFunctionSchema)
 def segment_session(
     config: dict,
@@ -494,7 +494,7 @@ def segment_session(
         for seg in segmentation_algorithms:
             logger.info("---------------------------------------------------------------------")
             logger.info(f"Running pose segmentation using {seg} algorithm...")
-            
+
             # Get sessions to analyze
             sessions = []
             if config["all_data"] in ["Yes", "yes"]:
@@ -512,7 +512,7 @@ def segment_session(
                                             "results",
                                             session,
                                             model_name,
-                                        ) 
+                                        )
                 if not os.path.exists(session_results_path):
                     os.mkdir(session_results_path)
 
@@ -522,14 +522,14 @@ def segment_session(
                     os.path.join(
                         str(project_path),
                         "results",
-                        sessions[0], 
+                        sessions[0],
                         model_name,
                         seg + "-" + str(n_clusters),
                     )
             ): #Checks if segment session was already processed before
                 new_segmentation = True
                 model = load_model(config, model_name, fixed)
-                latent_vectors = embedd_latent_vectors( 
+                latent_vectors = embedd_latent_vectors(
                     config,
                     sessions,
                     model,
@@ -545,13 +545,13 @@ def segment_session(
                     "Do you want to continue? A new segmentation will be computed! (yes/no) "
                 )
 
-                if flag == "yes": 
-                    new_segmentation = True 
+                if flag == "yes":
+                    new_segmentation = True
                     latent_vectors = get_latent_vectors(
-                        project_path, 
-                        sessions, 
-                        model_name, 
-                        seg, 
+                        project_path,
+                        sessions,
+                        model_name,
+                        seg,
                         n_clusters
                     )
 
@@ -581,13 +581,14 @@ def segment_session(
                     n_clusters=n_clusters,
                     segmentation_algorithm=seg,
                 )
-                logger.info(
-                    "You succesfully extracted motifs with VAME! From here, you can proceed running vame.community() "
-                    "to get the full picture of the spatiotemporal dynamic. To get an idea of the behavior captured by VAME, "
-                    "run vame.motif_videos(). This will leave you with short snippets of certain movements."
-                )
 
-        plot_motif_thresholding(config) 
+            logger.info(
+                "You succesfully extracted motifs with VAME! From here, you can proceed running vame.community() "
+                "to get the full picture of the spatiotemporal dynamic. To get an idea of the behavior captured by VAME, "
+                "run vame.motif_videos(). This will leave you with short snippets of certain movements."
+            )
+
+        plot_motif_thresholding(config)
 
     except Exception as e:
         logger.exception(f"An error occurred during pose segmentation: {e}")
