@@ -5,6 +5,7 @@ from .preprocessing import (
     visualize_preprocessing_cloud,
 )
 from .model import plot_loss
+from .motif import plot_motif_thresholding
 from .community import visualize_hierarchical_tree
 from .umap import visualize_umap
 from .report import generate_reports
