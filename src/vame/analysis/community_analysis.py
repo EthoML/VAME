@@ -205,7 +205,7 @@ def compute_transition_matrices(
 
 def sort_communities_by_position(tree: nx.Graph, communities: list) -> list:
     """
-    Sort communities by their left-to-right position in the tree visualization.
+    Sort communities and motifs by their left-to-right position in the tree visualization.
 
     Parameters
     ----------
@@ -217,7 +217,7 @@ def sort_communities_by_position(tree: nx.Graph, communities: list) -> list:
     Returns
     -------
     list
-        Communities sorted by their leftmost x-coordinate in the tree layout.
+        Communities and motifs sorted by their leftmost x-coordinate in the tree layout.
     """
     # Get node positions using the same layout as visualization
     pos = hierarchy_pos(
@@ -229,19 +229,28 @@ def sort_communities_by_position(tree: nx.Graph, communities: list) -> list:
         xcenter=50,
     )
 
-    # Calculate leftmost x-coordinate for each community
+    # Process each community: sort motifs within community and calculate community position
     community_positions = []
     for i, community in enumerate(communities):
-        # Find x-coordinates of all nodes in this community
-        x_coords = [pos[node][0] for node in community if node in pos]
-        if x_coords:
-            leftmost_x = min(x_coords)
-            community_positions.append((leftmost_x, i, community))
+        # Sort motifs within this community by their x-coordinate (left to right)
+        motif_positions = []
+        for motif in community:
+            if motif in pos:
+                motif_positions.append((pos[motif][0], motif))
 
-    # Sort by x-coordinate (left to right)
+        # Sort motifs by x-coordinate
+        motif_positions.sort(key=lambda x: x[0])
+        sorted_motifs = [motif for _, motif in motif_positions]
+
+        # Calculate community position (leftmost motif)
+        if motif_positions:
+            leftmost_x = motif_positions[0][0]  # First motif after sorting
+            community_positions.append((leftmost_x, i, sorted_motifs))
+
+    # Sort communities by their leftmost motif position (left to right)
     community_positions.sort(key=lambda x: x[0])
 
-    # Return sorted communities
+    # Return sorted communities with sorted motifs
     return [community for _, _, community in community_positions]
 
 
