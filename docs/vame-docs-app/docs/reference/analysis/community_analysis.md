@@ -93,7 +93,7 @@ Compute transition matrices for given files and labels.
 def sort_communities_by_position(tree: nx.Graph, communities: list) -> list
 ```
 
-Sort communities by their left-to-right position in the tree visualization.
+Sort communities and motifs by their left-to-right position in the tree visualization.
 
 **Parameters**
 
@@ -102,7 +102,7 @@ Sort communities by their left-to-right position in the tree visualization.
 
 **Returns**
 
-* `list`: Communities sorted by their leftmost x-coordinate in the tree layout.
+* `list`: Communities and motifs sorted by their leftmost x-coordinate in the tree layout.
 
 #### create\_cohort\_community\_bag
 
