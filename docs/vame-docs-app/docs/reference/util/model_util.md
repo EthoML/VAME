@@ -7,6 +7,27 @@ title: util.model_util
 
 #### logger
 
+#### load\_training\_metadata
+
+```python
+def load_training_metadata(config: dict) -> dict
+```
+
+Load training metadata to get keypoints used during training.
+
+**Parameters**
+
+* **config** (`dict`): Configuration dictionary.
+
+**Returns**
+
+* `dict`: Training metadata containing keypoints_used and other parameters.
+
+**Raises**
+
+* `FileNotFoundError`: If metadata.json file is not found.
+* `ValueError`: If metadata is invalid or missing required fields.
+
 #### load\_model
 
 ```python

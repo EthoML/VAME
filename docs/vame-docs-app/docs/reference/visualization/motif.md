@@ -3,22 +3,13 @@ sidebar_label: motif
 title: visualization.motif
 ---
 
-#### visualize\_motif\_tree
+#### plot\_motif\_thresholding
 
 ```python
-def visualize_motif_tree(
-        config: dict, segmentation_algorithm: Literal["hmm",
-                                                      "kmeans"]) -> None
+def plot_motif_thresholding(config: dict,
+                            segmentation_algorithm: Literal["hmm",
+                                                            "kmeans"] = "hmm",
+                            n_clusters: int | None = None,
+                            threshold: float = 1.0) -> None
 ```
-
-Visualizes the motif tree.
-
-**Parameters**
-
-* **config** (`dict`): Configuration dictionary.
-* **segmentation_algorithm** (`Literal["hmm", "kmeans"]`): Segmentation algorithm.
-
-**Returns**
-
-* `None`
 
