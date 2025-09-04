@@ -80,11 +80,17 @@ def traindata_aligned(
         keypoints = ds.keypoints.values
         if keypoints_to_include is not None:
             if any(k not in keypoints for k in keypoints_to_include):
-                raise ValueError("Some keypoints in `keypoints_to_include` are not present in the dataset.")
+                raise ValueError(
+                    "Some keypoints in `keypoints_to_include` are not present in the dataset.",
+                    f"Available keypoints are: {keypoints}",
+                )
             keypoints = keypoints_to_include
         elif keypoints_to_exclude is not None:
             if any(k not in keypoints for k in keypoints_to_exclude):
-                raise ValueError("Some keypoints in `keypoints_to_exclude` are not present in the dataset.")
+                raise ValueError(
+                    "Some keypoints in `keypoints_to_exclude` are not present in the dataset.",
+                    f"Available keypoints are: {keypoints}",
+                )
             keypoints = [k for k in keypoints if k not in keypoints_to_exclude]
 
         # Format the data for the RNN model and get metadata
