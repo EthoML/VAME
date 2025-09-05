@@ -208,6 +208,18 @@ eval_plot_path = Path(config_data["project_path"]) / "model" / "evaluate" / "fut
 display(Image(filename=eval_plot_path))
 ```
 
+You can visualize the motifs usage across sessions, and compare against a minimal usage threshold:
+
+```python
+from vame.visualization import visualize_motif_thresholding
+
+visualize_motif_thresholding(
+    config=config_data,
+    segmentation_algorithm="hmm",
+    threshold=1.0,
+)
+```
+
 After creating community clusters for your project, you can visualize the hierarchical tree:
 
 ```python
