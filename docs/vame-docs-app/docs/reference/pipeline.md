@@ -273,6 +273,30 @@ Visualizes the model losses.
 
 * `None`
 
+#### visualize\_motif\_thresholding
+
+```python
+def visualize_motif_thresholding(
+    segmentation_algorithm: Literal["hmm", "kmeans"] = "hmm",
+    n_clusters: Optional[int] = None,
+    threshold: float = 1.0,
+    show_figure: bool = True,
+    save_to_file: bool = False,
+    fig_size: tuple = (10, 6)) -> None
+```
+
+Visualizes the motif usage with thresholding.
+
+**Parameters**
+
+* **segmentation_algorithm** (`Literal["hmm", "kmeans"], optional`): Segmentation algorithm, by default &quot;hmm&quot;.
+* **n_clusters** (`Optional[int], optional`): Number of clusters, by default None.
+* **threshold** (`float, optional`): Threshold, by default 1.0.
+
+**Returns**
+
+* `None`
+
 #### visualize\_hierarchical\_tree
 
 ```python
