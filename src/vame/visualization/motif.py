@@ -4,16 +4,43 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-def plot_motif_thresholding(
+def visualize_motif_thresholding(
     config: dict,
     segmentation_algorithm: Literal["hmm", "kmeans"] = "hmm",
     n_clusters: int | None = None,
-    threshold: float = 1.0
+    threshold: float = 1.0,
+    show_figure: bool = True,
+    save_to_file: bool = False,
+    fig_size: tuple = (10, 6),
 ) -> None:
+    """
+    Visualizes the motif usage with thresholding.
+
+    Parameters
+    ----------
+    segmentation_algorithm : Literal["hmm", "kmeans"], optional
+        Segmentation algorithm, by default "hmm".
+    n_clusters : Optional[int], optional
+        Number of clusters, by default None. If None, it uses the value from config["n_clusters"].
+    threshold : float, optional
+        Threshold, by default 1.0.
+    show_figure : bool, optional
+        Whether to show the figure, by default True.
+    save_to_file : bool, optional
+        Whether to save the figure to file, by default False.
+    fig_size : tuple, optional
+        Figure size, by default (10, 6).
+
+    Returns
+    -------
+    None
+    """
     results_path = Path(config["project_path"]) / 'results'
 
     if n_clusters is None:
         n_clusters = config["n_clusters"]
+
+    fig = plt.figure(figsize=fig_size)
 
     all_session_m_counts = []
     for s in config["session_names"]:
@@ -35,4 +62,13 @@ def plot_motif_thresholding(
     plt.ylabel("Motif Usage in Percentage (%)")
     plt.title("Sorted Motif Usage")
     plt.legend()
-    plt.show()
+
+    if save_to_file:
+        save_path = Path(config["project_path"]) / "reports" / "figures"
+        save_path.mkdir(parents=True, exist_ok=True)
+        plt.savefig(save_path / f"motif_thresholding_{segmentation_algorithm}_{n_clusters}.png")
+
+    if show_figure:
+        plt.show()
+    else:
+        plt.close(fig)

@@ -715,7 +715,6 @@ def segment_session(
                 "to get the full picture of the spatiotemporal dynamic. To get an idea of the behavior captured by VAME, "
                 "run vame.motif_videos(). This will leave you with short snippets of certain movements."
             )
-
             logger.info("To visualize the average motif usage across sessions, run vame.visualization.plot_motif_thresholding.")
 
     except Exception as e:
