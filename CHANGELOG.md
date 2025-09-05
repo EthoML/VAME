@@ -2,9 +2,13 @@
 
 ### Fixes
 
+- Correct dendogram motif ordering ([Issue #175](https://github.com/EthoML/VAME/issues/175))
+
 ### Features
 
 - Optional to remove body parts from training ([Issue #168](https://github.com/EthoML/VAME/issues/168))
+- Motif thresholding plot ([Issue #45](https://github.com/EthoML/VAME/issues/45))
+- Uses project-wide seed in the model training and evaluation modules
 
 ### Others
 
