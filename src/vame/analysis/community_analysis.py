@@ -11,7 +11,7 @@ from vame.analysis.tree_hierarchy import (
     bag_nodes_by_cutline,
 )
 from vame.util.cli import get_sessions_from_user_input
-from vame.visualization.community import draw_tree
+from vame.visualization.community import draw_tree, hierarchy_pos
 from vame.schemas.states import save_state, CommunityFunctionSchema
 from vame.schemas.project import SegmentationAlgorithms
 from vame.logging.logger import VameLogger
@@ -203,6 +203,57 @@ def compute_transition_matrices(
     return transition_matrices
 
 
+def sort_communities_by_position(tree: nx.Graph, communities: list) -> list:
+    """
+    Sort communities and motifs by their left-to-right position in the tree visualization.
+
+    Parameters
+    ----------
+    tree : nx.Graph
+        The hierarchical tree.
+    communities : list
+        List of community bags (each containing motif indices).
+
+    Returns
+    -------
+    list
+        Communities and motifs sorted by their leftmost x-coordinate in the tree layout.
+    """
+    # Get node positions using the same layout as visualization
+    pos = hierarchy_pos(
+        G=tree,
+        root="Root",
+        width=10.0,
+        vert_gap=0.1,
+        vert_loc=0,
+        xcenter=50,
+    )
+
+    # Process each community: sort motifs within community and calculate community position
+    community_positions = []
+    for i, community in enumerate(communities):
+        # Sort motifs within this community by their x-coordinate (left to right)
+        motif_positions = []
+        for motif in community:
+            if motif in pos:
+                motif_positions.append((pos[motif][0], motif))
+
+        # Sort motifs by x-coordinate
+        motif_positions.sort(key=lambda x: x[0])
+        sorted_motifs = [motif for _, motif in motif_positions]
+
+        # Calculate community position (leftmost motif)
+        if motif_positions:
+            leftmost_x = motif_positions[0][0]  # First motif after sorting
+            community_positions.append((leftmost_x, i, sorted_motifs))
+
+    # Sort communities by their leftmost motif position (left to right)
+    community_positions.sort(key=lambda x: x[0])
+
+    # Return sorted communities with sorted motifs
+    return [community for _, _, community in community_positions]
+
+
 def create_cohort_community_bag(
     config: dict,
     motif_labels: List[np.ndarray],
@@ -270,6 +321,8 @@ def create_cohort_community_bag(
             cutline=cut_tree,
             root="Root",
         )
+        # Sort communities by their left-to-right position in the tree visualization
+        communities_all = sort_communities_by_position(T, communities_all)
         logger.info("Communities bag:")
         for ci, comm in enumerate(communities_all):
             logger.info(f"Community {ci}: {comm}")
@@ -279,12 +332,16 @@ def create_cohort_community_bag(
         while flag_1 == "no":
             cutline = int(input("Where do you want to cut the Tree? 0/1/2/3/..."))
             # community_bag = traverse_tree_cutline(T, cutline=cutline)
-            community_bag = bag_nodes_by_cutline(
+            communities_all = bag_nodes_by_cutline(
                 tree=T,
                 cutline=cutline,
                 root="Root",
             )
-            logger.info(community_bag)
+            # Sort communities by their left-to-right position in the tree visualization
+            communities_all = sort_communities_by_position(T, communities_all)
+            logger.info("Communities bag:")
+            for ci, comm in enumerate(communities_all):
+                logger.info(f"Community {ci}: {comm}")
             flag_2 = input("\nAre all motifs in the list? (yes/no/restart)")
             if flag_2 == "no":
                 while flag_2 == "no":
@@ -292,16 +349,17 @@ def create_cohort_community_bag(
                     if add == "ext":
                         motif_idx = int(input("Which motif number? "))
                         list_idx = int(input("At which position in the list? (pythonic indexing starts at 0) "))
-                        community_bag[list_idx].append(motif_idx)
+                        communities_all[list_idx].append(motif_idx)
                     if add == "end":
                         motif_idx = int(input("Which motif number? "))
-                        community_bag.append([motif_idx])
-                        logger.info(community_bag)
+                        communities_all.append([motif_idx])
+                        logger.info("Communities bag:")
+                        for ci, comm in enumerate(communities_all):
+                            logger.info(f"Community {ci}: {comm}")
                     flag_2 = input("\nAre all motifs in the list? (yes/no/restart)")
             if flag_2 == "restart":
                 continue
             if flag_2 == "yes":
-                communities_all = community_bag
                 flag_1 = "yes"
     return communities_all
 
@@ -380,7 +438,7 @@ def save_cohort_community_labels_per_session(
 @save_state(model=CommunityFunctionSchema)
 def community(
     config: dict,
-    cut_tree: int | None = None,
+    cut_tree: int = 3,
     save_logs: bool = True,
 ) -> None:
     """

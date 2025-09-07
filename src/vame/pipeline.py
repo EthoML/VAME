@@ -10,6 +10,7 @@ from vame.visualization import (
     visualize_preprocessing_timeseries,
     visualize_preprocessing_cloud,
     plot_loss,
+    visualize_motif_thresholding,
     visualize_hierarchical_tree,
     visualize_umap,
     generate_reports,
@@ -406,6 +407,41 @@ class VAMEPipeline:
             show_figure=show_figure,
         )
 
+    def visualize_motif_thresholding(
+        self,
+        segmentation_algorithm: Literal["hmm", "kmeans"] = "hmm",
+        n_clusters: Optional[int] = None,
+        threshold: float = 1.0,
+        show_figure: bool = True,
+        save_to_file: bool = False,
+        fig_size: tuple = (10, 6),
+    ) -> None:
+        """
+        Visualizes the motif usage with thresholding.
+
+        Parameters
+        ----------
+        segmentation_algorithm : Literal["hmm", "kmeans"], optional
+            Segmentation algorithm, by default "hmm".
+        n_clusters : Optional[int], optional
+            Number of clusters, by default None.
+        threshold : float, optional
+            Threshold, by default 1.0.
+
+        Returns
+        -------
+        None
+        """
+        visualize_motif_thresholding(
+            config=self.config,
+            segmentation_algorithm=segmentation_algorithm,
+            n_clusters=n_clusters,
+            threshold=threshold,
+            show_figure=show_figure,
+            save_to_file=save_to_file,
+            fig_size=fig_size,
+        )
+
     def visualize_hierarchical_tree(
         self,
         segmentation_algorithm: Literal["hmm", "kmeans"],
@@ -429,20 +465,25 @@ class VAMEPipeline:
 
     def visualize_umap(
         self,
-        label: Literal["community", "motif"] = "community",
-        segmentation_algorithm: Literal["hmm", "kmeans"] = "hmm",
-        show_figure: bool = False,
+        num_points: int = 30_000,
         save_to_file: bool = True,
+        show_figure: Literal["none", "matplotlib", "plotly", "all"] = "none",
     ) -> None:
         """
         Visualizes the UMAP plot.
 
         Parameters
         ----------
-        label : Literal["community", "motif"], optional
-            Label to visualize, by default "community".
-        segmentation_algorithm : Literal["hmm", "kmeans"], optional
-            Segmentation algorithm, by default "hmm".
+        num_points : int, optional
+            Number of data points to visualize. Default is 30,000.
+        save_to_file : bool, optional
+            Save the figure to file. Default is True.
+        show_figure : Literal["none", "matplotlib", "plotly", "all"], optional
+            Show the figure. Default is "none".
+            - "none": do not show
+            - "matplotlib": show with matplotlib
+            - "plotly": show with plotly
+            - "all": show with both matplotlib and plotly
 
         Returns
         -------
@@ -450,8 +491,9 @@ class VAMEPipeline:
         """
         visualize_umap(
             config=self.config,
-            label=label,
-            segmentation_algorithm=segmentation_algorithm,
+            num_points=num_points,
+            save_to_file=save_to_file,
+            show_figure=show_figure,
         )
 
     def report(self) -> None:

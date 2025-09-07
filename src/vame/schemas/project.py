@@ -196,10 +196,6 @@ class ProjectSchema(BaseModel):
         title="Number of iterations for HMM",
         default=100,
     )
-    load_data: str = Field(
-        default="-PE-seq-clean",
-        title="Load data",
-    )
     individual_segmentation: bool = Field(
         default=False,
         title="Individual segmentation",

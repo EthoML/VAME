@@ -76,7 +76,7 @@ ds
 
 ## Run the pipeline
 
-Now you can run the pipeline. At this point, you should pass the names of the pose estimation keypoints to be used for egocentric alignment.
+Now you can run the pipeline. At this point, you should pass the names of the pose estimation keypoints to be used for egocentric alignment. You can also pass other preprocessing and training set arguments.
 
 Note: The pipeline will take some time to run, depending on the size of the dataset, number of epochs, and if you are using a GPU or not.
 
@@ -85,7 +85,12 @@ preprocessing_kwargs = {
     "centered_reference_keypoint": "snout",
     "orientation_reference_keypoint": "tailbase",
 }
-pipeline.run_pipeline(preprocessing_kwargs=preprocessing_kwargs)
+trainingset_kwargs = {"test_fraction": 0.1}
+
+pipeline.run_pipeline(
+    preprocessing_kwargs=preprocessing_kwargs,
+    trainingset_kwargs=trainingset_kwargs,
+)
 ```
 
 ## Visualize the results
@@ -107,15 +112,11 @@ pipeline.visualize_model_losses(
 ```
 
 ```python
-pipeline.visualize_motif_tree(segmentation_algorithm="hmm")
+pipeline.visualize_hierarchical_tree(segmentation_algorithm="hmm")
 ```
 
 ```python
-pipeline.visualize_umap(
-    label="community",
-    segmentation_algorithm="hmm",
-    show_figure=True,
-)
+pipeline.visualize_umap(show_figure="plotly")
 ```
 
 ## Produce the pipeline report

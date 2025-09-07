@@ -31,6 +31,14 @@ def test_pipeline(setup_pipeline):
     assert save_fig_path_1.exists()
     assert save_fig_path_2.exists()
 
+    # Visualizations
+    pipeline.visualize_motif_thresholding(
+        show_figure=False,
+        save_to_file=True,
+    )
+    save_fig_path_3 = Path(project_path) / "reports" / "figures" / f"motif_thresholding_hmm_{pipeline.config['n_clusters']}.png"
+    assert save_fig_path_3.exists()
+
     # Test export to nwb
     export_to_nwb(config=pipeline.config)
     model_name = pipeline.config["model_name"]

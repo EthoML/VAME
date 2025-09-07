@@ -114,10 +114,13 @@ vame.preprocessing(
 
 At this point, we will prepare the data for training the VAME model, run the training and evaluate the model.
 
-We start by splitting the input data into train and test sets:
+We start by splitting the input data into train and test sets, and excluding any keypoints we don't want to use for model training:
 
 ```python
-vame.create_trainset(config=config_data)
+vame.create_trainset(
+    config=config_data,
+    keypoints_to_exclude=["tail_end"],
+)
 ```
 
 Now we can train the VAME model. This migth take a while, depending on dataset size and your hardware.
@@ -203,6 +206,18 @@ from IPython.display import Image, display
 
 eval_plot_path = Path(config_data["project_path"]) / "model" / "evaluate" / "future_reconstruction.png"
 display(Image(filename=eval_plot_path))
+```
+
+You can visualize the motifs usage across sessions, and compare against a minimal usage threshold:
+
+```python
+from vame.visualization import visualize_motif_thresholding
+
+visualize_motif_thresholding(
+    config=config_data,
+    segmentation_algorithm="hmm",
+    threshold=1.0,
+)
 ```
 
 After creating community clusters for your project, you can visualize the hierarchical tree:

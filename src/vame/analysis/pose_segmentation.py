@@ -13,7 +13,7 @@ from vame.logging.logger import VameLogger, TqdmToLogger
 from vame.model.rnn_model import RNN_VAE
 from vame.io.load_poses import read_pose_estimation_file
 from vame.util.cli import get_sessions_from_user_input
-from vame.util.model_util import load_model
+from vame.util.model_util import load_model, load_training_metadata
 from vame.util.auxiliary import check_torch_device
 from vame.preprocessing.to_model import format_xarray_for_rnn
 
@@ -57,12 +57,19 @@ def embed_latent_vectors(
     model_name = config["model_name"]
     temp_win = config["time_window"]
     num_features = config["num_features"]
-    if not fixed:
-        num_features = num_features - 3
     model = None
 
     logger.info("---------------------------------------------------------------------")
     logger.info(f"Embedding latent vectors for {model_name} model")
+
+    # Load training metadata to get keypoints used during training
+    try:
+        training_metadata = load_training_metadata(config)
+        keypoints_used = training_metadata["parameters"]["keypoints_used"]
+    except (FileNotFoundError, ValueError) as e:
+        logger.warning(f"Could not load training metadata: {e}")
+        logger.warning("Using all available keypoints - this may cause shape mismatch errors")
+        keypoints_used = None
 
     latent_vector_sessions = []
     for session in sessions:
@@ -86,10 +93,11 @@ def embed_latent_vectors(
         file_path = str(Path(project_path) / "data" / "processed" / f"{session}_processed.nc")
         _, _, ds = read_pose_estimation_file(file_path=file_path)
 
-        # Format the data for the RNN model
-        data = format_xarray_for_rnn(
+        # Format the data for the RNN model using the same keypoints as training
+        data, _ = format_xarray_for_rnn(
             ds=ds,
             read_from_variable=read_from_variable,
+            keypoints=keypoints_used,
         )
 
         latent_vector_list = []
@@ -159,12 +167,19 @@ def embed_latent_vectors_optimized(
     model_name = config["model_name"]
     temp_win = config["time_window"]
     num_features = config["num_features"]
-    if not fixed:
-        num_features = num_features - 3
     model = None
 
     logger.info("---------------------------------------------------------------------")
     logger.info(f"Embedding latent vectors for {model_name} model (OPTIMIZED)")
+
+    # Load training metadata to get keypoints used during training
+    try:
+        training_metadata = load_training_metadata(config)
+        keypoints_used = training_metadata["parameters"]["keypoints_used"]
+    except (FileNotFoundError, ValueError) as e:
+        logger.warning(f"Could not load training metadata: {e}")
+        logger.warning("Using all available keypoints - this may cause shape mismatch errors")
+        keypoints_used = None
 
     latent_vector_sessions = []
 
@@ -195,10 +210,11 @@ def embed_latent_vectors_optimized(
         file_path = str(Path(project_path) / "data" / "processed" / f"{session}_processed.nc")
         _, _, ds = read_pose_estimation_file(file_path=file_path)
 
-        # Format the data for the RNN model
-        data = format_xarray_for_rnn(
+        # Format the data for the RNN model using the same keypoints as training
+        data, _ = format_xarray_for_rnn(
             ds=ds,
             read_from_variable=read_from_variable,
+            keypoints=keypoints_used,
         )
 
         # Calculate number of windows
@@ -699,6 +715,7 @@ def segment_session(
                 "to get the full picture of the spatiotemporal dynamic. To get an idea of the behavior captured by VAME, "
                 "run vame.motif_videos(). This will leave you with short snippets of certain movements."
             )
+            logger.info("To visualize the average motif usage across sessions, run vame.visualization.plot_motif_thresholding.")
 
     except Exception as e:
         logger.exception(f"An error occurred during pose segmentation: {e}")

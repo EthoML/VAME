@@ -163,14 +163,12 @@ def eval_temporal(
     -------
     None
     """
-    SEED = 19
+    SEED = config["project_random_state"]
     ZDIMS = config["zdims"]
     FUTURE_DECODER = config["prediction_decoder"]
     TEMPORAL_WINDOW = config["time_window"] * 2
     FUTURE_STEPS = config["prediction_steps"]
     NUM_FEATURES = config["num_features"]
-    if not fixed:
-        NUM_FEATURES = NUM_FEATURES - 3
     TEST_BATCH_SIZE = 64
     hidden_size_layer_1 = config["hidden_size_layer_1"]
     hidden_size_layer_2 = config["hidden_size_layer_2"]
