@@ -7,7 +7,7 @@ title: model.evaluate
 
 #### logger
 
-#### use\_gpu
+#### DEVICE
 
 #### create\_reconstruction\_plot
 
@@ -48,7 +48,6 @@ Saves the plot to:
 
 ```python
 def eval_temporal(config: dict,
-                  use_gpu: bool,
                   model_name: str,
                   fixed: bool,
                   snapshot: Optional[str] = None,
@@ -60,7 +59,6 @@ Evaluate the temporal aspects of the trained model.
 **Parameters**
 
 * **config** (`dict`): Configuration dictionary.
-* **use_gpu** (`bool`): Flag indicating whether to use GPU for evaluation.
 * **model_name** (`str`): Name of the model.
 * **fixed** (`bool`): Flag indicating whether the data is fixed or not.
 * **snapshot** (`str, optional`): Path to the model snapshot. Defaults to None.

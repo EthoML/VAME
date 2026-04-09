@@ -19,11 +19,19 @@ Gets the VAME package version from pyproject.toml.
 
 * `str`: The version string.
 
-#### check\_torch\_device
+#### get\_device
 
 ```python
-def check_torch_device() -> bool
+def get_device() -> torch.device
 ```
+
+Detect the best available compute device.
+
+Checks for CUDA, then MPS (Apple Silicon), then falls back to CPU.
+
+**Returns**
+
+* `torch.device`: The selected device.
 
 #### \_convert\_enums\_to\_values
 

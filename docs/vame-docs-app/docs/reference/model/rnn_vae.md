@@ -19,7 +19,7 @@ Log every N batches
 
 Set to True to log parameter histograms
 
-#### use\_gpu
+#### DEVICE
 
 #### reconstruction\_loss
 
