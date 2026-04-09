@@ -9,16 +9,13 @@ from vame.schemas.states import EvaluateModelFunctionSchema, save_state
 from vame.model.rnn_vae import RNN_VAE
 from vame.model.dataloader import SEQUENCE_DATASET
 from vame.logging.logger import VameLogger
+from vame.util.auxiliary import get_device
 
 
 logger_config = VameLogger(__name__)
 logger = logger_config.logger
 
-use_gpu = torch.cuda.is_available()
-if use_gpu:
-    pass
-else:
-    torch.device("cpu")
+DEVICE = get_device()
 
 
 def create_reconstruction_plot(
@@ -66,12 +63,8 @@ def create_reconstruction_plot(
     dataiter = iter(test_loader)
     x = next(dataiter)
     x = x.permute(0, 2, 1)
-    if use_gpu:
-        data = x[:, :seq_len_half, :].type("torch.FloatTensor").cuda()
-        data_fut = x[:, seq_len_half : seq_len_half + FUTURE_STEPS, :].type("torch.FloatTensor").cuda()
-    else:
-        data = x[:, :seq_len_half, :].type("torch.FloatTensor").to()
-        data_fut = x[:, seq_len_half : seq_len_half + FUTURE_STEPS, :].type("torch.FloatTensor").to()
+    data = x[:, :seq_len_half, :].float().to(DEVICE)
+    data_fut = x[:, seq_len_half : seq_len_half + FUTURE_STEPS, :].float().to(DEVICE)
     if FUTURE_DECODER:
         x_tilde, future, latent, mu, logvar = model(data)
 
@@ -135,7 +128,6 @@ def create_reconstruction_plot(
 
 def eval_temporal(
     config: dict,
-    use_gpu: bool,
     model_name: str,
     fixed: bool,
     snapshot: Optional[str] = None,
@@ -148,8 +140,6 @@ def eval_temporal(
     ----------
     config : dict
         Configuration dictionary.
-    use_gpu : bool
-        Flag indicating whether to use GPU for evaluation.
     model_name : str
         Name of the model.
     fixed : bool
@@ -182,63 +172,31 @@ def eval_temporal(
     filepath = os.path.join(config["project_path"], "model")
 
     seq_len_half = int(TEMPORAL_WINDOW / 2)
-    if use_gpu:
-        torch.cuda.manual_seed(SEED)
-        model = RNN_VAE(
-            TEMPORAL_WINDOW,
-            ZDIMS,
-            NUM_FEATURES,
-            FUTURE_DECODER,
-            FUTURE_STEPS,
-            hidden_size_layer_1,
-            hidden_size_layer_2,
-            hidden_size_rec,
-            hidden_size_pred,
-            dropout_encoder,
-            dropout_rec,
-            dropout_pred,
-            softplus,
-        ).cuda()
-        model.load_state_dict(
-            torch.load(
-                os.path.join(
-                    config["project_path"],
-                    "model",
-                    "best_model",
-                    model_name + "_" + config["project_name"] + ".pkl",
-                )
-            )
-        )
+    model = RNN_VAE(
+        TEMPORAL_WINDOW,
+        ZDIMS,
+        NUM_FEATURES,
+        FUTURE_DECODER,
+        FUTURE_STEPS,
+        hidden_size_layer_1,
+        hidden_size_layer_2,
+        hidden_size_rec,
+        hidden_size_pred,
+        dropout_encoder,
+        dropout_rec,
+        dropout_pred,
+        softplus,
+    ).to(DEVICE)
+    weights_path = os.path.join(
+        config["project_path"],
+        "model",
+        "best_model",
+        model_name + "_" + config["project_name"] + ".pkl",
+    )
+    if snapshot:
+        model.load_state_dict(torch.load(snapshot, map_location=DEVICE))
     else:
-        model = RNN_VAE(
-            TEMPORAL_WINDOW,
-            ZDIMS,
-            NUM_FEATURES,
-            FUTURE_DECODER,
-            FUTURE_STEPS,
-            hidden_size_layer_1,
-            hidden_size_layer_2,
-            hidden_size_rec,
-            hidden_size_pred,
-            dropout_encoder,
-            dropout_rec,
-            dropout_pred,
-            softplus,
-        ).to()
-        if not snapshot:
-            model.load_state_dict(
-                torch.load(
-                    os.path.join(
-                        config["project_path"],
-                        "model",
-                        "best_model",
-                        model_name + "_" + config["project_name"] + ".pkl",
-                    ),
-                    map_location=torch.device("cpu"),
-                )
-            )
-        elif snapshot:
-            model.load_state_dict(torch.load(snapshot), map_location=torch.device("cpu"))
+        model.load_state_dict(torch.load(weights_path, map_location=DEVICE))
     model.eval()  # toggle evaluation mode
 
     testset = SEQUENCE_DATASET(
@@ -309,20 +267,10 @@ def evaluate_model(
         model_name = config["model_name"]
         fixed = config["egocentric_data"]
 
-        use_gpu = torch.cuda.is_available()
-        if use_gpu:
-            logger.info("Using CUDA")
-            logger.info("GPU active: {}".format(torch.cuda.is_available()))
-            logger.info("GPU used: {}".format(torch.cuda.get_device_name(0)))
-        else:
-            torch.device("cpu")
-            logger.info("CUDA is not working, or a GPU is not found; using CPU!")
-
         logger.info(f"Evaluation of model: {model_name}")
         if not use_snapshots:
             eval_temporal(
                 config=config,
-                use_gpu=use_gpu,
                 model_name=model_name,
                 fixed=fixed,
             )
@@ -333,7 +281,6 @@ def evaluate_model(
                 epoch = snap.split("_")[-1]
                 eval_temporal(
                     config=config,
-                    use_gpu=use_gpu,
                     model_name=model_name,
                     fixed=fixed,
                     snapshot=fullpath,

@@ -14,7 +14,7 @@ from vame.model.rnn_model import RNN_VAE
 from vame.io.load_poses import read_pose_estimation_file
 from vame.util.cli import get_sessions_from_user_input
 from vame.util.model_util import load_model, load_training_metadata
-from vame.util.auxiliary import check_torch_device
+from vame.util.auxiliary import get_device
 from vame.preprocessing.to_model import format_xarray_for_rnn
 
 
@@ -86,7 +86,7 @@ def embed_latent_vectors(
 
         # Load the model, if not yet loaded
         if model is None:
-            use_gpu = check_torch_device()
+            device = get_device()
             model = load_model(config, model_name, fixed)
 
         # Read session data
@@ -105,10 +105,7 @@ def embed_latent_vectors(
             for i in tqdm.tqdm(range(data.shape[1] - temp_win + 1), file=tqdm_stream):
                 data_sample_np = data[:, i : temp_win + i].T
                 data_sample_np = np.reshape(data_sample_np, (1, temp_win, num_features))
-                if use_gpu:
-                    h_n = model.encoder(torch.from_numpy(data_sample_np).type("torch.FloatTensor").cuda())
-                else:
-                    h_n = model.encoder(torch.from_numpy(data_sample_np).type("torch.FloatTensor").to())
+                h_n = model.encoder(torch.from_numpy(data_sample_np).float().to(device))
                 mu, _, _ = model.lmbda(h_n)
                 latent_vector_list.append(mu.cpu().data.numpy())
 
@@ -198,12 +195,12 @@ def embed_latent_vectors_optimized(
 
         # Load the model, if not yet loaded
         if model is None:
-            use_gpu = check_torch_device()
+            device = get_device()
             model = load_model(config, model_name, fixed)
 
             # Model optimizations
             model.eval()  # Ensure model is in evaluation mode
-            if use_gpu:
+            if device.type == "cuda":
                 torch.backends.cudnn.benchmark = True  # Optimize for fixed input sizes
 
         # Read session data
@@ -272,8 +269,7 @@ def embed_latent_vectors_optimized(
                 # Convert to tensor
                 batch_tensor = torch.from_numpy(batch_windows).type("torch.FloatTensor")
 
-                if use_gpu:
-                    batch_tensor = batch_tensor.cuda()
+                batch_tensor = batch_tensor.to(device)
 
                 try:
                     # Process entire batch through encoder
@@ -287,14 +283,16 @@ def embed_latent_vectors_optimized(
                     if "out of memory" in str(e).lower():
                         # Reduce batch size and retry
                         logger.warning(f"GPU out of memory, reducing batch size from {batch_size}")
-                        torch.cuda.empty_cache()
+                        if device.type == "cuda":
+                            torch.cuda.empty_cache()
+                        elif device.type == "mps":
+                            torch.mps.empty_cache()
 
                         # Process windows one by one for this batch
                         for i in range(current_batch_size):
                             single_window = batch_windows[i:i+1]
                             single_tensor = torch.from_numpy(single_window).type("torch.FloatTensor")
-                            if use_gpu:
-                                single_tensor = single_tensor.cuda()
+                            single_tensor = single_tensor.to(device)
 
                             h_n = model.encoder(single_tensor)
                             mu, _, _ = model.lmbda(h_n)
@@ -303,8 +301,10 @@ def embed_latent_vectors_optimized(
                         raise e
 
                 # Clear GPU cache periodically
-                if use_gpu and batch_idx % 10 == 0:
+                if device.type == "cuda" and batch_idx % 10 == 0:
                     torch.cuda.empty_cache()
+                elif device.type == "mps" and batch_idx % 10 == 0:
+                    torch.mps.empty_cache()
 
         # Save latent vector to file
         np.save(latent_vector_path, latent_vectors)

@@ -14,6 +14,7 @@ from vame.model.dataloader import SEQUENCE_DATASET
 from vame.model.rnn_model import RNN_VAE
 from vame.schemas.states import TrainModelFunctionSchema, save_state
 from vame.logging.logger import VameLogger, TqdmToLogger
+from vame.util.auxiliary import get_device
 
 
 logger_config = VameLogger(__name__)
@@ -25,14 +26,7 @@ TENSORBOARD_ENABLED = True
 TENSORBOARD_LOG_FREQUENCY = 1  # Log every N batches
 TENSORBOARD_LOG_HISTOGRAMS = False  # Set to True to log parameter histograms
 
-# make sure torch uses cuda for GPU computing
-use_gpu = torch.cuda.is_available()
-if use_gpu:
-    logger.info("GPU detected")
-    logger.info(f"GPU used: {torch.cuda.get_device_name(0)}")
-else:
-    logger.info("No GPU found... proceeding with CPU (slow!)")
-    torch.device("cpu")
+DEVICE = get_device()
 
 
 def reconstruction_loss(
@@ -310,12 +304,8 @@ def train(
     for idx, data_item in enumerate(train_loader):
         data_item = Variable(data_item)
         data_item = data_item.permute(0, 2, 1)
-        if use_gpu:
-            data = data_item[:, :seq_len_half, :].type("torch.FloatTensor").cuda()
-            fut = data_item[:, seq_len_half : seq_len_half + future_steps, :].type("torch.FloatTensor").cuda()
-        else:
-            data = data_item[:, :seq_len_half, :].type("torch.FloatTensor").to()
-            fut = data_item[:, seq_len_half : seq_len_half + future_steps, :].type("torch.FloatTensor").to()
+        data = data_item[:, :seq_len_half, :].float().to(DEVICE)
+        fut = data_item[:, seq_len_half : seq_len_half + future_steps, :].float().to(DEVICE)
 
         if noise is True:
             data_gaussian = gaussian(data, True, seq_len_half)
@@ -469,10 +459,7 @@ def test(
             # we're only going to infer, so no autograd at all required
             data_item = Variable(data_item)
             data_item = data_item.permute(0, 2, 1)
-            if use_gpu:
-                data = data_item[:, :seq_len_half, :].type("torch.FloatTensor").cuda()
-            else:
-                data = data_item[:, :seq_len_half, :].type("torch.FloatTensor").to()
+            data = data_item[:, :seq_len_half, :].float().to(DEVICE)
 
             if future_decoder:
                 recon_images, _, latent, mu, logvar = model(data)
@@ -588,19 +575,10 @@ def train_model(
             logger.info(f"TensorBoard logging enabled. Log directory: {tb_log_dir}")
             logger.info("To view logs, run: tensorboard --logdir=%s --port=6006" % os.path.join(config["project_path"], "logs", "tensorboard"))
 
-        # make sure torch uses cuda for GPU computing
-        use_gpu = torch.cuda.is_available()
-        if use_gpu:
-            logger.info("Using CUDA")
-            logger.info("GPU active: {}".format(torch.cuda.is_available()))
-            logger.info("GPU used: {}".format(torch.cuda.get_device_name(0)))
-        else:
-            torch.device("cpu")
-            logger.info("warning, a GPU was not found... proceeding with CPU (slow!) \n")
+        device = get_device()
 
         # HYPERPARAMETERS
         # General
-        CUDA = use_gpu
         SEED = config["project_random_state"]
         TRAIN_BATCH_SIZE = config["batch_size"]
         TEST_BATCH_SIZE = int(config["batch_size"] / 4)
@@ -653,48 +631,26 @@ def train_model(
         fut_losses = []
 
         torch.manual_seed(SEED)
-        RNN = RNN_VAE
-        if CUDA:
-            torch.cuda.manual_seed(SEED)
-            model = RNN(
-                TEMPORAL_WINDOW,
-                ZDIMS,
-                NUM_FEATURES,
-                FUTURE_DECODER,
-                FUTURE_STEPS,
-                hidden_size_layer_1,
-                hidden_size_layer_2,
-                hidden_size_rec,
-                hidden_size_pred,
-                dropout_encoder,
-                dropout_rec,
-                dropout_pred,
-                softplus,
-            ).cuda()
-        else:  # cpu support ...
-            torch.cuda.manual_seed(SEED)
-            model = RNN(
-                TEMPORAL_WINDOW,
-                ZDIMS,
-                NUM_FEATURES,
-                FUTURE_DECODER,
-                FUTURE_STEPS,
-                hidden_size_layer_1,
-                hidden_size_layer_2,
-                hidden_size_rec,
-                hidden_size_pred,
-                dropout_encoder,
-                dropout_rec,
-                dropout_pred,
-                softplus,
-            ).to()
+        model = RNN_VAE(
+            TEMPORAL_WINDOW,
+            ZDIMS,
+            NUM_FEATURES,
+            FUTURE_DECODER,
+            FUTURE_STEPS,
+            hidden_size_layer_1,
+            hidden_size_layer_2,
+            hidden_size_rec,
+            hidden_size_pred,
+            dropout_encoder,
+            dropout_rec,
+            dropout_pred,
+            softplus,
+        ).to(device)
 
         # Log model graph to TensorBoard
         if writer:
             try:
-                dummy_input = torch.randn(1, TEMPORAL_WINDOW // 2, NUM_FEATURES)
-                if CUDA:
-                    dummy_input = dummy_input.cuda()
+                dummy_input = torch.randn(1, TEMPORAL_WINDOW // 2, NUM_FEATURES).to(device)
                 writer.add_graph(model, dummy_input)
                 logger.info("Model graph logged to TensorBoard")
             except Exception as e:

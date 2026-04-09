@@ -4,6 +4,7 @@ import torch
 from pathlib import Path
 from vame.logging.logger import VameLogger
 from vame.model.rnn_model import RNN_VAE
+from vame.util.auxiliary import get_device
 
 
 logger_config = VameLogger(__name__)
@@ -102,10 +103,8 @@ def load_model(config: dict, model_name: str, fixed: bool = True) -> RNN_VAE:
         dropout_pred,
         softplus,
     )
-    if torch.cuda.is_available():
-        model = model.cuda()
-    else:
-        model = model.cpu()
+    device = get_device()
+    model = model.to(device)
 
     model.load_state_dict(
         torch.load(
@@ -114,7 +113,8 @@ def load_model(config: dict, model_name: str, fixed: bool = True) -> RNN_VAE:
                 "model",
                 "best_model",
                 model_name + "_" + config["project_name"] + ".pkl",
-            )
+            ),
+            map_location=device,
         )
     )
     model.eval()
