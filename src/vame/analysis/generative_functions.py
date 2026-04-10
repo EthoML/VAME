@@ -7,7 +7,7 @@ from sklearn.mixture import GaussianMixture
 
 from vame.schemas.states import GenerativeModelFunctionSchema, save_state
 from vame.logging.logger import VameLogger
-from vame.util.auxiliary import read_config
+from vame.util.auxiliary import read_config, get_device
 from vame.util.model_util import load_model
 from vame.util.cli import get_sessions_from_user_input
 from vame.schemas.project import SegmentationAlgorithms
@@ -56,11 +56,8 @@ def random_generative_samples_motif(
         density_sample = gm.sample(10)
 
         # generate image via model decoder
-        tensor_sample = torch.from_numpy(density_sample[0]).type("torch.FloatTensor")
-        if torch.cuda.is_available():
-            tensor_sample = tensor_sample.cuda()
-        else:
-            tensor_sample = tensor_sample.cpu()
+        device = get_device()
+        tensor_sample = torch.from_numpy(density_sample[0]).float().to(device)
 
         decoder_inputs = tensor_sample.unsqueeze(2).repeat(1, 1, time_window)
         decoder_inputs = decoder_inputs.permute(0, 2, 1)
@@ -107,11 +104,8 @@ def random_generative_samples(
     density_sample = gm.sample(10)
 
     # generate image via model decoder
-    tensor_sample = torch.from_numpy(density_sample[0]).type("torch.FloatTensor")
-    if torch.cuda.is_available():
-        tensor_sample = tensor_sample.cuda()
-    else:
-        tensor_sample = tensor_sample.cpu()
+    device = get_device()
+    tensor_sample = torch.from_numpy(density_sample[0]).float().to(device)
 
     decoder_inputs = tensor_sample.unsqueeze(2).repeat(1, 1, time_window)
     decoder_inputs = decoder_inputs.permute(0, 2, 1)
@@ -154,11 +148,8 @@ def random_reconstruction_samples(
     time_window = config["time_window"]
 
     rnd = np.random.choice(latent_vector.shape[0], 10)
-    tensor_sample = torch.from_numpy(latent_vector[rnd]).type("torch.FloatTensor")
-    if torch.cuda.is_available():
-        tensor_sample = tensor_sample.cuda()
-    else:
-        tensor_sample = tensor_sample.cpu()
+    device = get_device()
+    tensor_sample = torch.from_numpy(latent_vector[rnd]).float().to(device)
 
     decoder_inputs = tensor_sample.unsqueeze(2).repeat(1, 1, time_window)
     decoder_inputs = decoder_inputs.permute(0, 2, 1)
@@ -201,11 +192,8 @@ def visualize_cluster_center(
     time_window = config["time_window"]
     animal_centers = cluster_center
 
-    tensor_sample = torch.from_numpy(animal_centers).type("torch.FloatTensor")
-    if torch.cuda.is_available():
-        tensor_sample = tensor_sample.cuda()
-    else:
-        tensor_sample = tensor_sample.cpu()
+    device = get_device()
+    tensor_sample = torch.from_numpy(animal_centers).float().to(device)
     decoder_inputs = tensor_sample.unsqueeze(2).repeat(1, 1, time_window)
     decoder_inputs = decoder_inputs.permute(0, 2, 1)
 

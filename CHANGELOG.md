@@ -1,3 +1,11 @@
+# v0.12.1
+
+### Fixes
+
+- Add Apple Silicon (MPS) GPU support
+- Centralize device detection in `get_device()` utility
+
+
 # v0.12.0
 
 ### Fixes

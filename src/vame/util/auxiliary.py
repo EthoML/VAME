@@ -1,6 +1,7 @@
 from importlib.metadata import version
 import os
 import json
+import torch
 import yaml
 import ruamel.yaml
 from pathlib import Path
@@ -27,18 +28,26 @@ def get_version() -> str:
     return version("vame-py")
 
 
-def check_torch_device() -> bool:
-    import torch
+def get_device() -> torch.device:
+    """Detect the best available compute device.
 
-    use_gpu = torch.cuda.is_available()
-    if use_gpu:
-        logger.info("Using CUDA")
-        logger.info("GPU active: {}".format(torch.cuda.is_available()))
-        logger.info("GPU used: {}".format(torch.cuda.get_device_name(0)))
+    Checks for CUDA, then MPS (Apple Silicon), then falls back to CPU.
+
+    Returns
+    -------
+    torch.device
+        The selected device.
+    """
+    if torch.cuda.is_available():
+        device = torch.device("cuda")
+        logger.info(f"Using CUDA — GPU: {torch.cuda.get_device_name(0)}")
+    elif torch.backends.mps.is_available():
+        device = torch.device("mps")
+        logger.info("Using MPS (Apple Silicon GPU)")
     else:
-        logger.info("CUDA is not working! Attempting to use the CPU...")
-        torch.device("cpu")
-    return use_gpu
+        device = torch.device("cpu")
+        logger.info("No GPU found, using CPU")
+    return device
 
 
 def _convert_enums_to_values(obj: Any) -> Any:
