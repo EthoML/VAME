@@ -29,13 +29,14 @@ class VAMEPipeline:
         self,
         project_name: str,
         poses_estimations: List[str],
-        source_software: Literal["DeepLabCut", "SLEAP", "LightningPose"],
+        source_software: Literal["DeepLabCut", "SLEAP", "LightningPose", "NWB"],
         working_directory: str = ".",
         videos: Optional[List[str]] = None,
         video_type: str = ".mp4",
         fps: Optional[float] = None,
         copy_videos: bool = False,
-        paths_to_pose_nwb_series_data: Optional[str] = None,
+        processing_module_key: str = "behavior",
+        pose_estimation_key: str = "PoseEstimation",
         config_kwargs: Optional[dict] = None,
         save_logs=True,
     ) -> None:
@@ -50,8 +51,9 @@ class VAMEPipeline:
             List of video files.
         poses_estimations : List[str]
             List of pose estimation files.
-        source_software : Literal["DeepLabCut", "SLEAP", "LightningPose"]
-            Source software used for pose estimation.
+        source_software : Literal["DeepLabCut", "SLEAP", "LightningPose", "NWB"]
+            Source software used for pose estimation. Use "NWB" to read an
+            ``ndx-pose`` PoseEstimation from an NWB file.
         working_directory : str, optional
             Working directory, by default ".".
         video_type : str, optional
@@ -60,8 +62,13 @@ class VAMEPipeline:
             Sampling rate of the videos. If not passed, it will be estimated from the video file. By default None.
         copy_videos : bool, optional
             Copy videos, by default False.
-        paths_to_pose_nwb_series_data : Optional[str], optional
-            Path to pose NWB series data, by default None.
+        processing_module_key : str, optional
+            Only used when ``source_software="NWB"``. Name of the NWB processing
+            module that contains the pose estimation container. Defaults to "behavior".
+        pose_estimation_key : str, optional
+            Only used when ``source_software="NWB"``. Name of the
+            ``ndx_pose.PoseEstimation`` object inside the processing module.
+            Defaults to "PoseEstimation".
         config_kwargs : Optional[dict], optional
             Additional configuration keyword arguments, by default None.
         save_logs : bool, optional
@@ -81,7 +88,8 @@ class VAMEPipeline:
             video_type=video_type,
             fps=fps,
             copy_videos=copy_videos,
-            paths_to_pose_nwb_series_data=paths_to_pose_nwb_series_data,
+            processing_module_key=processing_module_key,
+            pose_estimation_key=pose_estimation_key,
             config_kwargs=config_kwargs,
         )
 
