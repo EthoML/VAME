@@ -48,6 +48,9 @@ def load_pose_estimation(
             processing_module_key=processing_module_key,
             pose_estimation_key=pose_estimation_key,
         )
+        # movement's NWB loader stores attrs as Path objects, which xarray's
+        # netCDF writer rejects. Coerce to str so downstream ds.to_netcdf works.
+        ds.attrs = {k: (str(v) if isinstance(v, Path) else v) for k, v in ds.attrs.items()}
     else:
         ds = mio_load_poses.from_file(
             file_path=pose_estimation_file,
