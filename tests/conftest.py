@@ -3,7 +3,7 @@ from pathlib import Path
 import shutil
 import psutil
 import time
-from typing import List, Optional, Literal
+from typing import Literal
 import numpy as np
 
 import vame
@@ -15,12 +15,11 @@ def init_project(
     project_name: str,
     videos: list,
     poses_estimations: list,
-    source_software: Literal["DeepLabCut", "SLEAP", "LightningPose"],
+    source_software: Literal["DeepLabCut", "SLEAP", "LightningPose", "NWB"],
     working_directory: str,
     egocentric_data: bool = False,
     centered_reference_keypoint: str = "Nose",
     orientation_reference_keypoint: str = "Tailroot",
-    paths_to_pose_nwb_series_data: Optional[List[str]] = None,
 ):
     config_path, config_values = vame.init_new_project(
         project_name=project_name,
@@ -29,7 +28,6 @@ def init_project(
         source_software=source_software,
         working_directory=working_directory,
         video_type=".mp4",
-        paths_to_pose_nwb_series_data=paths_to_pose_nwb_series_data,
     )
 
     # Override config values with test values to speed up tests
