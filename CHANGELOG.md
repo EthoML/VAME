@@ -4,6 +4,10 @@
 
 - Read pose estimation data from NWB files (`ndx-pose`).
 
+### Fixes
+
+- Bump `imageio-ffmpeg` pin from `0.5.1` to `0.6.0` so a prebuilt wheel (with the bundled ffmpeg binary) is available on Apple Silicon Python 3.11.
+
 
 # v0.12.1
 
