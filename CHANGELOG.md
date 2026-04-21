@@ -1,3 +1,10 @@
+# v0.13.0
+
+### Features
+
+- Read pose estimation data from NWB files (`ndx-pose`).
+
+
 # v0.12.1
 
 ### Fixes
