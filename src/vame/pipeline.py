@@ -1,4 +1,4 @@
-from typing import List, Optional, Literal
+from typing import List, Optional, Literal, Union
 from pathlib import Path
 import xarray as xr
 
@@ -203,6 +203,7 @@ class VAMEPipeline:
         test_fraction: float = 0.1,
         split_mode: Literal["mode_1", "mode_2"] = "mode_2",
         read_from_variable: str = "position_processed",
+        extra_features: Union[List[str], Literal["all"], None] = None,
     ) -> None:
         """
         Creates the training set.
@@ -213,6 +214,12 @@ class VAMEPipeline:
             Test fraction.
         split_mode : str, optional
             Split mode, by default "mode_2".
+        read_from_variable : str, optional
+            Variable name to read from the processed data. Defaults to "position_processed".
+        extra_features : list[str] | "all" | None, optional
+            Extra data variables to append as features after the keypoint features.
+            Pass a list of variable names, ``"all"`` to include every non-standard
+            variable in the dataset, or ``None`` to use no extra features. Defaults to None.
 
         Returns
         -------
@@ -223,6 +230,7 @@ class VAMEPipeline:
             test_fraction=test_fraction,
             read_from_variable=read_from_variable,
             split_mode=split_mode,
+            extra_features=extra_features,
             save_logs=self.save_logs,
         )
 

@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field, ConfigDict
-from typing import List, Optional, Literal
+from typing import List, Optional, Literal, Union
 from datetime import datetime, timezone
 from enum import Enum
 
@@ -51,6 +51,20 @@ class ProjectSchema(BaseModel):
         default=None,
         title="Keypoint names",
         description="Names of keypoints extracted from pose estimation data",
+    )
+    extra_features: Optional[Union[List[str], Literal["all"]]] = Field(
+        default=None,
+        title="Extra feature names",
+        description=(
+            "Extra data variables to include as features alongside keypoints. "
+            "Pass a list of variable names, 'all' to include every non-standard "
+            "variable in the dataset, or None to use no extra features."
+        ),
+    )
+    extra_features: Optional[List[str]] = Field(
+        default=None,
+        title="Extra feature names",
+        description="Names of extra data variables to include as features alongside keypoints",
     )
     egocentric_data: bool = Field(
         default=False,

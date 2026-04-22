@@ -1,7 +1,7 @@
 import json
 import numpy as np
 from pathlib import Path
-from typing import List, Literal
+from typing import List, Literal, Union
 import datetime
 
 from vame.util.auxiliary import update_config
@@ -23,6 +23,7 @@ def traindata_aligned(
     split_mode: Literal["mode_1", "mode_2"] = "mode_2",
     keypoints_to_include: List[str] | None = None,
     keypoints_to_exclude: List[str] | None = None,
+    extra_features: Union[List[str], Literal["all"], None] = None,
 ) -> None:
     """
     Create training dataset for aligned data.
@@ -45,6 +46,10 @@ def traindata_aligned(
         - mode_2: Takes random continuous chunks from each session proportional to test_fraction
                  for testing and uses the remaining parts for training.
         Defaults to "mode_2".
+    extra_features : list[str] | "all" | None, optional
+        Extra data variables to append as features after the keypoint features.
+        Pass a list of variable names, ``"all"`` to include every non-standard
+        variable in the dataset, or ``None`` to use no extra features. Defaults to None.
 
     Returns
     -------
@@ -93,11 +98,21 @@ def traindata_aligned(
                 )
             keypoints = [k for k in keypoints if k not in keypoints_to_exclude]
 
+        # Validate extra features exist in this session's dataset
+        if extra_features is not None and extra_features != "all":
+            missing = [v for v in extra_features if v not in ds.data_vars]
+            if missing:
+                raise ValueError(
+                    f"Extra features {missing} not found in session '{session}'. "
+                    f"Available variables: {list(ds.data_vars)}"
+                )
+
         # Format the data for the RNN model and get metadata
         session_array, metadata = format_xarray_for_rnn(
             ds=ds,
             read_from_variable=read_from_variable,
             keypoints=keypoints,
+            extra_features=extra_features,
         )
         all_data_list.append(session_array)
 
@@ -259,6 +274,7 @@ def create_trainset(
     split_mode: Literal["mode_1", "mode_2"] = "mode_2",
     keypoints_to_include: List[str] | None = None,
     keypoints_to_exclude: List[str] | None = None,
+    extra_features: Union[List[str], Literal["all"], None] = None,
     save_logs: bool = True,
 ) -> None:
     """
@@ -292,6 +308,10 @@ def create_trainset(
         - mode_2: Takes random continuous chunks from each session proportional to test_fraction
                  for testing and uses the remaining parts for training.
         Defaults to "mode_2".
+    extra_features : list[str] | "all" | None, optional
+        Extra data variables to append as features after the keypoint features.
+        Pass a list of variable names, ``"all"`` to include every non-standard
+        variable in the dataset, or ``None`` to use no extra features. Defaults to None.
     save_logs : bool, optional
         Whether to save logs. Defaults to True.
 
@@ -328,6 +348,7 @@ def create_trainset(
                 split_mode=split_mode,
                 keypoints_to_include=keypoints_to_include,
                 keypoints_to_exclude=keypoints_to_exclude,
+                extra_features=extra_features,
             )
         else:
             raise NotImplementedError("Fixed data training is not implemented yet")

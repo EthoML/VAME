@@ -62,14 +62,16 @@ def embed_latent_vectors(
     logger.info("---------------------------------------------------------------------")
     logger.info(f"Embedding latent vectors for {model_name} model")
 
-    # Load training metadata to get keypoints used during training
+    # Load training metadata to get keypoints and extra features used during training
     try:
         training_metadata = load_training_metadata(config)
         keypoints_used = training_metadata["parameters"]["keypoints_used"]
+        extra_features_used = training_metadata["parameters"].get("extra_features_used", None) or None
     except (FileNotFoundError, ValueError) as e:
         logger.warning(f"Could not load training metadata: {e}")
         logger.warning("Using all available keypoints - this may cause shape mismatch errors")
         keypoints_used = None
+        extra_features_used = None
 
     latent_vector_sessions = []
     for session in sessions:
@@ -93,11 +95,12 @@ def embed_latent_vectors(
         file_path = str(Path(project_path) / "data" / "processed" / f"{session}_processed.nc")
         _, _, ds = read_pose_estimation_file(file_path=file_path)
 
-        # Format the data for the RNN model using the same keypoints as training
+        # Format the data for the RNN model using the same features as training
         data, _ = format_xarray_for_rnn(
             ds=ds,
             read_from_variable=read_from_variable,
             keypoints=keypoints_used,
+            extra_features=extra_features_used,
         )
 
         latent_vector_list = []
@@ -169,14 +172,16 @@ def embed_latent_vectors_optimized(
     logger.info("---------------------------------------------------------------------")
     logger.info(f"Embedding latent vectors for {model_name} model (OPTIMIZED)")
 
-    # Load training metadata to get keypoints used during training
+    # Load training metadata to get keypoints and extra features used during training
     try:
         training_metadata = load_training_metadata(config)
         keypoints_used = training_metadata["parameters"]["keypoints_used"]
+        extra_features_used = training_metadata["parameters"].get("extra_features_used", None) or None
     except (FileNotFoundError, ValueError) as e:
         logger.warning(f"Could not load training metadata: {e}")
         logger.warning("Using all available keypoints - this may cause shape mismatch errors")
         keypoints_used = None
+        extra_features_used = None
 
     latent_vector_sessions = []
 
@@ -207,11 +212,12 @@ def embed_latent_vectors_optimized(
         file_path = str(Path(project_path) / "data" / "processed" / f"{session}_processed.nc")
         _, _, ds = read_pose_estimation_file(file_path=file_path)
 
-        # Format the data for the RNN model using the same keypoints as training
+        # Format the data for the RNN model using the same features as training
         data, _ = format_xarray_for_rnn(
             ds=ds,
             read_from_variable=read_from_variable,
             keypoints=keypoints_used,
+            extra_features=extra_features_used,
         )
 
         # Calculate number of windows
