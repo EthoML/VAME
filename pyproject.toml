@@ -1,6 +1,6 @@
 [project]
 name = "vame-py"
-version = '0.12.1'
+version = '0.13.0'
 description = "Variational Animal Motion Embedding."
 authors = [{ name = "K. Luxem & " }, { name = "P. Bauer" }]
 requires-python = ">=3.11"
@@ -29,7 +29,7 @@ dependencies = [
     "h5py>=3.11.0",
     "pydantic>=2.7.4",
     "imageio==2.34.1",
-    "imageio-ffmpeg==0.5.1",
+    "imageio-ffmpeg==0.6.0",
     "pynwb==3.0.0",
     "ndx-pose==0.2.2",
     "ndx-vame==0.2.2",

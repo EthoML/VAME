@@ -12,7 +12,7 @@
 🌟 Welcome to EthoML/VAME (Variational Animal Motion Encoding), an open-source machine learning tool for behavioral action segmentation and analyses.
 
 VAME [documentation](https://ethoml.github.io/VAME/). <br/> <br/>
-❗ <b>[Clear here to read the NEW peer-reviewed and open-access neuroscience article in <i>Cell Reports</i>.</b>](https://www.cell.com/cms/10.1016/j.celrep.2024.114870/attachment/df29fd8e-66e4-474e-8fdd-8adf5b1e110a/mmc11.pdf) ❗ <br/>
+❗ <b>[Click here to read the NEW peer-reviewed and open-access neuroscience article in <i>Cell Reports</i>.</b>](https://www.cell.com/cms/10.1016/j.celrep.2024.114870/attachment/df29fd8e-66e4-474e-8fdd-8adf5b1e110a/mmc11.pdf) ❗ <br/>
 
 
 We are a group of behavioral enthusiasts, comprising the original VAME developers Kevin Luxem and Pavol Bauer, behavioral neuroscientists Stephanie R. Miller and Jorge J. Palop, and computer scientists and statisticians Alex Pico, Reuben Thomas, and Katie Ly. Our aim is to provide scalable, unbiased and sensitive approaches for assessing mouse behavior using computer vision and machine learning approaches.
@@ -21,7 +21,7 @@ We are focused on the expanding the analytical capabilities of VAME segmentation
 
 ## Recent Improvements to VAME
 * Curated scripts for VAME implementation
-* Addition of compatability with [DeepLabCut](https://github.com/DeepLabCut/DeepLabCut), [SLEAP](https://github.com/talmolab/sleap), and [LightningPose](https://github.com/paninski-lab/lightning-pose)
+* Addition of compatability with [DeepLabCut](https://github.com/DeepLabCut/DeepLabCut), [SLEAP](https://github.com/talmolab/sleap), [LightningPose](https://github.com/paninski-lab/lightning-pose), and [NWB](https://www.nwb.org/) files (via the [ndx-pose](https://github.com/rly/ndx-pose) extension)
 * Addition of compatability with [movement](https://github.com/neuroinformatics-unit/movement) for data ingestion
 * Addition of a new cost function for community dendrogram generation
 * Addition of a new egocentric alignment method

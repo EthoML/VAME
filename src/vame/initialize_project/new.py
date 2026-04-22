@@ -20,13 +20,14 @@ logger = logger_config.logger
 def init_new_project(
     project_name: str,
     poses_estimations: List[str],
-    source_software: Literal["DeepLabCut", "SLEAP", "LightningPose"],
+    source_software: Literal["DeepLabCut", "SLEAP", "LightningPose", "NWB"],
     working_directory: str = ".",
     videos: Optional[List[str]] = None,
     video_type: str = ".mp4",
     fps: Optional[float] = None,
     copy_videos: bool = False,
-    paths_to_pose_nwb_series_data: Optional[str] = None,
+    processing_module_key: str = "behavior",
+    pose_estimation_key: str = "PoseEstimation",
     config_kwargs: Optional[dict] = None,
 ) -> Tuple[str, dict]:
     """
@@ -62,8 +63,9 @@ def init_new_project(
         List of videos paths to be used in the project. E.g. ['./sample_data/Session001.mp4']
     poses_estimations : List[str]
         List of pose estimation files paths to be used in the project. E.g. ['./sample_data/pose estimation/Session001.csv']
-    source_software : Literal["DeepLabCut", "SLEAP", "LightningPose"]
-        Source software used for pose estimation.
+    source_software : Literal["DeepLabCut", "SLEAP", "LightningPose", "NWB"]
+        Source software used for pose estimation. Use "NWB" to read an
+        ``ndx-pose`` PoseEstimation from an NWB file.
     working_directory : str, optional
         Working directory. Defaults to '.'.
     video_type : str, optional
@@ -72,8 +74,13 @@ def init_new_project(
         Sampling rate of the videos. If not passed, it will be estimated from the video file. Defaults to None.
     copy_videos : bool, optional
         If True, the videos will be copied to the project directory. If False, symbolic links will be created instead. Defaults to False.
-    paths_to_pose_nwb_series_data : Optional[str], optional
-        List of paths to the pose series data in nwb files. Defaults to None.
+    processing_module_key : str, optional
+        Only used when ``source_software="NWB"``. Name of the NWB processing
+        module that contains the pose estimation container. Defaults to "behavior".
+    pose_estimation_key : str, optional
+        Only used when ``source_software="NWB"``. Name of the
+        ``ndx_pose.PoseEstimation`` object inside the processing module.
+        Defaults to "PoseEstimation".
     config_kwargs : Optional[dict], optional
         Additional configuration parameters. Defaults to None.
 
@@ -170,6 +177,8 @@ def init_new_project(
             video_file=video_path,
             fps=fps,
             source_software=source_software,
+            processing_module_key=processing_module_key,
+            pose_estimation_key=pose_estimation_key,
         )
         output_name = data_raw_path / Path(pes_path).stem
         ds.to_netcdf(
@@ -207,7 +216,6 @@ def init_new_project(
         project_path=str(project_path),
         session_names=session_names,
         pose_estimation_filetype=pose_estimation_filetype,
-        paths_to_pose_nwb_series_data=[paths_to_pose_nwb_series_data] if paths_to_pose_nwb_series_data else None,
         **config_kwargs,
     )
     config_data = new_project.model_dump()

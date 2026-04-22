@@ -47,7 +47,6 @@ def pose_to_numpy(
             )
 
         file_type = config["pose_estimation_filetype"]
-        paths_to_pose_nwb_series_data = config["paths_to_pose_nwb_series_data"]
         for i, session in enumerate(sessions):
             file_path = os.path.join(
                 project_path,
@@ -58,11 +57,6 @@ def pose_to_numpy(
             data, data_mat, ds = read_pose_estimation_file(
                 file_path=file_path,
                 file_type=file_type,
-                path_to_pose_nwb_series_data=(
-                    paths_to_pose_nwb_series_data
-                    if not paths_to_pose_nwb_series_data
-                    else paths_to_pose_nwb_series_data[i]
-                ),
             )
 
             pose_list = []

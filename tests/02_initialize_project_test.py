@@ -1,6 +1,7 @@
 from pathlib import Path
 from vame.util.auxiliary import read_config
 from vame import init_new_project
+from vame.io.load_poses import load_vame_dataset
 import shutil
 
 
@@ -49,3 +50,40 @@ def test_existing_project():
 #     config_values = read_config(config)
 #     assert config_values["project_name"] == setup_project_from_folder["project_name"]
 #     assert Path(setup_project_from_folder["config_path"]).exists()
+
+
+def test_init_project_from_nwb():
+    """
+    Initialize a project from an NWB file (ndx-pose) and verify that the
+    session is registered and the keypoints from the NWB PoseEstimation
+    container are preserved in the generated xarray dataset.
+    """
+    project_name = "test_project_nwb"
+    nwb_path = Path("./tests/test_project_sample_nwb/cropped_video.nwb").resolve()
+    working_directory = str(Path("./tests").resolve())
+
+    config_path, config_values = init_new_project(
+        project_name=project_name,
+        poses_estimations=[str(nwb_path)],
+        source_software="NWB",
+        working_directory=working_directory,
+    )
+
+    try:
+        assert Path(config_path).exists()
+        assert config_values["session_names"] == [nwb_path.stem]
+        assert config_values["pose_estimation_filetype"] == "nwb"
+
+        ds_path = Path(config_values["project_path"]) / "data" / "raw" / f"{nwb_path.stem}.nc"
+        ds = load_vame_dataset(ds_path)
+        expected_keypoints = {
+            "Forehand-Left",
+            "Forehand-Right",
+            "Hindhand-Left",
+            "Hindhand-Right",
+            "Nose",
+            "Tailroot",
+        }
+        assert set(ds["keypoints"].values.tolist()) == expected_keypoints
+    finally:
+        shutil.rmtree(Path(config_path).parent)

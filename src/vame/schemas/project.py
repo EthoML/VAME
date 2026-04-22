@@ -37,10 +37,6 @@ class ProjectSchema(BaseModel):
     pose_estimation_filetype: Literal["csv", "nwb", "slp", "h5"] = Field(
         title="Pose estimation filetype",
     )
-    paths_to_pose_nwb_series_data: Optional[List[str]] = Field(
-        title="Paths to pose series data in nwb files",
-        default=None,
-    )
     project_random_state: int = Field(
         title="Project random state",
         default=42,
