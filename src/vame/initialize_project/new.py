@@ -160,9 +160,13 @@ def init_new_project(
                 try:
                     logger.info(f"Creating symbolic link from {src} to {dst}")
                     os.symlink(os.fspath(src), os.fspath(dst))
-                except OSError:
-                    logger.info(f"Symbolic link creation failed, copying instead: {src} to {dst}")
-                    shutil.copy(os.fspath(src), os.fspath(dst))
+                except OSError as e:
+                    raise OSError(
+                        f"Failed to create a symbolic link from {src} to {dst}. "
+                        "On Windows, symlinks require Administrator privileges or Developer Mode. "
+                        "Enable Developer Mode in Windows Settings, run as Administrator, "
+                        "or pass copy_videos=True to copy the files instead."
+                    ) from e
 
         if fps is None:
             fps = get_video_frame_rate(str(videos_paths[0]))

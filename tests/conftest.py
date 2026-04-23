@@ -28,6 +28,7 @@ def init_project(
         source_software=source_software,
         working_directory=working_directory,
         video_type=".mp4",
+        copy_videos=True,
     )
 
     # Override config values with test values to speed up tests
@@ -212,6 +213,7 @@ def setup_pipeline():
         videos=videos,
         poses_estimations=poses_estimations,
         source_software=source_software,
+        copy_videos=True,
         config_kwargs=config_kwargs,
     )
     yield {"pipeline": pipeline}

@@ -33,6 +33,7 @@ def test_existing_project():
         poses_estimations=poses_estimations,
         source_software="DeepLabCut",
         working_directory=working_directory,
+        copy_videos=True,
     )
     config_path_duplicated, config_duplicated = init_new_project(
         project_name=project_name,
@@ -40,6 +41,7 @@ def test_existing_project():
         poses_estimations=poses_estimations,
         source_software="DeepLabCut",
         working_directory=working_directory,
+        copy_videos=True,
     )
     assert config_path_creation == config_path_duplicated
     shutil.rmtree(Path(config_path_creation).parent)
@@ -59,7 +61,7 @@ def test_init_project_from_nwb():
     container are preserved in the generated xarray dataset.
     """
     project_name = "test_project_nwb"
-    nwb_path = Path("./tests/test_project_sample_nwb/cropped_video.nwb").resolve()
+    nwb_path = Path("./tests/tests_project_sample_nwb/cropped_video.nwb").resolve()
     working_directory = str(Path("./tests").resolve())
 
     config_path, config_values = init_new_project(
