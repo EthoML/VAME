@@ -3,7 +3,6 @@ from pathlib import Path
 import shutil
 import psutil
 import time
-from typing import Literal
 import numpy as np
 
 import vame
@@ -15,8 +14,8 @@ def init_project(
     project_name: str,
     videos: list,
     poses_estimations: list,
-    source_software: Literal["DeepLabCut", "SLEAP", "LightningPose", "NWB"],
-    working_directory: str,
+    source_software: str = "auto",
+    working_directory: str = ".",
     egocentric_data: bool = False,
     centered_reference_keypoint: str = "Nose",
     orientation_reference_keypoint: str = "Tailroot",

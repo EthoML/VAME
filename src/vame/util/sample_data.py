@@ -35,8 +35,8 @@ def download_sample_data(source_software: str, with_video: bool = True) -> dict:
 
     video_path = info_dict.get("video")
     if video_path and video_path.stem != info_dict["poses"].stem:
-        # rename video file to match pose file
-        video_path = video_path.rename(video_path.parent / (str(info_dict["poses"].stem) + video_path.suffix))
+        # rename video file to match pose file (use replace so it works on Windows too)
+        video_path = video_path.replace(video_path.parent / (str(info_dict["poses"].stem) + video_path.suffix))
 
     info_dict["video"] = str(video_path) if video_path is not None else ""
     info_dict["poses"] = str(info_dict["poses"])
