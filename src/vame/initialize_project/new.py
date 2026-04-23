@@ -157,8 +157,12 @@ def init_new_project(
                 logger.info(f"Copying {src} to {dst}")
                 shutil.copy(os.fspath(src), os.fspath(dst))
             else:
-                logger.info(f"Creating symbolic link from {src} to {dst}")
-                os.symlink(os.fspath(src), os.fspath(dst))
+                try:
+                    logger.info(f"Creating symbolic link from {src} to {dst}")
+                    os.symlink(os.fspath(src), os.fspath(dst))
+                except OSError:
+                    logger.info(f"Symbolic link creation failed, copying instead: {src} to {dst}")
+                    shutil.copy(os.fspath(src), os.fspath(dst))
 
         if fps is None:
             fps = get_video_frame_rate(str(videos_paths[0]))
