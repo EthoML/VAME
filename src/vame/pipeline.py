@@ -29,7 +29,7 @@ class VAMEPipeline:
         self,
         project_name: str,
         poses_estimations: List[str],
-        source_software: str = "auto",
+        source_software: Literal["DeepLabCut", "SLEAP", "LightningPose", "NWB", "auto"] = "auto",
         working_directory: str = ".",
         videos: Optional[List[str]] = None,
         video_type: str = ".mp4",
