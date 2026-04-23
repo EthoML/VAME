@@ -21,4 +21,6 @@ from vame.util import model_util
 from vame.util.auxiliary import *
 
 from vame.preprocessing import preprocessing
+from vame.preprocessing import validate_extra_features
+from vame import io
 from vame import visualization

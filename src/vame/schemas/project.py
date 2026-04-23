@@ -52,6 +52,17 @@ class ProjectSchema(BaseModel):
         title="Keypoint names",
         description="Names of keypoints extracted from pose estimation data",
     )
+    extra_features: List[str] = Field(
+        default_factory=list,
+        title="Extra feature names",
+        description=(
+            "Names of pre-computed scalar features stored as data variables in each "
+            "session's processed .nc. Appended to the RNN input after the pose-derived "
+            "features. VAME does not preprocess these — users are responsible for time "
+            "alignment, scaling, and NaN handling. Use vame.io.extra.add_extra_features "
+            "to write them and vame.validate_extra_features to verify the contract."
+        ),
+    )
     egocentric_data: bool = Field(
         default=False,
         title="Egocentric data",
