@@ -181,7 +181,7 @@ def test_generative_model_figures(
 
 
 def test_report(setup_project_and_train_model):
-    generate_reports(config=setup_project_and_train_model["config_data"])
+    generate_reports(config=setup_project_and_train_model["config_data"], show_figure=False)
     reports_path = Path(setup_project_and_train_model["config_data"]["project_path"]) / "reports"
     assert len(list(reports_path.glob("*.png"))) > 0
 
