@@ -20,7 +20,7 @@ logger = logger_config.logger
 def init_new_project(
     project_name: str,
     poses_estimations: List[str],
-    source_software: Literal["DeepLabCut", "SLEAP", "LightningPose", "NWB"],
+    source_software: Literal["DeepLabCut", "SLEAP", "LightningPose", "NWB", "auto"] = "auto",
     working_directory: str = ".",
     videos: Optional[List[str]] = None,
     video_type: str = ".mp4",
@@ -63,14 +63,16 @@ def init_new_project(
         List of videos paths to be used in the project. E.g. ['./sample_data/Session001.mp4']
     poses_estimations : List[str]
         List of pose estimation files paths to be used in the project. E.g. ['./sample_data/pose estimation/Session001.csv']
-    source_software : Literal["DeepLabCut", "SLEAP", "LightningPose", "NWB"]
-        Source software used for pose estimation. Use "NWB" to read an
-        ``ndx-pose`` PoseEstimation from an NWB file.
+    source_software : Literal["DeepLabCut", "SLEAP", "LightningPose", "NWB", "auto"], optional
+        Source software used for pose estimation. Defaults to ``"auto"``, which
+        lets movement infer the format from the file extension and contents.
+        Pass an explicit value (``"DeepLabCut"``, ``"SLEAP"``,
+        ``"LightningPose"``, ``"NWB"``) to override auto-detection.
     working_directory : str, optional
         Working directory. Defaults to '.'.
     video_type : str, optional
         Video extension (.mp4 or .avi). Defaults to '.mp4'.
-    fps : int, optional
+    fps : float, optional
         Sampling rate of the videos. If not passed, it will be estimated from the video file. Defaults to None.
     copy_videos : bool, optional
         If True, the videos will be copied to the project directory. If False, symbolic links will be created instead. Defaults to False.
@@ -157,8 +159,16 @@ def init_new_project(
                 logger.info(f"Copying {src} to {dst}")
                 shutil.copy(os.fspath(src), os.fspath(dst))
             else:
-                logger.info(f"Creating symbolic link from {src} to {dst}")
-                os.symlink(os.fspath(src), os.fspath(dst))
+                try:
+                    logger.info(f"Creating symbolic link from {src} to {dst}")
+                    os.symlink(os.fspath(src), os.fspath(dst))
+                except OSError as e:
+                    raise OSError(
+                        f"Failed to create a symbolic link from {src} to {dst}. "
+                        "On Windows, symlinks require Administrator privileges or Developer Mode. "
+                        "Enable Developer Mode in Windows Settings, run as Administrator, "
+                        "or pass copy_videos=True to copy the files instead."
+                    ) from e
 
         if fps is None:
             fps = get_video_frame_rate(str(videos_paths[0]))
@@ -174,9 +184,9 @@ def init_new_project(
     for pes_path, video_path in zip(poses_estimations, videos_paths):
         ds = load_pose_estimation(
             pose_estimation_file=pes_path,
+            source_software=source_software,
             video_file=video_path,
             fps=fps,
-            source_software=source_software,
             processing_module_key=processing_module_key,
             pose_estimation_key=pose_estimation_key,
         )

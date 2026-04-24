@@ -20,13 +20,15 @@ VAME pipeline class.
 ```python
 def __init__(project_name: str,
              poses_estimations: List[str],
-             source_software: Literal["DeepLabCut", "SLEAP", "LightningPose"],
+             source_software: Literal["DeepLabCut", "SLEAP", "LightningPose",
+                                      "NWB", "auto"] = "auto",
              working_directory: str = ".",
              videos: Optional[List[str]] = None,
              video_type: str = ".mp4",
              fps: Optional[float] = None,
              copy_videos: bool = False,
-             paths_to_pose_nwb_series_data: Optional[str] = None,
+             processing_module_key: str = "behavior",
+             pose_estimation_key: str = "PoseEstimation",
              config_kwargs: Optional[dict] = None,
              save_logs=True) -> None
 ```
@@ -36,14 +38,20 @@ Initializes the VAME pipeline.
 **Parameters**
 
 * **project_name** (`str`): Project name.
-* **videos** (`List[str]`): List of video files.
 * **poses_estimations** (`List[str]`): List of pose estimation files.
-* **source_software** (`Literal["DeepLabCut", "SLEAP", "LightningPose"]`): Source software used for pose estimation.
+* **source_software** (`str, optional`): Source software used for pose estimation. Defaults to ``&quot;auto&quot;``,
+which lets movement infer the format from the file. Pass an explicit
+value (``&quot;DeepLabCut&quot;``, ``&quot;SLEAP&quot;``, ``&quot;LightningPose&quot;``,
+``&quot;NWB&quot;``) to override.
 * **working_directory** (`str, optional`): Working directory, by default &quot;.&quot;.
 * **video_type** (`str, optional`): Video file type, by default &quot;.mp4&quot;.
-* **fps** (`int, optional`): Sampling rate of the videos. If not passed, it will be estimated from the video file. By default None.
+* **fps** (`float, optional`): Sampling rate of the videos. If not passed, it will be estimated from the video file. By default None.
 * **copy_videos** (`bool, optional`): Copy videos, by default False.
-* **paths_to_pose_nwb_series_data** (`Optional[str], optional`): Path to pose NWB series data, by default None.
+* **processing_module_key** (`str, optional`): Only used when ``source_software=&quot;NWB&quot;``. Name of the NWB processing
+module that contains the pose estimation container. Defaults to &quot;behavior&quot;.
+* **pose_estimation_key** (`str, optional`): Only used when ``source_software=&quot;NWB&quot;``. Name of the
+``ndx_pose.PoseEstimation`` object inside the processing module.
+Defaults to &quot;PoseEstimation&quot;.
 * **config_kwargs** (`Optional[dict], optional`): Additional configuration keyword arguments, by default None.
 * **save_logs** (`bool, optional`): Flag indicating whether to save logs. Defaults to True.
 

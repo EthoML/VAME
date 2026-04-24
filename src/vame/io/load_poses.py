@@ -1,6 +1,6 @@
 from typing import Literal, Optional, Tuple
 from pathlib import Path
-from movement.io import load_poses as mio_load_poses
+from movement.io.load import load_dataset
 import xarray as xr
 import numpy as np
 import pandas as pd
@@ -8,7 +8,7 @@ import pandas as pd
 
 def load_pose_estimation(
     pose_estimation_file: Path | str,
-    source_software: Literal["DeepLabCut", "SLEAP", "LightningPose", "NWB"],
+    source_software: Literal["DeepLabCut", "SLEAP", "LightningPose", "NWB", "auto"] = "auto",
     video_file: Optional[Path | str] = None,
     fps: Optional[float] = None,
     processing_module_key: str = "behavior",
@@ -20,14 +20,18 @@ def load_pose_estimation(
     Parameters
     ----------
     pose_estimation_file : Path or str
-        Path to the pose estimation file.
-    video_file : Path or str
-        Path to the video file.
+        Path to the pose estimation file. Dispatched through movement's
+        unified loader, which auto-detects format from extension and contents.
+    source_software : str, optional
+        Source software used for pose estimation. Defaults to ``"auto"``, which
+        lets movement infer the format from the file. Explicit values
+        (``"DeepLabCut"``, ``"SLEAP"``, ``"LightningPose"``, ``"NWB"``) are
+        passed straight through.
+    video_file : Path or str, optional
+        Path to the video file. Stored as a dataset attribute.
     fps : float, optional
-        Sampling rate of the video.
-    source_software : Literal["DeepLabCut", "SLEAP", "LightningPose", "NWB"]
-        Source software used for pose estimation. Use "NWB" to read an
-        ``ndx-pose`` PoseEstimation from an NWB file.
+        Sampling rate of the video. Ignored when ``source_software`` is
+        ``"NWB"`` (fps is read from the file).
     processing_module_key : str, optional
         Only used when ``source_software="NWB"``. Name of the NWB processing
         module that contains the pose estimation container. Default is
@@ -39,24 +43,21 @@ def load_pose_estimation(
 
     Returns
     -------
-    ds : xarray.Dataset
-        Pose estimation dataset.
+    xr.Dataset
+        Movement-format pose estimation dataset.
     """
+    file_path = Path(pose_estimation_file)
+    nwb_kwargs = {}
     if source_software == "NWB":
-        ds = mio_load_poses.from_nwb_file(
-            file=pose_estimation_file,
-            processing_module_key=processing_module_key,
-            pose_estimation_key=pose_estimation_key,
-        )
-        # movement's NWB loader stores attrs as Path objects, which xarray's
-        # netCDF writer rejects. Coerce to str so downstream ds.to_netcdf works.
-        ds.attrs = {k: (str(v) if isinstance(v, Path) else v) for k, v in ds.attrs.items()}
-    else:
-        ds = mio_load_poses.from_file(
-            file_path=pose_estimation_file,
-            source_software=source_software,
-            fps=fps,
-        )
+        nwb_kwargs = {
+            "processing_module_key": processing_module_key,
+            "pose_estimation_key": pose_estimation_key,
+        }
+    ds = load_dataset(file=file_path, source_software=source_software, fps=fps, **nwb_kwargs)
+    # movement's NWB loader stores attrs as Path objects, which xarray's
+    # netCDF writer rejects. Coerce to str so downstream ds.to_netcdf works.
+    ds.attrs = {k: (str(v) if isinstance(v, Path) else v) for k, v in ds.attrs.items()}
+
     if video_file:
         ds.attrs["video_path"] = str(video_file)
     return ds
@@ -77,34 +78,8 @@ def load_vame_dataset(ds_path: Path | str) -> xr.Dataset:
         VAME dataset
     """
     with xr.open_dataset(ds_path, engine="netcdf4") as tmp_ds:
-        ds_in_memory = tmp_ds.load()  # read entire file into memory
+        ds_in_memory = tmp_ds.load()
     return ds_in_memory
-
-
-# def load_vame_dataset_lock(ds_path: Path | str) -> xr.Dataset:
-#     """
-#     Load VAME dataset with file locking to prevent conflicts.
-
-#     Parameters
-#     ----------
-#     ds_path : Path or str
-#         Path to the netCDF dataset.
-
-#     Returns
-#     -------
-#     xr.Dataset
-#         VAME dataset loaded into memory.
-#     """
-#     import portalocker
-
-#     ds_path = Path(ds_path)
-#     lock_path = ds_path.parent / f"{ds_path.name}.lock"
-
-#     # Use portalocker.Lock which supports the `timeout` keyword.
-#     with portalocker.Lock(str(lock_path), mode="w", flags=portalocker.LOCK_SH) as _:
-#         with xr.open_dataset(ds_path, engine="netcdf4") as tmp_ds:
-#             ds_in_memory = tmp_ds.load()  # Load the dataset into memory.
-#     return ds_in_memory
 
 
 def nc_to_dataframe(nc_data):
@@ -149,13 +124,13 @@ def read_pose_estimation_file(
     ----------
     file_path : str
         Path to the pose estimation file.
-    file_type : PoseEstimationFiletype
-        Type of the pose estimation file. Supported types are 'csv' and 'nwb'.
+    file_type : str, optional
+        Unused; retained for backwards compatibility.
 
     Returns
     -------
-    Tuple[pd.DataFrame, np.ndarray]
-        Tuple containing the pose estimation data as a pandas DataFrame and a numpy array.
+    Tuple[pd.DataFrame, np.ndarray, xr.Dataset]
+        Pose estimation data as a DataFrame, numpy array, and xarray Dataset.
     """
     ds = load_vame_dataset(ds_path=file_path)
     data = nc_to_dataframe(ds)
