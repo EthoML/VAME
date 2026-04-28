@@ -34,7 +34,7 @@ class ProjectSchema(BaseModel):
         ...,
         title="Session names",
     )
-    pose_estimation_filetype: Literal["csv", "nwb", "slp", "h5"] = Field(
+    pose_estimation_filetype: Literal["csv", "nwb", "slp", "h5", "nc"] = Field(
         title="Pose estimation filetype",
     )
     project_random_state: int = Field(

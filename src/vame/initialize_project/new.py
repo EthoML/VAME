@@ -20,7 +20,7 @@ logger = logger_config.logger
 def init_new_project(
     project_name: str,
     poses_estimations: List[str],
-    source_software: Literal["DeepLabCut", "SLEAP", "LightningPose", "NWB", "auto"] = "auto",
+    source_software: Literal["DeepLabCut", "SLEAP", "LightningPose", "NWB", "auto", "movement"] = "auto",
     working_directory: str = ".",
     videos: Optional[List[str]] = None,
     video_type: str = ".mp4",
@@ -118,9 +118,9 @@ def init_new_project(
         logger.info('Created "{}"'.format(p))
 
     filetype = poses_estimations[0].split(".")[-1]
-    if filetype not in ("csv", "nwb", "slp", "h5"):
-        raise ValueError(f"Unsupported pose estimation file type: {filetype}. Must be one of: csv, nwb, slp, h5")
-    pose_estimation_filetype = cast(Literal["csv", "nwb", "slp", "h5"], filetype)
+    if filetype not in ("csv", "nwb", "slp", "h5", "nc"):
+        raise ValueError(f"Unsupported pose estimation file type: {filetype}. Must be one of: csv, nwb, slp, h5, nc")
+    pose_estimation_filetype = cast(Literal["csv", "nwb", "slp", "h5", "nc"], filetype)
 
     # Session names
     pes_paths = [Path(vp).resolve() for vp in poses_estimations]
