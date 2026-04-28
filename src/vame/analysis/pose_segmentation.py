@@ -15,6 +15,7 @@ from vame.io.load_poses import read_pose_estimation_file
 from vame.util.cli import get_sessions_from_user_input
 from vame.util.model_util import load_model, load_training_metadata
 from vame.util.auxiliary import get_device
+from vame.preprocessing.extra import validate_extra_features
 from vame.preprocessing.to_model import format_xarray_for_rnn
 
 
@@ -66,10 +67,20 @@ def embed_latent_vectors(
     try:
         training_metadata = load_training_metadata(config)
         keypoints_used = training_metadata["parameters"]["keypoints_used"]
+        extra_features_used = list(training_metadata["parameters"].get("extra_features") or [])
     except (FileNotFoundError, ValueError) as e:
         logger.warning(f"Could not load training metadata: {e}")
         logger.warning("Using all available keypoints - this may cause shape mismatch errors")
         keypoints_used = None
+        extra_features_used = []
+
+    # Validate extra features against the *training* metadata (not the live
+    # config), so inference fails fast if the model's inputs aren't available.
+    validate_extra_features(
+        config=config,
+        sessions=sessions,
+        extra_features=extra_features_used,
+    )
 
     latent_vector_sessions = []
     for session in sessions:
@@ -98,6 +109,7 @@ def embed_latent_vectors(
             ds=ds,
             read_from_variable=read_from_variable,
             keypoints=keypoints_used,
+            extra_features=extra_features_used,
         )
 
         latent_vector_list = []
@@ -173,10 +185,20 @@ def embed_latent_vectors_optimized(
     try:
         training_metadata = load_training_metadata(config)
         keypoints_used = training_metadata["parameters"]["keypoints_used"]
+        extra_features_used = list(training_metadata["parameters"].get("extra_features") or [])
     except (FileNotFoundError, ValueError) as e:
         logger.warning(f"Could not load training metadata: {e}")
         logger.warning("Using all available keypoints - this may cause shape mismatch errors")
         keypoints_used = None
+        extra_features_used = []
+
+    # Validate extra features against the *training* metadata (not the live
+    # config), so inference fails fast if the model's inputs aren't available.
+    validate_extra_features(
+        config=config,
+        sessions=sessions,
+        extra_features=extra_features_used,
+    )
 
     latent_vector_sessions = []
 
@@ -212,6 +234,7 @@ def embed_latent_vectors_optimized(
             ds=ds,
             read_from_variable=read_from_variable,
             keypoints=keypoints_used,
+            extra_features=extra_features_used,
         )
 
         # Calculate number of windows

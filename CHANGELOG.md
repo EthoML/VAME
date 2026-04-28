@@ -1,3 +1,11 @@
+# v0.14.0
+
+### Features
+
+- Register pre-computed scalar features (speed, head direction, mask area, etc.) for model training via `vame.io.add_extra_features` and `vame.validate_extra_features`.
+- Accept movement-format `.nc` files as pose estimation input via `source_software="movement"`, with strict schema validation.
+
+
 # v0.13.0
 
 ### Features
