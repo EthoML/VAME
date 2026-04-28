@@ -2,8 +2,13 @@
 
 ### Features
 
-- Register pre-computed scalar features (speed, head direction, mask area, etc.) for model training via `vame.io.add_extra_features` and `vame.validate_extra_features`.
-- Accept movement-format `.nc` files as pose estimation input via `source_software="movement"`, with strict schema validation.
+- Register pre-computed scalar features (speed, head direction, mask area, etc.) for model training via `vame.io.add_extra_features` and `vame.validate_extra_features` ([PR #213](https://github.com/EthoML/VAME/pull/213))
+- Accept movement-format `.nc` files as pose estimation input via `source_software="movement"`, with strict schema validation ([PR #213](https://github.com/EthoML/VAME/pull/213))
+- Update pose loader to movement 0.16 unified loader interface ([PR #212](https://github.com/EthoML/VAME/pull/212))
+
+### Fixes
+
+- Fix Windows compatibility in project init and sample data download. ([PR #209](https://github.com/EthoML/VAME/pull/209))
 
 
 # v0.13.0
