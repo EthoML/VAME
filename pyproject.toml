@@ -1,9 +1,9 @@
 [project]
 name = "vame-py"
-version = '0.13.0'
+version = '0.14.0'
 description = "Variational Animal Motion Embedding."
 authors = [{ name = "K. Luxem & " }, { name = "P. Bauer" }]
-requires-python = ">=3.11"
+requires-python = ">=3.12"
 keywords = ["vame", "auto-encoder"]
 readme = { file = 'README.md', content-type = 'text/markdown' }
 dependencies = [
@@ -34,7 +34,7 @@ dependencies = [
     "ndx-pose==0.2.2",
     "ndx-vame==0.2.2",
     "tables>=3.10.0",
-    "movement==0.7.1",
+    "movement>=0.16.0",
     "netCDF4>=1.7.2",
 ]
 

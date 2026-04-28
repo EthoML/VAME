@@ -33,9 +33,11 @@ from pathlib import Path
 
 To quickly try VAME, you can download sample data and use it as input. If you want to work with your own data, all you need to do is to provide the paths to the pose estimation files as lists of strings. You can also optionally provide the paths to the corresponding video files.
 
+**Note on NWB input:** the sample-data downloader only ships DeepLabCut and SLEAP files. To run VAME on NWB files (ndx-pose), skip `download_sample_data` and pass your own `.nwb` paths to `poses_estimations` with `source_software="NWB"`.
+
 ```python
 # You can run VAME with data from different sources:
-# "DeepLabCut", "SLEAP" or "LightningPose"
+# "DeepLabCut", "SLEAP", "LightningPose" or "NWB"
 source_software = "DeepLabCut"
 
 # Download sample data
@@ -108,6 +110,37 @@ vame.preprocessing(
     centered_reference_keypoint="snout",
     orientation_reference_keypoint="tailbase",
 )
+```
+
+#### Optional: Add extra features
+
+You can enrich the model's input with your own pre-computed scalar time series — speed, acceleration, head direction, mask area, or any other derived signal that isn't directly in the pose data. VAME does not preprocess these features (no alignment, scaling, or interpolation): you provide them ready-to-use, time-aligned with the pose data, and they are appended as additional channels in the RNN input.
+
+Each extra feature must be:
+- a 1-D numpy array, one value per frame, length matching the session's processed time dimension;
+- numeric, with no NaN or Inf values;
+- registered with the same name across all sessions in the project.
+
+Use `vame.io.add_extra_features` to write features into the processed `.nc` of each session and register them in the config, then call `vame.validate_extra_features` to verify the contract before training.
+
+```python
+# Replace the placeholder values below with your own pre-computed arrays
+# before running this cell. Skip this cell entirely if you don't want to
+# register any extra features for training.
+speed = ...       # calculate your feature: dict of {session_name: np.ndarray of shape (n_frames,)}
+head_dir_x = ...  # calculate your feature: dict of {session_name: np.ndarray of shape (n_frames,)}
+
+for session in config_data["session_names"]:
+    vame.io.add_extra_features(
+        config=config_data,
+        session=session,
+        features={
+            "speed": speed[session],
+            "head_dir_x": head_dir_x[session],
+        },
+    )
+
+vame.validate_extra_features(config_data)
 ```
 
 ## Step 3: Train the VAME model

@@ -29,7 +29,7 @@ class VAMEPipeline:
         self,
         project_name: str,
         poses_estimations: List[str],
-        source_software: Literal["DeepLabCut", "SLEAP", "LightningPose", "NWB"],
+        source_software: Literal["DeepLabCut", "SLEAP", "LightningPose", "NWB", "auto"] = "auto",
         working_directory: str = ".",
         videos: Optional[List[str]] = None,
         video_type: str = ".mp4",
@@ -47,18 +47,18 @@ class VAMEPipeline:
         ----------
         project_name : str
             Project name.
-        videos : List[str]
-            List of video files.
         poses_estimations : List[str]
             List of pose estimation files.
-        source_software : Literal["DeepLabCut", "SLEAP", "LightningPose", "NWB"]
-            Source software used for pose estimation. Use "NWB" to read an
-            ``ndx-pose`` PoseEstimation from an NWB file.
+        source_software : str, optional
+            Source software used for pose estimation. Defaults to ``"auto"``,
+            which lets movement infer the format from the file. Pass an explicit
+            value (``"DeepLabCut"``, ``"SLEAP"``, ``"LightningPose"``,
+            ``"NWB"``) to override.
         working_directory : str, optional
             Working directory, by default ".".
         video_type : str, optional
             Video file type, by default ".mp4".
-        fps : int, optional
+        fps : float, optional
             Sampling rate of the videos. If not passed, it will be estimated from the video file. By default None.
         copy_videos : bool, optional
             Copy videos, by default False.

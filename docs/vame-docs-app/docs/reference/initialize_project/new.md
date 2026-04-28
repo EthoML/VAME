@@ -13,13 +13,15 @@ title: initialize_project.new
 def init_new_project(project_name: str,
                      poses_estimations: List[str],
                      source_software: Literal["DeepLabCut", "SLEAP",
-                                              "LightningPose"],
+                                              "LightningPose", "NWB", "auto",
+                                              "movement"] = "auto",
                      working_directory: str = ".",
                      videos: Optional[List[str]] = None,
                      video_type: str = ".mp4",
                      fps: Optional[float] = None,
                      copy_videos: bool = False,
-                     paths_to_pose_nwb_series_data: Optional[str] = None,
+                     processing_module_key: str = "behavior",
+                     pose_estimation_key: str = "PoseEstimation",
                      config_kwargs: Optional[dict] = None) -> Tuple[str, dict]
 ```
 
@@ -52,12 +54,19 @@ A VAME project is a directory with the following structure:
 * **project_name** (`str`): Project name.
 * **videos** (`List[str]`): List of videos paths to be used in the project. E.g. [&#x27;./sample_data/Session001.mp4&#x27;]
 * **poses_estimations** (`List[str]`): List of pose estimation files paths to be used in the project. E.g. [&#x27;./sample_data/pose estimation/Session001.csv&#x27;]
-* **source_software** (`Literal["DeepLabCut", "SLEAP", "LightningPose"]`): Source software used for pose estimation.
+* **source_software** (`Literal["DeepLabCut", "SLEAP", "LightningPose", "NWB", "auto"], optional`): Source software used for pose estimation. Defaults to ``&quot;auto&quot;``, which
+lets movement infer the format from the file extension and contents.
+Pass an explicit value (``&quot;DeepLabCut&quot;``, ``&quot;SLEAP&quot;``,
+``&quot;LightningPose&quot;``, ``&quot;NWB&quot;``) to override auto-detection.
 * **working_directory** (`str, optional`): Working directory. Defaults to &#x27;.&#x27;.
 * **video_type** (`str, optional`): Video extension (.mp4 or .avi). Defaults to &#x27;.mp4&#x27;.
-* **fps** (`int, optional`): Sampling rate of the videos. If not passed, it will be estimated from the video file. Defaults to None.
+* **fps** (`float, optional`): Sampling rate of the videos. If not passed, it will be estimated from the video file. Defaults to None.
 * **copy_videos** (`bool, optional`): If True, the videos will be copied to the project directory. If False, symbolic links will be created instead. Defaults to False.
-* **paths_to_pose_nwb_series_data** (`Optional[str], optional`): List of paths to the pose series data in nwb files. Defaults to None.
+* **processing_module_key** (`str, optional`): Only used when ``source_software=&quot;NWB&quot;``. Name of the NWB processing
+module that contains the pose estimation container. Defaults to &quot;behavior&quot;.
+* **pose_estimation_key** (`str, optional`): Only used when ``source_software=&quot;NWB&quot;``. Name of the
+``ndx_pose.PoseEstimation`` object inside the processing module.
+Defaults to &quot;PoseEstimation&quot;.
 * **config_kwargs** (`Optional[dict], optional`): Additional configuration parameters. Defaults to None.
 
 **Returns**
