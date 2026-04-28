@@ -47,13 +47,6 @@ def test_existing_project():
     shutil.rmtree(Path(config_path_creation).parent)
 
 
-# def test_existing_project_from_folder(setup_project_from_folder):
-#     config = Path(setup_project_from_folder["config_path"])
-#     config_values = read_config(config)
-#     assert config_values["project_name"] == setup_project_from_folder["project_name"]
-#     assert Path(setup_project_from_folder["config_path"]).exists()
-
-
 def test_init_project_from_nwb():
     """
     Initialize a project from an NWB file (ndx-pose) and verify that the
@@ -87,5 +80,39 @@ def test_init_project_from_nwb():
             "Tailroot",
         }
         assert set(ds["keypoints"].values.tolist()) == expected_keypoints
+    finally:
+        shutil.rmtree(Path(config_path).parent)
+
+
+def test_init_project_from_movement_nc():
+    """
+    Initialize a project from a movement-format .nc file and verify that the
+    file is accepted, the session registered, the filetype recorded as 'nc',
+    and the keypoints preserved in the persisted dataset.
+    """
+    nc_path = Path("./tests/tests_project_sample_nc/cropped_video.nc").resolve()
+    project_name = "test_project_movement_nc"
+    working_directory = str(Path("./tests").resolve())
+
+    config_path, config_values = init_new_project(
+        project_name=project_name,
+        poses_estimations=[str(nc_path)],
+        source_software="movement",
+        working_directory=working_directory,
+    )
+
+    try:
+        assert Path(config_path).exists()
+        assert config_values["session_names"] == [nc_path.stem]
+        assert config_values["pose_estimation_filetype"] == "nc"
+
+        ds_path = Path(config_values["project_path"]) / "data" / "raw" / f"{nc_path.stem}.nc"
+        ds = load_vame_dataset(ds_path)
+        assert "position" in ds.data_vars
+        assert "confidence" in ds.data_vars
+        assert ds["position"].dims == ("time", "space", "keypoints", "individuals")
+        assert ds["confidence"].dims == ("time", "keypoints", "individuals")
+        assert list(ds["space"].values) == ["x", "y"]
+        assert len(ds["keypoints"].values) > 0
     finally:
         shutil.rmtree(Path(config_path).parent)
