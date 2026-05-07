@@ -8,6 +8,7 @@ from vame.util.auxiliary import update_config
 from vame.logging.logger import VameLogger
 from vame.schemas.states import CreateTrainsetFunctionSchema, save_state
 from vame.io.load_poses import read_pose_estimation_file
+from vame.preprocessing.extra import validate_extra_features
 from vame.preprocessing.to_model import format_xarray_for_rnn
 
 
@@ -69,6 +70,10 @@ def traindata_aligned(
     # Set random seed for reproducibility
     np.random.seed(config["project_random_state"])
 
+    # Validate the extra-feature contract up-front so users see all problems at once.
+    extra_features = list(config.get("extra_features") or [])
+    validate_extra_features(config=config, sessions=sessions)
+
     all_data_list = []
     session_metadata = None
 
@@ -98,6 +103,7 @@ def traindata_aligned(
             ds=ds,
             read_from_variable=read_from_variable,
             keypoints=keypoints,
+            extra_features=extra_features,
         )
         all_data_list.append(session_array)
 

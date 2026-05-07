@@ -42,6 +42,9 @@ wheels/
 pip-log.txt
 pip-delete-this-directory.txt
 
+# Test-generated project directories
+tests/test_*/
+
 # Unit test / coverage reports
 htmlcov/
 .tox/

@@ -7,7 +7,7 @@ channels:
   - defaults
 channel_priority: strict
 dependencies:
-  - python=3.11
+  - python=3.12
   - cudatoolkit=11.8
   - pytorch=2.5.1
   - pip

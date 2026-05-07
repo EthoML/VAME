@@ -1,1 +1,2 @@
 from vame.preprocessing.preprocessing import preprocessing
+from vame.preprocessing.extra import validate_extra_features
