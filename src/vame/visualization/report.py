@@ -259,13 +259,18 @@ def plot_community_motifs(
     # Overlay motif bars within each community
     for idx, community in enumerate(community_indices):
         motifs = community_bag[community]
-        # Get counts and sort motifs by count in decreasing order
-        motif_counts = [(motif, motif_labels[motif]) for motif in motifs]
+        # Get counts and sort motifs by count in decreasing order.
+        # A motif present in the cohort may be absent in a single session, so
+        # fall back to 0 instead of raising a KeyError.
+        motif_counts = [(motif, motif_labels.get(motif, 0)) for motif in motifs]
         motif_counts.sort(key=lambda x: x[1], reverse=True)
         motifs_sorted = [motif for motif, count in motif_counts]
         counts_sorted = [count for motif, count in motif_counts]
         total_motif_counts = sum(counts_sorted)
-        motif_percentages = [(count / total_motif_counts) * 100 for count in counts_sorted]
+        # Guard against a community whose motifs are all absent in this session.
+        motif_percentages = [
+            (count / total_motif_counts) * 100 if total_motif_counts else 0 for count in counts_sorted
+        ]
 
         num_motifs = len(motifs_sorted)
         # Adjust motif bar width to fill the community bar width
