@@ -22,7 +22,8 @@ def init_new_project(project_name: str,
                      copy_videos: bool = False,
                      processing_module_key: str = "behavior",
                      pose_estimation_key: str = "PoseEstimation",
-                     config_kwargs: Optional[dict] = None) -> Tuple[str, dict]
+                     config_kwargs: Optional[dict] = None,
+                     cleanup_on_error: bool = True) -> Tuple[str, dict]
 ```
 
 Creates a new VAME project with the given parameters.
@@ -68,6 +69,9 @@ module that contains the pose estimation container. Defaults to &quot;behavior&q
 ``ndx_pose.PoseEstimation`` object inside the processing module.
 Defaults to &quot;PoseEstimation&quot;.
 * **config_kwargs** (`Optional[dict], optional`): Additional configuration parameters. Defaults to None.
+* **cleanup_on_error** (`bool, optional`): If True, remove the partially-created project directory when an error
+occurs during creation, so a failed run leaves nothing behind. Set to
+False to keep the partial project for inspection. Defaults to True.
 
 **Returns**
 
