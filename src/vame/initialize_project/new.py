@@ -29,6 +29,7 @@ def init_new_project(
     processing_module_key: str = "behavior",
     pose_estimation_key: str = "PoseEstimation",
     config_kwargs: Optional[dict] = None,
+    cleanup_on_error: bool = True,
 ) -> Tuple[str, dict]:
     """
     Creates a new VAME project with the given parameters.
@@ -85,6 +86,10 @@ def init_new_project(
         Defaults to "PoseEstimation".
     config_kwargs : Optional[dict], optional
         Additional configuration parameters. Defaults to None.
+    cleanup_on_error : bool, optional
+        If True, remove the partially-created project directory when an error
+        occurs during creation, so a failed run leaves nothing behind. Set to
+        False to keep the partial project for inspection. Defaults to True.
 
     Returns
     -------
@@ -105,144 +110,171 @@ def init_new_project(
     model_path = project_path / "model"
     model_evaluate_path = model_path / "evaluate"
     model_pretrained_path = model_path / "pretrained_model"
-    for p in [
-        data_path,
-        data_raw_path,
-        data_processed_path,
-        results_path,
-        model_path,
-        model_pretrained_path,
-        model_evaluate_path,
-    ]:
-        p.mkdir(parents=True)
-        logger.info('Created "{}"'.format(p))
 
-    filetype = poses_estimations[0].split(".")[-1]
-    if filetype not in ("csv", "nwb", "slp", "h5", "nc"):
-        raise ValueError(f"Unsupported pose estimation file type: {filetype}. Must be one of: csv, nwb, slp, h5, nc")
-    pose_estimation_filetype = cast(Literal["csv", "nwb", "slp", "h5", "nc"], filetype)
+    try:
+        for p in [
+            data_path,
+            data_raw_path,
+            data_processed_path,
+            results_path,
+            model_path,
+            model_pretrained_path,
+            model_evaluate_path,
+        ]:
+            p.mkdir(parents=True)
+            logger.info('Created "{}"'.format(p))
 
-    # Session names
-    pes_paths = [Path(vp).resolve() for vp in poses_estimations]
-    session_names = []
-    for s in pes_paths:
-        session_names.append(s.stem)
+        filetype = poses_estimations[0].split(".")[-1]
+        if filetype not in ("csv", "nwb", "slp", "h5", "nc"):
+            raise ValueError(f"Unsupported pose estimation file type: {filetype}. Must be one of: csv, nwb, slp, h5, nc")
+        pose_estimation_filetype = cast(Literal["csv", "nwb", "slp", "h5", "nc"], filetype)
 
-    # Creates directories under project/results/
-    dirs_results = [results_path / Path(i.stem) for i in pes_paths]
-    for p in dirs_results:
-        p.mkdir(parents=True, exist_ok=True)
+        # Session names
+        pes_paths = [Path(vp).resolve() for vp in poses_estimations]
+        session_names = []
+        for s in pes_paths:
+            session_names.append(s.stem)
 
-    # Copy or link videos if they are provided
-    if videos:
-        videos_paths = []
-        for i in videos:
-            # Check if it is a folder  -- WE SHOULD PROBABLY REMOVE THIS OPTION
-            if os.path.isdir(i):
-                vids_in_dir = [os.path.join(i, vp) for vp in os.listdir(i) if video_type in vp]
-                if len(vids_in_dir) == 0:
-                    logger.info(f"No videos found in {i}")
-                    logger.info(f"Perhaps change the video_type, which is currently set to: {video_type}")
+        # Creates directories under project/results/
+        dirs_results = [results_path / Path(i.stem) for i in pes_paths]
+        for p in dirs_results:
+            p.mkdir(parents=True, exist_ok=True)
+
+        # Copy or link videos if they are provided
+        if videos:
+            videos_paths = []
+            for i in videos:
+                # Check if it is a folder  -- WE SHOULD PROBABLY REMOVE THIS OPTION
+                if os.path.isdir(i):
+                    vids_in_dir = [os.path.join(i, vp) for vp in os.listdir(i) if video_type in vp]
+                    if len(vids_in_dir) == 0:
+                        logger.info(f"No videos found in {i}")
+                        logger.info(f"Perhaps change the video_type, which is currently set to: {video_type}")
+                    else:
+                        videos_paths.extend(vids_in_dir)
+                        logger.info(f"{len(vids_in_dir)} videos from the directory {i} were added to the project.")
+                elif os.path.isfile(i):
+                    videos_paths.append(i)
                 else:
-                    videos_paths.extend(vids_in_dir)
-                    logger.info(f"{len(vids_in_dir)} videos from the directory {i} were added to the project.")
-            elif os.path.isfile(i):
-                videos_paths.append(i)
-            else:
-                logger.info(f"Invalid video path: {i}")
-                raise FileNotFoundError(f"Invalid video path: {i}")
+                    logger.info(f"Invalid video path: {i}")
+                    raise FileNotFoundError(f"Invalid video path: {i}")
 
-        logger.info("Copying / linking the video files... \n")
-        destinations = [data_raw_path / Path(vp).name for vp in videos_paths]
-        for src, dst in zip(videos_paths, destinations):
-            if copy_videos:
-                logger.info(f"Copying {src} to {dst}")
-                shutil.copy(os.fspath(src), os.fspath(dst))
-            else:
-                try:
-                    logger.info(f"Creating symbolic link from {src} to {dst}")
-                    os.symlink(os.fspath(src), os.fspath(dst))
-                except OSError as e:
-                    raise OSError(
-                        f"Failed to create a symbolic link from {src} to {dst}. "
-                        "On Windows, symlinks require Administrator privileges or Developer Mode. "
-                        "Enable Developer Mode in Windows Settings, run as Administrator, "
-                        "or pass copy_videos=True to copy the files instead."
-                    ) from e
+            logger.info("Copying / linking the video files... \n")
+            # Name each linked/copied video after its paired session (the pose-file
+            # stem), not the video's own filename. Videos are paired positionally with the pose
+            # files (see the zip over poses_estimations / videos_paths below).
+            if len(videos_paths) != len(session_names):
+                raise ValueError(
+                    f"Number of videos ({len(videos_paths)}) does not match the number of "
+                    f"pose estimation files / sessions ({len(session_names)}). Provide exactly "
+                    "one video per pose estimation file, in the same order."
+                )
+            destinations = [
+                data_raw_path / f"{session_names[idx]}{Path(vp).suffix}"
+                for idx, vp in enumerate(videos_paths)
+            ]
+            for src, dst in zip(videos_paths, destinations):
+                if copy_videos:
+                    logger.info(f"Copying {src} to {dst}")
+                    shutil.copy(os.fspath(src), os.fspath(dst))
+                else:
+                    try:
+                        logger.info(f"Creating symbolic link from {src} to {dst}")
+                        os.symlink(os.fspath(src), os.fspath(dst))
+                    except OSError as e:
+                        raise OSError(
+                            f"Failed to create a symbolic link from {src} to {dst}. "
+                            "On Windows, symlinks require Administrator privileges or Developer Mode. "
+                            "Enable Developer Mode in Windows Settings, run as Administrator, "
+                            "or pass copy_videos=True to copy the files instead."
+                        ) from e
 
-        if fps is None:
-            fps = get_video_frame_rate(str(videos_paths[0]))
-            logger.info(f"Estimated FPS: {fps}")
-    else:
-        videos_paths = [""] * len(pes_paths)
-        logger.info("No videos provided.")
+            if fps is None:
+                fps = get_video_frame_rate(str(videos_paths[0]))
+                logger.info(f"Estimated FPS: {fps}")
+        else:
+            videos_paths = [""] * len(pes_paths)
+            logger.info("No videos provided.")
 
-    # Copy pose estimation data
-    logger.info("Copying pose estimation raw data...\n")
-    num_features_list = []
-    keypoints_list = []
-    for pes_path, video_path in zip(poses_estimations, videos_paths):
-        ds = load_pose_estimation(
-            pose_estimation_file=pes_path,
-            source_software=source_software,
-            video_file=video_path,
-            fps=fps,
-            processing_module_key=processing_module_key,
-            pose_estimation_key=pose_estimation_key,
+        # Copy pose estimation data
+        logger.info("Copying pose estimation raw data...\n")
+        num_features_list = []
+        keypoints_list = []
+        for pes_path, video_path in zip(poses_estimations, videos_paths):
+            ds = load_pose_estimation(
+                pose_estimation_file=pes_path,
+                source_software=source_software,
+                video_file=video_path,
+                fps=fps,
+                processing_module_key=processing_module_key,
+                pose_estimation_key=pose_estimation_key,
+            )
+            output_name = data_raw_path / Path(pes_path).stem
+            ds.to_netcdf(
+                path=f"{output_name}.nc",
+                engine="netcdf4",
+            )
+            num_features_list.append(ds.space.shape[0] * ds.keypoints.shape[0])
+            keypoints_list.append(list(ds["keypoints"].values))
+
+            output_processed_name = data_processed_path / Path(pes_path).stem
+            ds.to_netcdf(
+                path=f"{output_processed_name}_processed.nc",
+                engine="netcdf4",
+            )
+
+        # Set configuration parameters
+        if config_kwargs is None:
+            config_kwargs = {}
+
+        unique_num_features = list(set(num_features_list))
+        if len(unique_num_features) > 1:
+            raise ValueError("All pose estimation files must have the same number of features.")
+        config_kwargs["num_features"] = unique_num_features[0]
+
+        # Check all keypoints are the same across sessions
+        if not all(keypoints == keypoints_list[0] for keypoints in keypoints_list):
+            raise ValueError("All pose estimation files must have the same keypoint names.")
+        config_kwargs["keypoints"] = keypoints_list[0]
+
+        # Create config.yaml file
+        new_project = ProjectSchema(
+            vame_version=get_version(),
+            project_name=project_name,
+            creation_datetime=creation_datetime,
+            project_path=str(project_path),
+            session_names=session_names,
+            pose_estimation_filetype=pose_estimation_filetype,
+            **config_kwargs,
         )
-        output_name = data_raw_path / Path(pes_path).stem
-        ds.to_netcdf(
-            path=f"{output_name}.nc",
-            engine="netcdf4",
-        )
-        num_features_list.append(ds.space.shape[0] * ds.keypoints.shape[0])
-        keypoints_list.append(list(ds["keypoints"].values))
-
-        output_processed_name = data_processed_path / Path(pes_path).stem
-        ds.to_netcdf(
-            path=f"{output_processed_name}_processed.nc",
-            engine="netcdf4",
+        config_data = new_project.model_dump()
+        projconfigfile = os.path.join(str(project_path), "config.yaml")
+        write_config(
+            config_path=projconfigfile,
+            config=config_data,
         )
 
-    # Set configuration parameters
-    if config_kwargs is None:
-        config_kwargs = {}
+        # Create states.json file
+        vame_pipeline_default_schema = VAMEPipelineStatesSchema()
+        vame_pipeline_default_schema_path = Path(project_path) / "states" / "states.json"
+        if not vame_pipeline_default_schema_path.parent.exists():
+            vame_pipeline_default_schema_path.parent.mkdir(parents=True)
+        with open(vame_pipeline_default_schema_path, "w") as f:
+            json.dump(vame_pipeline_default_schema.model_dump(), f, indent=4)
 
-    unique_num_features = list(set(num_features_list))
-    if len(unique_num_features) > 1:
-        raise ValueError("All pose estimation files must have the same number of features.")
-    config_kwargs["num_features"] = unique_num_features[0]
+        logger.info(f"A VAME project has been created at {project_path}")
 
-    # Check all keypoints are the same across sessions
-    if not all(keypoints == keypoints_list[0] for keypoints in keypoints_list):
-        raise ValueError("All pose estimation files must have the same keypoint names.")
-    config_kwargs["keypoints"] = keypoints_list[0]
-
-    # Create config.yaml file
-    new_project = ProjectSchema(
-        vame_version=get_version(),
-        project_name=project_name,
-        creation_datetime=creation_datetime,
-        project_path=str(project_path),
-        session_names=session_names,
-        pose_estimation_filetype=pose_estimation_filetype,
-        **config_kwargs,
-    )
-    config_data = new_project.model_dump()
-    projconfigfile = os.path.join(str(project_path), "config.yaml")
-    write_config(
-        config_path=projconfigfile,
-        config=config_data,
-    )
-
-    # Create states.json file
-    vame_pipeline_default_schema = VAMEPipelineStatesSchema()
-    vame_pipeline_default_schema_path = Path(project_path) / "states" / "states.json"
-    if not vame_pipeline_default_schema_path.parent.exists():
-        vame_pipeline_default_schema_path.parent.mkdir(parents=True)
-    with open(vame_pipeline_default_schema_path, "w") as f:
-        json.dump(vame_pipeline_default_schema.model_dump(), f, indent=4)
-
-    logger.info(f"A VAME project has been created at {project_path}")
-
-    return projconfigfile, read_config(projconfigfile)
+        return projconfigfile, read_config(projconfigfile)
+    except BaseException as e:
+        # Roll back the partially-created project so a failed run leaves nothing
+        # behind. shutil.rmtree unlinks any video *symlinks* without following
+        # them, so the user's source videos are never deleted. 
+        if cleanup_on_error:
+            logger.error(f"Project creation failed ({e!r}); removing partial project at {project_path}")
+            shutil.rmtree(project_path, ignore_errors=True)
+        else:
+            logger.error(
+                f"Project creation failed ({e!r}); leaving partial project at "
+                f"{project_path} (cleanup_on_error=False)"
+            )
+        raise

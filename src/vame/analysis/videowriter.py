@@ -90,20 +90,27 @@ def create_cluster_videos(
     capture = cv.VideoCapture(video_file_path)
     if not capture.isOpened():
         raise ValueError(f"Video capture could not be opened. Ensure the video file is valid.\n {video_file_path}")
-    width = capture.get(cv.CAP_PROP_FRAME_WIDTH)
-    height = capture.get(cv.CAP_PROP_FRAME_HEIGHT)
+    width = int(capture.get(cv.CAP_PROP_FRAME_WIDTH))
+    height = int(capture.get(cv.CAP_PROP_FRAME_HEIGHT))
+    # Display rate for the montage clips
     fps = 25  # capture.get(cv.CAP_PROP_FPS)
 
-    cluster_start = config["time_window"] / 2
-    unique_labels, count_labels = np.unique(labels, return_counts=True)
+    # Offset that re-centers each motif window on the labeled frame.
+    cluster_start = int(config["time_window"] / 2)
+    length_of_motif_video = config["length_of_motif_video"]
+    unique_labels = np.unique(labels)
 
+    # Build one writer per (non-empty) cluster up front, and map every video-frame
+    # index we need to the writer that consumes it
+    writers = []
+    frame_to_writer = {}
     for cluster in unique_labels:
-        logger.info("Cluster: %d" % (cluster))
-        cluster_lbl = np.where(labels == cluster)
-        cluster_lbl = cluster_lbl[0]
+        cluster_lbl = np.where(labels == cluster)[0]
         if not cluster_lbl.size:
-            logger.info("Cluster is empty")
+            logger.info("Cluster %d is empty" % cluster)
             continue
+
+        vid_length = min(len(cluster_lbl), length_of_motif_video)
 
         if flag == "motif":
             output = os.path.join(
@@ -111,7 +118,7 @@ def create_cluster_videos(
                 "cluster_videos",
                 session + f"-motif_%d{output_video_type}" % cluster,
             )
-        if flag == "community":
+        else:  # community
             output = os.path.join(
                 path_to_file,
                 "community_videos",
@@ -120,32 +127,47 @@ def create_cluster_videos(
 
         if output_video_type == ".avi":
             codec = cv.VideoWriter_fourcc("M", "J", "P", "G")
-            video_writer = cv.VideoWriter(output, codec, fps, (int(width), int(height)))
-        elif output_video_type == ".mp4":
-            video_writer = imageio.get_writer(
+            writer = cv.VideoWriter(output, codec, fps, (width, height))
+        else:  # .mp4
+            writer = imageio.get_writer(
                 output,
                 fps=fps,
                 codec="h264",
                 macro_block_size=None,
             )
+        writers.append(writer)
 
-        if len(cluster_lbl) < config["length_of_motif_video"]:
-            vid_length = len(cluster_lbl)
-        else:
-            vid_length = config["length_of_motif_video"]
+        # First `vid_length` frames of this cluster, re-centered by cluster_start.
+        for idx in cluster_lbl[:vid_length]:
+            frame_to_writer[int(idx) + cluster_start] = writer
 
-        for num in tqdm.tqdm(range(vid_length), file=tqdm_logger_stream):
-            idx = cluster_lbl[num]
-            capture.set(1, idx + cluster_start)
-            ret, frame = capture.read()
-            if output_video_type == ".avi":
-                video_writer.write(frame)
-            elif output_video_type == ".mp4":
-                video_writer.append_data(frame)
+    if not frame_to_writer:
+        capture.release()
+        return
+
+    # Single sequential pass up to the last frame we need. Decode (read) only the
+    # frames we keep; cheaply skip the rest with grab(), which advances the
+    # decoder without the full retrieve/color-convert that read() performs.
+    max_needed = max(frame_to_writer)
+    for f in tqdm.tqdm(range(max_needed + 1), file=tqdm_logger_stream):
+        writer = frame_to_writer.get(f)
+        if writer is None:
+            capture.grab()
+            continue
+        ret, frame = capture.read()
+        if not ret:
+            logger.info("Reached end of video at frame %d before all frames were written." % f)
+            break
         if output_video_type == ".avi":
-            video_writer.release()
-        elif output_video_type == ".mp4":
-            video_writer.close()
+            writer.write(frame)
+        else:  # .mp4
+            writer.append_data(frame)
+
+    for writer in writers:
+        if output_video_type == ".avi":
+            writer.release()
+        else:
+            writer.close()
     capture.release()
 
 
