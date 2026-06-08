@@ -1,3 +1,13 @@
+# v0.14.1
+
+### Fixes
+
+- Roll back a partially-created project when initialization fails ([PR #218](https://github.com/EthoML/VAME/pull/218))
+- Speed up motif/community video clips generation ([PR #218](https://github.com/EthoML/VAME/pull/218))
+- Name copied/linked videos after their paired session and validate one video per pose estimation file ([PR #218](https://github.com/EthoML/VAME/pull/218))
+- Handle motifs absent from a session in the community motif report ([PR #218](https://github.com/EthoML/VAME/pull/218))
+
+
 # v0.14.0
 
 ### Features
