@@ -30,18 +30,6 @@ TENSORBOARD_LOG_HISTOGRAMS = False  # Set to True to log parameter histograms
 DEVICE = get_device()
 
 
-def _seed_worker(worker_id: int) -> None:
-    """Give each DataLoader worker its own numpy seed.
-
-    SEQUENCE_DATASET draws random crops with numpy, whose RNG is NOT fork-safe —
-    without this, multiple workers would generate identical windows and silently
-    cut the effective data diversity. torch seeds each worker deterministically,
-    so derive numpy's seed from torch's per-worker seed.
-    """
-    worker_seed = torch.initial_seed() % 2**32
-    np.random.seed(worker_seed)
-
-
 def reconstruction_loss(
     x: torch.Tensor,
     x_tilde: torch.Tensor,
@@ -122,17 +110,16 @@ def cluster_loss(
         Cluster loss.
     """
     gram_matrix = (H.T @ H) / batch_size
-    # svdvals returns the same singular values as torch.svd (descending) but skips
-    # computing U/V, so it's cheaper. SVD backward has no MPS autograd kernel
-    # (gradients can be silently wrong), so run the decomposition on CPU when on
-    # MPS. The device moves stay in the graph, so gradients still flow back to the
-    # MPS latent. CUDA/CPU keep their fast path.
+    # SVD backward has no MPS autograd kernel (gradients can be silently wrong),
+    # so run the decomposition on CPU when on MPS. The device moves stay in the
+    # graph, so gradients still flow back to the MPS latent. CUDA/CPU keep their
+    # fast path.
     if gram_matrix.device.type == "mps":
-        sv_2 = torch.linalg.svdvals(gram_matrix.cpu())
+        _, sv_2, _ = torch.svd(gram_matrix.cpu())
         sv = torch.sqrt(sv_2[:kloss])
         loss = torch.sum(sv).to(gram_matrix.device)
     else:
-        sv_2 = torch.linalg.svdvals(gram_matrix)
+        _, sv_2, _ = torch.svd(gram_matrix)
         sv = torch.sqrt(sv_2[:kloss])
         loss = torch.sum(sv)
     return lmbda * loss
@@ -819,26 +806,8 @@ def train_model(
             samples_per_epoch=test_samples,
         )
 
-        # Overlap data loading with compute. pin_memory only helps CUDA; on macOS
-        # workers are spawned (extra startup + the dataset array is copied per
-        # worker), so persistent_workers avoids re-spawning each epoch. Set
-        # num_workers=0 in the config to disable if it regresses on your machine.
-        num_workers = int(config.get("num_workers", 4))
-        loader_kwargs = {
-            "num_workers": num_workers,
-            "pin_memory": torch.cuda.is_available(),
-        }
-        if num_workers > 0:
-            loader_kwargs["persistent_workers"] = True
-            loader_kwargs["prefetch_factor"] = 2
-            loader_kwargs["worker_init_fn"] = _seed_worker
-
-        train_loader = Data.DataLoader(
-            trainset, batch_size=TRAIN_BATCH_SIZE, shuffle=True, drop_last=True, **loader_kwargs
-        )
-        test_loader = Data.DataLoader(
-            testset, batch_size=TEST_BATCH_SIZE, shuffle=True, drop_last=True, **loader_kwargs
-        )
+        train_loader = Data.DataLoader(trainset, batch_size=TRAIN_BATCH_SIZE, shuffle=True, drop_last=True)
+        test_loader = Data.DataLoader(testset, batch_size=TEST_BATCH_SIZE, shuffle=True, drop_last=True)
 
         optimizer = torch.optim.Adam(model.parameters(), lr=LEARNING_RATE, amsgrad=True)
 

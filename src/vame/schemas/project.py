@@ -185,10 +185,6 @@ class ProjectSchema(BaseModel):
         default=False,
         title="Softplus",
     )
-    num_workers: int = Field(
-        default=4,
-        title="DataLoader workers",
-    )
     steps_per_epoch: Optional[int] = Field(
         default=None,
         title="Steps (batches) per epoch",
