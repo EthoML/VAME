@@ -24,10 +24,22 @@ tqdm_to_logger = TqdmToLogger(logger)
 
 # TensorBoard configuration (hardcoded)
 TENSORBOARD_ENABLED = True
-TENSORBOARD_LOG_FREQUENCY = 1  # Log every N batches
+TENSORBOARD_LOG_FREQUENCY = 10  # Log every N batches (each log forces a GPU->CPU sync)
 TENSORBOARD_LOG_HISTOGRAMS = False  # Set to True to log parameter histograms
 
 DEVICE = get_device()
+
+
+def _seed_worker(worker_id: int) -> None:
+    """Give each DataLoader worker its own numpy seed.
+
+    SEQUENCE_DATASET draws random crops with numpy, whose RNG is NOT fork-safe —
+    without this, multiple workers would generate identical windows and silently
+    cut the effective data diversity. torch seeds each worker deterministically,
+    so derive numpy's seed from torch's per-worker seed.
+    """
+    worker_seed = torch.initial_seed() % 2**32
+    np.random.seed(worker_seed)
 
 
 def reconstruction_loss(
@@ -110,16 +122,17 @@ def cluster_loss(
         Cluster loss.
     """
     gram_matrix = (H.T @ H) / batch_size
-    # SVD backward has no MPS autograd kernel (gradients can be silently wrong),
-    # so run the decomposition on CPU when on MPS. The device moves stay in the
-    # graph, so gradients still flow back to the MPS latent. CUDA/CPU keep their
-    # fast path.
+    # svdvals returns the same singular values as torch.svd (descending) but skips
+    # computing U/V, so it's cheaper. SVD backward has no MPS autograd kernel
+    # (gradients can be silently wrong), so run the decomposition on CPU when on
+    # MPS. The device moves stay in the graph, so gradients still flow back to the
+    # MPS latent. CUDA/CPU keep their fast path.
     if gram_matrix.device.type == "mps":
-        _, sv_2, _ = torch.svd(gram_matrix.cpu())
+        sv_2 = torch.linalg.svdvals(gram_matrix.cpu())
         sv = torch.sqrt(sv_2[:kloss])
         loss = torch.sum(sv).to(gram_matrix.device)
     else:
-        _, sv_2, _ = torch.svd(gram_matrix)
+        sv_2 = torch.linalg.svdvals(gram_matrix)
         sv = torch.sqrt(sv_2[:kloss])
         loss = torch.sum(sv)
     return lmbda * loss
@@ -303,11 +316,13 @@ def train(
     """
     # toggle model to train mode
     model.train()
-    train_loss = 0.0
-    mse_loss = 0.0
-    kullback_loss = 0.0
-    kmeans_losses = 0.0
-    fut_loss = 0.0
+    # Accumulate on-device and sync once per epoch (calling .item() every batch
+    # forces a GPU->CPU sync that stalls the whole pipeline).
+    train_loss = torch.zeros((), device=DEVICE)
+    mse_loss = torch.zeros((), device=DEVICE)
+    kullback_loss = torch.zeros((), device=DEVICE)
+    kmeans_losses = torch.zeros((), device=DEVICE)
+    fut_loss = torch.zeros((), device=DEVICE)
     loss = 0.0
     seq_len_half = int(seq_len / 2)
 
@@ -330,7 +345,7 @@ def train(
             kl_loss = kullback_leibler_loss(mu, logvar)
             kl_weight = kl_annealing(epoch, kl_start, annealtime, anneal_function)
             loss = rec_loss + fut_rec_loss + BETA * kl_weight * kl_loss + kl_weight * kmeans_loss
-            fut_loss += fut_rec_loss.item()
+            fut_loss += fut_rec_loss.detach()
         else:
             data_tilde, latent, mu, logvar = model(data_gaussian)
             rec_loss = reconstruction_loss(data, data_tilde, mse_red)
@@ -358,10 +373,10 @@ def train(
 
         # torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm = 5)
 
-        train_loss += loss.item()
-        mse_loss += rec_loss.item()
-        kullback_loss += kl_loss.item()
-        kmeans_losses += kmeans_loss.item()
+        train_loss += loss.detach()
+        mse_loss += rec_loss.detach()
+        kullback_loss += kl_loss.detach()
+        kmeans_losses += kmeans_loss.detach()
 
         # if idx % 1000 == 0:
         #     print('Epoch: %d.  loss: %.4f' %(epoch, loss.item()))
@@ -372,35 +387,43 @@ def train(
     else:
         scheduler.step()
 
+    # Single GPU->CPU sync for the whole epoch's averages.
+    n_batches = idx + 1
+    train_loss = (train_loss / n_batches).item()
+    mse_loss = (mse_loss / n_batches).item()
+    kullback_loss = (kullback_loss / n_batches).item()
+    kmeans_losses = (kmeans_losses / n_batches).item()
+    fut_loss = (fut_loss / n_batches).item()
+
     if future_decoder:
         logger.info(
             "Train loss: {:.3f}, MSE-Loss: {:.3f}, MSE-Future-Loss {:.3f}, KL-Loss: {:.3f}, Kmeans-Loss: {:.3f}, weight: {:.2f}".format(
-                train_loss / idx,
-                mse_loss / idx,
-                fut_loss / idx,
-                BETA * kl_weight * kullback_loss / idx,
-                kl_weight * kmeans_losses / idx,
+                train_loss,
+                mse_loss,
+                fut_loss,
+                BETA * kl_weight * kullback_loss,
+                kl_weight * kmeans_losses,
                 kl_weight,
             )
         )
     else:
         logger.info(
             "Train loss: {:.3f}, MSE-Loss: {:.3f}, KL-Loss: {:.3f}, Kmeans-Loss: {:.3f}, weight: {:.2f}".format(
-                train_loss / idx,
-                mse_loss / idx,
-                BETA * kl_weight * kullback_loss / idx,
-                kl_weight * kmeans_losses / idx,
+                train_loss,
+                mse_loss,
+                BETA * kl_weight * kullback_loss,
+                kl_weight * kmeans_losses,
                 kl_weight,
             )
         )
 
     return (
         kl_weight,
-        train_loss / idx,
-        kl_weight * kmeans_losses / idx,
-        kullback_loss / idx,
-        mse_loss / idx,
-        fut_loss / idx,
+        train_loss,
+        kl_weight * kmeans_losses,
+        kullback_loss,
+        mse_loss,
+        fut_loss,
         global_step + len(train_loader),
     )
 
@@ -457,10 +480,11 @@ def test(
     """
     # toggle model to inference mode
     model.eval()
-    test_loss = 0.0
-    mse_loss = 0.0
-    kullback_loss = 0.0
-    kmeans_losses = 0.0
+    # Accumulate on-device; sync once after the loop (see train()).
+    test_loss = torch.zeros((), device=DEVICE)
+    mse_loss = torch.zeros((), device=DEVICE)
+    kullback_loss = torch.zeros((), device=DEVICE)
+    kmeans_losses = torch.zeros((), device=DEVICE)
     loss = 0.0
     seq_len_half = int(seq_len / 2)
 
@@ -487,27 +511,35 @@ def test(
 
             # torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm = 5)
 
-            test_loss += loss.item()
-            mse_loss += rec_loss.item()
-            kullback_loss += kl_loss.item()
-            kmeans_losses += kmeans_loss.item()
+            test_loss += loss.detach()
+            mse_loss += rec_loss.detach()
+            kullback_loss += kl_loss.detach()
+            kmeans_losses += kmeans_loss.detach()
+
+    # Single GPU->CPU sync for the epoch's averages.
+    n_batches = idx + 1
+    test_loss_avg = (test_loss / n_batches).item()
+    mse_avg = (mse_loss / n_batches).item()
+    kl_avg = (kullback_loss / n_batches).item()
+    kmeans_sum = kmeans_losses.item()
+    kmeans_avg = kmeans_sum / n_batches
 
     # TensorBoard logging for test metrics
     if writer:
-        writer.add_scalar('epoch/test_loss', test_loss / idx, epoch)
-        writer.add_scalar('epoch/test_mse', mse_loss / idx, epoch)
-        writer.add_scalar('epoch/test_kl', BETA * kl_weight * kullback_loss / idx, epoch)
-        writer.add_scalar('epoch/test_kmeans', kl_weight * kmeans_losses / idx, epoch)
+        writer.add_scalar('epoch/test_loss', test_loss_avg, epoch)
+        writer.add_scalar('epoch/test_mse', mse_avg, epoch)
+        writer.add_scalar('epoch/test_kl', BETA * kl_weight * kl_avg, epoch)
+        writer.add_scalar('epoch/test_kmeans', kl_weight * kmeans_avg, epoch)
 
     logger.info(
         "Test loss: {:.3f}, MSE-Loss: {:.3f}, KL-Loss: {:.3f}, Kmeans-Loss: {:.3f}".format(
-            test_loss / idx,
-            mse_loss / idx,
-            BETA * kl_weight * kullback_loss / idx,
-            kl_weight * kmeans_losses / idx,
+            test_loss_avg,
+            mse_avg,
+            BETA * kl_weight * kl_avg,
+            kl_weight * kmeans_avg,
         )
     )
-    return mse_loss / idx, test_loss / idx, kl_weight * kmeans_losses
+    return mse_avg, test_loss_avg, kl_weight * kmeans_sum
 
 
 def _stop_sentinel_path(config: dict) -> Path:
@@ -766,21 +798,47 @@ def train_model(
                     logger.error("Could not load pretrained model. Check file path in config.yaml.")
 
         """ DATASET """
+        # Optional: cap batches per epoch so epoch length doesn't scale with the
+        # raw frame count. None => legacy behavior (one sample per frame).
+        steps_per_epoch = config.get("steps_per_epoch", None)
+        train_samples = steps_per_epoch * TRAIN_BATCH_SIZE if steps_per_epoch else None
+        test_samples = steps_per_epoch * TEST_BATCH_SIZE if steps_per_epoch else None
+
         trainset = SEQUENCE_DATASET(
             os.path.join(config["project_path"], "data", "train", ""),
             data="train_seq.npy",
             train=True,
             temporal_window=TEMPORAL_WINDOW,
+            samples_per_epoch=train_samples,
         )
         testset = SEQUENCE_DATASET(
             os.path.join(config["project_path"], "data", "train", ""),
             data="test_seq.npy",
             train=False,
             temporal_window=TEMPORAL_WINDOW,
+            samples_per_epoch=test_samples,
         )
 
-        train_loader = Data.DataLoader(trainset, batch_size=TRAIN_BATCH_SIZE, shuffle=True, drop_last=True)
-        test_loader = Data.DataLoader(testset, batch_size=TEST_BATCH_SIZE, shuffle=True, drop_last=True)
+        # Overlap data loading with compute. pin_memory only helps CUDA; on macOS
+        # workers are spawned (extra startup + the dataset array is copied per
+        # worker), so persistent_workers avoids re-spawning each epoch. Set
+        # num_workers=0 in the config to disable if it regresses on your machine.
+        num_workers = int(config.get("num_workers", 4))
+        loader_kwargs = {
+            "num_workers": num_workers,
+            "pin_memory": torch.cuda.is_available(),
+        }
+        if num_workers > 0:
+            loader_kwargs["persistent_workers"] = True
+            loader_kwargs["prefetch_factor"] = 2
+            loader_kwargs["worker_init_fn"] = _seed_worker
+
+        train_loader = Data.DataLoader(
+            trainset, batch_size=TRAIN_BATCH_SIZE, shuffle=True, drop_last=True, **loader_kwargs
+        )
+        test_loader = Data.DataLoader(
+            testset, batch_size=TEST_BATCH_SIZE, shuffle=True, drop_last=True, **loader_kwargs
+        )
 
         optimizer = torch.optim.Adam(model.parameters(), lr=LEARNING_RATE, amsgrad=True)
 

@@ -2,6 +2,7 @@ import torch
 from torch.utils.data.dataset import Dataset
 import numpy as np
 import os
+from typing import Optional
 from vame.logging.logger import VameLogger
 
 
@@ -12,6 +13,7 @@ class SEQUENCE_DATASET(Dataset):
         data: str,
         train: bool,
         temporal_window: int,
+        samples_per_epoch: Optional[int] = None,
         **kwargs,
     ) -> None:
         """
@@ -58,6 +60,16 @@ class SEQUENCE_DATASET(Dataset):
             self.mean = np.load(path_to_file + "seq_mean.npy")
             self.std = np.load(path_to_file + "seq_std.npy")
 
+        # Normalize once and store as float32. Previously each __getitem__ did
+        # (x - mean) / std in float64 and the train loop cast to float32 — same
+        # numbers, but doing it once here halves host->device bandwidth and drops
+        # a per-batch device cast.
+        self.X = ((self.X - self.mean) / self.std).astype(np.float32)
+
+        # Number of random-crop samples drawn per epoch. None => one per frame
+        # (legacy behavior); set to decouple epoch length from dataset size.
+        self.samples_per_epoch = samples_per_epoch
+
         if train:
             self.logger.info("Initialize train data. Datapoints %d" % self.data_points)
         else:
@@ -72,7 +84,7 @@ class SEQUENCE_DATASET(Dataset):
         int
             Number of data points.
         """
-        return self.data_points
+        return self.samples_per_epoch or self.data_points
 
     def __getitem__(self, index: int) -> torch.Tensor:
         """
@@ -92,6 +104,6 @@ class SEQUENCE_DATASET(Dataset):
         nf = self.data_points
         start = np.random.choice(nf - temp_window)
         end = start + temp_window
-        sequence = self.X[:, start:end]
-        sequence = (sequence - self.mean) / self.std
-        return torch.from_numpy(sequence)
+        # self.X is already normalized + float32; copy so the slice is contiguous
+        # and not a view shared across worker processes.
+        return torch.from_numpy(self.X[:, start:end].copy())
