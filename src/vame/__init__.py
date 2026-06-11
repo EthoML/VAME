@@ -7,7 +7,7 @@ import netCDF4
 
 from vame.initialize_project import init_new_project
 from vame.model import create_trainset
-from vame.model import train_model
+from vame.model import train_model, stop_training
 from vame.model import evaluate_model
 from vame.analysis import segment_session
 from vame.analysis import motif_videos

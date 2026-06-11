@@ -5,6 +5,7 @@ from torch.autograd import Variable
 from torch.optim.lr_scheduler import StepLR, ReduceLROnPlateau
 from torch.utils.tensorboard.writer import SummaryWriter
 import os
+import json
 import numpy as np
 from pathlib import Path
 from tqdm import tqdm
@@ -509,6 +510,60 @@ def test(
     return mse_loss / idx, test_loss / idx, kl_weight * kmeans_losses
 
 
+def _stop_sentinel_path(config: dict) -> Path:
+    """Path of the sentinel file used to request a graceful training stop.
+
+    ``train_model`` checks for this file at each epoch boundary; ``stop_training``
+    creates it. Project-level (one training per project at a time).
+    """
+    return Path(config["project_path"]) / "model" / "STOP"
+
+
+def stop_training(config: dict) -> bool:
+    """Request a graceful stop of an in-progress ``train_model`` run.
+
+    Writes a sentinel file that ``train_model`` checks at each epoch boundary;
+    when seen, it saves the current model, records the ``aborted`` state, and
+    stops cleanly. Call this from another thread / process / notebook kernel
+    while training runs elsewhere (e.g. on a server, or from the VAME app).
+
+    Note: if you are running ``train_model`` synchronously in the *same* thread
+    (a plain script or a blocking notebook cell), use Ctrl+C instead — that
+    raises ``KeyboardInterrupt`` and is already handled the same way.
+
+    Parameters
+    ----------
+    config : dict
+        Configuration dictionary (must contain ``project_path``).
+
+    Returns
+    -------
+    bool
+        True if a training run for this project currently reports as "running"
+        (best-effort). The stop request is written regardless and is cleared
+        automatically at the next training start.
+    """
+    sentinel = _stop_sentinel_path(config)
+    sentinel.parent.mkdir(parents=True, exist_ok=True)
+    sentinel.touch()
+    logger.info(
+        "Stop requested for project '%s' (sentinel: %s)",
+        config["project_path"],
+        sentinel,
+    )
+
+    running = False
+    try:
+        states_file = Path(config["project_path"]) / "states" / "states.json"
+        states = json.loads(states_file.read_text())
+        running = states.get("train_model", {}).get("execution_state") == "running"
+    except Exception:
+        pass
+    if not running:
+        logger.warning("No training currently reports as 'running' for this project.")
+    return running
+
+
 @save_state(model=TrainModelFunctionSchema)
 def train_model(
     config: dict,
@@ -564,6 +619,10 @@ def train_model(
         model_name = config["model_name"]
         pretrained_weights = config["pretrained_weights"]
         pretrained_model = config["pretrained_model"]
+
+        # Clear any stale stop request left over from a previous run.
+        stop_sentinel = _stop_sentinel_path(config)
+        stop_sentinel.unlink(missing_ok=True)
 
         logger.info("Train Variational Autoencoder - model name: %s \n" % model_name)
         if not os.path.exists(os.path.join(config["project_path"], "model", "best_model", "")):
@@ -933,6 +992,50 @@ def train_model(
                 fut_losses,
             )
             logger.info("\n")
+
+            # User-requested graceful stop. Checked at the epoch boundary (this
+            # epoch's losses are already saved above). Save current weights, then
+            # raise KeyboardInterrupt so @save_state records "aborted".
+            if stop_sentinel.exists():
+                project_name = config["project_name"]
+                logger.info(
+                    "Stop requested — saving current model and aborting at epoch %d." % epoch
+                )
+
+                def _atomic_save(state_dict, dest):
+                    tmp = dest + ".tmp"
+                    torch.save(state_dict, tmp)
+                    os.replace(tmp, dest)  # never leave a half-written .pkl
+
+                # Always keep a labelled snapshot of the stopped weights.
+                _atomic_save(
+                    model.state_dict(),
+                    os.path.join(
+                        config["project_path"],
+                        "model",
+                        "best_model",
+                        "snapshots",
+                        model_name + "_" + project_name + "_stopped_epoch_" + str(epoch) + ".pkl",
+                    ),
+                )
+                # If KL annealing never produced a best_model, promote the current
+                # (pre-convergence) weights so evaluate/segment can still run.
+                best_model_path = os.path.join(
+                    config["project_path"],
+                    "model",
+                    "best_model",
+                    model_name + "_" + project_name + ".pkl",
+                )
+                if not os.path.exists(best_model_path):
+                    logger.warning(
+                        "No converged best_model yet — promoting current "
+                        "(pre-convergence) weights so evaluate/segment can run; "
+                        "results will be lower quality."
+                    )
+                    _atomic_save(model.state_dict(), best_model_path)
+
+                stop_sentinel.unlink(missing_ok=True)
+                raise KeyboardInterrupt("Training stopped by user request")
 
         if convergence < config["model_convergence"]:
             logger.info("Finished training...")
