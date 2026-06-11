@@ -185,6 +185,10 @@ class ProjectSchema(BaseModel):
         default=False,
         title="Softplus",
     )
+    steps_per_epoch: Optional[int] = Field(
+        default=None,
+        title="Steps (batches) per epoch",
+    )
 
     # Segmentation
     n_clusters: int = Field(
