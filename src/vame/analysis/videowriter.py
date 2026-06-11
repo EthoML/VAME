@@ -210,6 +210,10 @@ def motif_videos(
     -------
     None
     """
+    # Reproducibility: seed all RNGs from project_random_state.
+    from vame.util.seed import seed_everything
+
+    seed_everything(config.get("project_random_state", 42))
     try:
         tqdm_logger_stream = None
         if save_logs:
@@ -301,6 +305,10 @@ def community_videos(
     -------
     None
     """
+    # Reproducibility: seed all RNGs from project_random_state.
+    from vame.util.seed import seed_everything
+
+    seed_everything(config.get("project_random_state", 42))
     try:
         tqdm_logger_stream = None
         if save_logs:

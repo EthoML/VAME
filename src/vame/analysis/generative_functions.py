@@ -235,6 +235,10 @@ def generative_model(
     plt.Figure
         Plots of generated samples for each segmentation algorithm.
     """
+    # Reproducibility: seed all RNGs from project_random_state.
+    from vame.util.seed import seed_everything
+
+    seed_everything(config.get("project_random_state", 42))
     try:
         if save_logs:
             logs_path = Path(config["project_path"]) / "logs" / "generative_model.log"

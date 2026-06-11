@@ -717,7 +717,12 @@ def train_model(
         mse_losses = []
         fut_losses = []
 
-        torch.manual_seed(SEED)
+        # Reproducibility: seed all RNGs (torch seeded to SEED right before model
+        # creation keeps weight init identical; also seeds numpy so the per-epoch
+        # random-crop sampler is deterministic).
+        from vame.util.seed import seed_everything
+
+        seed_everything(SEED)
         model = RNN_VAE(
             TEMPORAL_WINDOW,
             ZDIMS,

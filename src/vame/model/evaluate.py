@@ -154,6 +154,10 @@ def eval_temporal(
     None
     """
     SEED = config["project_random_state"]
+    # Reproducibility: seed all RNGs so the eval crops/shuffle are deterministic.
+    from vame.util.seed import seed_everything
+
+    seed_everything(SEED)
     ZDIMS = config["zdims"]
     FUTURE_DECODER = config["prediction_decoder"]
     TEMPORAL_WINDOW = config["time_window"] * 2
