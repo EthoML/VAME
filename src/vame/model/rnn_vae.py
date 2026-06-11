@@ -109,9 +109,18 @@ def cluster_loss(
         Cluster loss.
     """
     gram_matrix = (H.T @ H) / batch_size
-    _, sv_2, _ = torch.svd(gram_matrix)
-    sv = torch.sqrt(sv_2[:kloss])
-    loss = torch.sum(sv)
+    # SVD backward has no MPS autograd kernel (gradients can be silently wrong),
+    # so run the decomposition on CPU when on MPS. The device moves stay in the
+    # graph, so gradients still flow back to the MPS latent. CUDA/CPU keep their
+    # fast path.
+    if gram_matrix.device.type == "mps":
+        _, sv_2, _ = torch.svd(gram_matrix.cpu())
+        sv = torch.sqrt(sv_2[:kloss])
+        loss = torch.sum(sv).to(gram_matrix.device)
+    else:
+        _, sv_2, _ = torch.svd(gram_matrix)
+        sv = torch.sqrt(sv_2[:kloss])
+        loss = torch.sum(sv)
     return lmbda * loss
 
 
