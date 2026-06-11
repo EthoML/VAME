@@ -240,6 +240,44 @@ Evaluate the model on the test dataset.
 * `Tuple[float, float, float]`: Tuple containing MSE loss per item, total test loss per item,
 and K-means loss weighted by the kl_weight.
 
+#### \_stop\_sentinel\_path
+
+```python
+def _stop_sentinel_path(config: dict) -> Path
+```
+
+Path of the sentinel file used to request a graceful training stop.
+
+``train_model`` checks for this file at each epoch boundary; ``stop_training``
+creates it. Project-level (one training per project at a time).
+
+#### stop\_training
+
+```python
+def stop_training(config: dict) -> bool
+```
+
+Request a graceful stop of an in-progress ``train_model`` run.
+
+Writes a sentinel file that ``train_model`` checks at each epoch boundary;
+when seen, it saves the current model, records the ``aborted`` state, and
+stops cleanly. Call this from another thread / process / notebook kernel
+while training runs elsewhere (e.g. on a server, or from the VAME app).
+
+Note: if you are running ``train_model`` synchronously in the *same* thread
+(a plain script or a blocking notebook cell), use Ctrl+C instead — that
+raises ``KeyboardInterrupt`` and is already handled the same way.
+
+**Parameters**
+
+* **config** (`dict`): Configuration dictionary (must contain ``project_path``).
+
+**Returns**
+
+* `bool`: True if a training run for this project currently reports as &quot;running&quot;
+(best-effort). The stop request is written regardless and is cleared
+automatically at the next training start.
+
 #### train\_model
 
 ```python
