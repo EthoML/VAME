@@ -12,7 +12,11 @@ class SEQUENCE_DATASET(Dataset)
 #### \_\_init\_\_
 
 ```python
-def __init__(path_to_file: str, data: str, train: bool, temporal_window: int,
+def __init__(path_to_file: str,
+             data: str,
+             train: bool,
+             temporal_window: int,
+             samples_per_epoch: Optional[int] = None,
              **kwargs) -> None
 ```
 

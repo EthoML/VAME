@@ -13,7 +13,7 @@ title: model.rnn_vae
 
 #### TENSORBOARD\_LOG\_FREQUENCY
 
-Log every N batches
+Log every N batches (each log forces a GPU-&gt;CPU sync)
 
 #### TENSORBOARD\_LOG\_HISTOGRAMS
 
