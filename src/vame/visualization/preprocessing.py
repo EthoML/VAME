@@ -18,6 +18,10 @@ def preprocessing_visualization(
     save_to_file: bool = False,
     show_figure: bool = True,
 ) -> None:
+    # Reproducibility: seed all RNGs from project_random_state.
+    from vame.util.seed import seed_everything
+
+    seed_everything(config.get("project_random_state", 42))
     for session_index in range(len(config["session_names"])):
         visualize_preprocessing_scatter(
             config=config,

@@ -657,6 +657,10 @@ def visualize_umap(
     -------
     None
     """
+    # Reproducibility: seed all RNGs from project_random_state.
+    from vame.util.seed import seed_everything
+
+    seed_everything(config.get("project_random_state", 42))
     try:
         if save_logs:
             log_path = Path(config["project_path"]) / "logs" / "report.log"
