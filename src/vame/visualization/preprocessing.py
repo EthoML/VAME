@@ -353,7 +353,7 @@ def visualize_preprocessing_timeseries(
     if num_positions == 1:
         axes = axes.reshape(1, -1)
 
-    individual = "individual_0"
+    individual = str(ds.individuals.values[0])
     all_keypoints = ds.keypoints.values
 
     # Filter keypoints if a list is provided
