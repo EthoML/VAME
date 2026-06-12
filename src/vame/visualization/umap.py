@@ -5,7 +5,7 @@ import numpy as np
 import xarray as xr
 from pathlib import Path
 import matplotlib.pyplot as plt
-import matplotlib.cm as cm
+from matplotlib import colormaps
 from matplotlib.lines import Line2D
 from matplotlib.figure import Figure
 import plotly.graph_objects as go
@@ -265,7 +265,7 @@ def umap_vis_matplotlib(
             # Create legend with discrete colors
             handles = []
             for label_val in sorted(unique_labels):
-                color = cm.get_cmap('hsv')(
+                color = colormaps['hsv'](
                     label_val / max(unique_labels) if max(unique_labels) > 0 else 0
                 )
                 handles.append(

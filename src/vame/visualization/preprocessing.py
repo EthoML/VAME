@@ -1,5 +1,5 @@
 from pathlib import Path
-from matplotlib.cm import get_cmap
+from matplotlib import colormaps
 from matplotlib.lines import Line2D
 import numpy as np
 
@@ -367,7 +367,7 @@ def visualize_preprocessing_timeseries(
         keypoints_to_plot = all_keypoints
 
     # Create a colormap with distinguishable colors
-    cmap = get_cmap("tab10") if len(keypoints_to_plot) <= 10 else get_cmap("tab20")
+    cmap = colormaps["tab10"] if len(keypoints_to_plot) <= 10 else colormaps["tab20"]
     colors = [cmap(i / len(keypoints_to_plot)) for i in range(len(keypoints_to_plot))]
 
     # Plot each position type
@@ -551,7 +551,7 @@ def visualize_preprocessing_cloud(
     keypoint_indices = [np.where(all_keypoints == kp)[0][0] for kp in keypoints_to_plot]
 
     # Create a colormap with distinguishable colors
-    cmap = get_cmap("tab10") if len(keypoints_to_plot) <= 10 else get_cmap("tab20")
+    cmap = colormaps["tab10"] if len(keypoints_to_plot) <= 10 else colormaps["tab20"]
     colors = [cmap(i / len(keypoints_to_plot)) for i in range(len(keypoints_to_plot))]
 
     # Create a figure with a single row of subplots
