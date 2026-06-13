@@ -1,3 +1,22 @@
+# v0.14.2
+
+### Features
+
+- Load pose estimation data directly from DANDI. Installable with the `dandi` extra: `pip install vame-py[dandi]` ([PR #222](https://github.com/EthoML/VAME/pull/222))
+- Gracefully stop an in-progress training run with `vame.model.stop_training(config)`([PR #220](https://github.com/EthoML/VAME/pull/220))
+- Faster model training ([PR #220](https://github.com/EthoML/VAME/pull/220))
+- Project-wide reproducibility: `project_random_state` now seeds every RNG VAME draws from (Python, NumPy, Torch) across preprocessing, segmentation, community, UMAP, reports, and video/generative steps via the new `vame.util.seed.seed_everything` ([PR #221](https://github.com/EthoML/VAME/pull/221))
+
+### Fixes
+
+- Run the Gram-matrix SVD on CPU during training: SVD backward has no MPS autograd kernel and could silently produce wrong gradients on Apple Silicon ([PR #220](https://github.com/EthoML/VAME/pull/220))
+
+### Docs
+
+- Add a "Read from DANDI" how-to guide and example notebook under a new "How to" section ([PR #222](https://github.com/EthoML/VAME/pull/222))
+- Remove the standalone landing page (the site root now redirects to the docs introduction) and the unused blog ([PR #219](https://github.com/EthoML/VAME/pull/219))
+
+
 # v0.14.1
 
 ### Fixes
