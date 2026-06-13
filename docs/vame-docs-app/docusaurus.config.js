@@ -43,9 +43,7 @@ const config = {
         docs: {
           sidebarPath: './sidebars.js',
         },
-        blog: {
-          showReadingTime: true,
-        },
+        blog: false,
         theme: {
           customCss: './src/css/custom.css',
         },
@@ -67,7 +65,6 @@ const config = {
             position: 'right',
             label: 'Documentation',
           },
-          { to: '/blog', label: 'Blog', position: 'right' },
           {
             href: 'https://github.com/EthoML/VAME',
             label: 'GitHub',
@@ -90,10 +87,6 @@ const config = {
           {
             title: 'More',
             items: [
-              {
-                label: 'Blog',
-                to: '/blog',
-              },
               {
                 label: 'GitHub',
                 href: 'https://github.com/EthoML/VAME/',

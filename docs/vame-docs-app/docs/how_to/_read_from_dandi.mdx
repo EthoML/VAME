@@ -1,0 +1,79 @@
+This tutorial runs the full VAME pipeline on pose data loaded directly from a [DANDI](https://dandiarchive.org/) dandiset.
+
+Install VAME with the `dandi` extra:
+
+```bash
+pip install vame-py[dandi]
+```
+
+## 1. Discover pose data in the dandiset
+
+`dandiset_parse` streams each NWB file's metadata and reports which sessions contain pose estimation (`ndx-pose`) data and which keypoints are available across them.
+
+```python
+from vame.io.dandi import dandiset_parse, dandiset_load
+
+dandiset_id = "000689"
+version = "0.240530.1923"
+
+# Scan the dandiset for NWB files with pose data and get a summary.
+parsed = dandiset_parse(dandiset_id, version)
+parsed
+```
+
+## 2. Load the selected sessions
+
+`dandiset_load` fetches only the files and keypoints you choose, writing one movement-format `.nc` per session into `out_dir`. Pick keypoints shared by every session you keep, since VAME requires all sessions to have the same keypoints. The returned paths plug straight into a VAME project.
+
+```python
+keypoints = [
+    "HeadPoseEstimationSeries",
+    "LeftEarPoseEstimationSeries",
+    "RightEarPoseEstimationSeries",
+    "TailPoseEstimationSeries",
+]
+
+poses_estimations = dandiset_load(
+    dandiset_id,
+    version,
+    files=parsed["valid_files"],
+    pose_estimation_series=keypoints,
+    out_dir="./dandi_nc",
+)
+poses_estimations
+```
+
+## Instantiate the VAME pipeline
+
+From here it is a standard VAME project: the `.nc` files are the pose inputs with `source_software="movement"`, and there are no videos. Training hyperparameters go in `config_kwargs`.
+
+```python
+from vame.pipeline import VAMEPipeline
+
+config_kwargs = {
+    "n_clusters": 30,
+    "max_epochs": 100,
+    "steps_per_epoch": 200,
+    "batch_size": 256,
+}
+
+pipeline = VAMEPipeline(
+    working_directory=".",
+    project_name="dandi_pipeline_example",
+    poses_estimations=poses_estimations,
+    source_software="movement",
+    config_kwargs=config_kwargs,
+)
+```
+
+## Run the pipeline
+
+Pass the keypoints used for egocentric alignment. The pipeline preprocesses the data, trains the model, segments behavior into motifs, clusters them into communities, and builds the reports.
+
+```python
+preprocessing_kwargs = {
+    "centered_reference_keypoint": "HeadPoseEstimationSeries",
+    "orientation_reference_keypoint": "TailPoseEstimationSeries",
+}
+pipeline.run_pipeline(preprocessing_kwargs=preprocessing_kwargs)
+```

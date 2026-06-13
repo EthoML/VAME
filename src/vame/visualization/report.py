@@ -34,6 +34,10 @@ def generate_reports(
     """
     project_path = Path(config["project_path"])
     segmentation_algorithms = config["segmentation_algorithms"]
+    # Reproducibility: seed all RNGs from project_random_state.
+    from vame.util.seed import seed_everything
+
+    seed_everything(config.get("project_random_state", 42))
 
     # Create a report folder for the project, if it does not exist
     report_folder = project_path / "reports"

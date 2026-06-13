@@ -150,6 +150,10 @@ def gif(
     config = read_config(str(config_file))
     model_name = config["model_name"]
     n_clusters = config["n_clusters"]
+    # Reproducibility: seed all RNGs from project_random_state.
+    from vame.util.seed import seed_everything
+
+    seed_everything(config.get("project_random_state", 42))
 
     if segmentation_algorithm not in config["segmentation_algorithms"]:
         raise ValueError("Segmentation algorithm not found in config")
@@ -200,7 +204,7 @@ def gif(
                 n_components=2,
                 min_dist=config["min_dist"],
                 n_neighbors=config["n_neighbors"],
-                random_state=config["random_state"],
+                random_state=config.get("project_random_state", 42),
             )
 
             latent_vector = np.load(os.path.join(path_to_file, "", "latent_vector_" + session + ".npy"))
