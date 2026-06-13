@@ -58,11 +58,13 @@ def _resolve_asset_urls(
     dandiset: str,
     version: str,
     files: Optional[List[str]] = None,
+    limit: Optional[int] = None,
 ) -> Dict[str, str]:
     """
     Map asset path -> stream URL for the ``.nwb`` assets of a dandiset.
 
-    If ``files`` is given, only those asset paths are resolved.
+    If ``files`` is given, only those asset paths are resolved. If ``limit`` is
+    given, stop after collecting that many ``.nwb`` assets.
     """
     try:
         from dandi.dandiapi import DandiAPIClient
@@ -83,6 +85,8 @@ def _resolve_asset_urls(
             if wanted is not None and asset.path not in wanted:
                 continue
             urls[asset.path] = asset.get_content_url(follow_redirects=1, strip_query=True)
+            if limit is not None and len(urls) >= limit:
+                break
     logger.info(f"Resolved {len(urls)} .nwb asset URL(s).")
     return urls
 
@@ -146,7 +150,7 @@ def _load_movement_ds(
     return ds
 
 
-def dandiset_parse(dandiset: str, version: str) -> dict:
+def dandiset_parse(dandiset: str, version: str, n_items: Optional[int] = None) -> dict:
     """
     Scan a dandiset for NWB files containing ndx-pose PoseEstimation data.
 
@@ -159,6 +163,9 @@ def dandiset_parse(dandiset: str, version: str) -> dict:
         Dandiset identifier, e.g. ``"000689"``.
     version : str
         Published version (e.g. ``"0.240530.1923"``) or ``"draft"``.
+    n_items : int, optional
+        If given, scan only the first ``n_items`` NWB assets (handy for quick
+        checks/tests). Default ``None`` scans the entire dandiset.
 
     Returns
     -------
@@ -168,7 +175,7 @@ def dandiset_parse(dandiset: str, version: str) -> dict:
         and each entry of ``pose_estimation_series`` is a series (keypoint) name
         with the number of valid files it appears in, ordered by count desc.
     """
-    urls = _resolve_asset_urls(dandiset, version)
+    urls = _resolve_asset_urls(dandiset, version, limit=n_items)
     total = len(urls)
     valid_files: List[str] = []
     counter: Counter = Counter()

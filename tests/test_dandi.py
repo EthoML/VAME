@@ -5,6 +5,7 @@ from vame.io.dandi import (
     open_remote_nwbfile,
     _resolve_asset_urls,
     _find_pose_estimations,
+    dandiset_parse,
     dandiset_load,
 )
 from vame.io.load_poses import load_vame_dataset
@@ -54,6 +55,20 @@ def test_find_pose_estimations(asset_urls, two_files):
     assert found  # at least one PoseEstimation container
     series = {s for _, _, names in found for s in names}
     assert set(KEYPOINTS).issubset(series)
+
+
+def test_dandiset_parse_n_items():
+    # `limit` stops the resolver early — exactly n assets.
+    assert len(_resolve_asset_urls(DANDISET, VERSION, limit=2)) == 2
+
+    # `n_items` scans only the first few files and returns a consistent summary.
+    result = dandiset_parse(DANDISET, VERSION, n_items=3)
+    assert set(result) == {"valid_files", "pose_estimation_series"}
+    assert len(result["valid_files"]) <= 3
+    assert all(p.endswith(".nwb") for p in result["valid_files"])
+    for s in result["pose_estimation_series"]:
+        assert set(s) == {"name", "count"}
+        assert 1 <= s["count"] <= len(result["valid_files"])
 
 
 def test_dandiset_load(two_files, tmp_path):
