@@ -21,7 +21,7 @@ parsed = dandiset_parse(dandiset_id, version)
 parsed
 ```
 
-## 2. Stream the selected sessions
+## 2. Load the selected sessions
 
 `dandiset_load` fetches only the files and keypoints you choose, writing one movement-format `.nc` per session into `out_dir`. Pick keypoints shared by every session you keep, since VAME requires all sessions to have the same keypoints. The returned paths plug straight into a VAME project.
 
