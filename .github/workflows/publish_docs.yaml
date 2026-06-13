@@ -39,6 +39,8 @@ jobs:
           mv docs/vame-docs-app/docs/getting_started/_pipeline.md docs/vame-docs-app/docs/getting_started/_pipeline.mdx
           jupyter nbconvert --to markdown examples/step_by_step.ipynb --embed-images --no-prompt --output-dir=docs/vame-docs-app/docs/getting_started --output _step_by_step
           mv docs/vame-docs-app/docs/getting_started/_step_by_step.md docs/vame-docs-app/docs/getting_started/_step_by_step.mdx
+          jupyter nbconvert --to markdown examples/read_from_dandi.ipynb --embed-images --no-prompt --output-dir=docs/vame-docs-app/docs/how_to --output _read_from_dandi
+          mv docs/vame-docs-app/docs/how_to/_read_from_dandi.md docs/vame-docs-app/docs/how_to/_read_from_dandi.mdx
 
       - uses: actions/setup-node@v3
         with:
