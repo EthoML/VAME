@@ -3,6 +3,16 @@ sidebar_label: load_poses
 title: io.load_poses
 ---
 
+#### \_MOVEMENT\_DIM\_ALIASES
+
+#### \_normalize\_movement\_dims
+
+```python
+def _normalize_movement_dims(ds: xr.Dataset) -> xr.Dataset
+```
+
+Rename movement&#x27;s singular dim/coord names back to VAME&#x27;s plural ones.
+
 #### \_validate\_movement\_schema
 
 ```python
