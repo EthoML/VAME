@@ -6,6 +6,7 @@ import pynwb
 import ndx_pose
 from movement.io.load_poses import from_nwb_file
 
+from vame.io.load_poses import _normalize_movement_dims
 from vame.logging.logger import VameLogger
 
 
@@ -133,6 +134,7 @@ def _load_movement_ds(
             from_nwb_file(nwbfile, processing_module_key=pm_key, pose_estimation_key=pe_key)
         )
     ds = datasets[0] if len(datasets) == 1 else xr.merge(datasets, join="outer", compat="no_conflicts")
+    ds = _normalize_movement_dims(ds)  # movement 0.17 uses singular dim names
 
     available = ds.coords["keypoints"].values.tolist()
     keep = [s for s in requested_series if s in available]
