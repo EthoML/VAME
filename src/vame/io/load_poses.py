@@ -6,6 +6,23 @@ import numpy as np
 import pandas as pd
 
 
+# movement 0.17 renamed xarray dims/coords to singular (keypoints->keypoint,
+# individuals->individual). VAME standardizes internally on the plural names used
+# by every existing project and all downstream code, so we rename singular back to
+# plural at ingest.
+_MOVEMENT_DIM_ALIASES = {"keypoint": "keypoints", "individual": "individuals"}
+
+
+def _normalize_movement_dims(ds: xr.Dataset) -> xr.Dataset:
+    """Rename movement's singular dim/coord names back to VAME's plural ones."""
+    renames = {
+        old: new
+        for old, new in _MOVEMENT_DIM_ALIASES.items()
+        if old in ds.dims or old in ds.coords
+    }
+    return ds.rename(renames) if renames else ds
+
+
 def _validate_movement_schema(ds: xr.Dataset) -> None:
     """
     Validate that a Dataset matches the movement-format pose schema VAME expects.
@@ -135,6 +152,7 @@ def load_pose_estimation(
 
     if source_software == "movement":
         ds = load_vame_dataset(ds_path=file_path)
+        ds = _normalize_movement_dims(ds)
         _validate_movement_schema(ds)
         if video_file:
             ds.attrs["video_path"] = str(video_file)
@@ -146,7 +164,8 @@ def load_pose_estimation(
             "processing_module_key": processing_module_key,
             "pose_estimation_key": pose_estimation_key,
         }
-    ds = load_dataset(file=file_path, source_software=source_software, fps=fps, **nwb_kwargs)
+    ds = load_dataset(file=file_path, source_software=source_software, fps=fps, **nwb_kwargs,)
+    ds = _normalize_movement_dims(ds)
     # movement's NWB loader stores attrs as Path objects, which xarray's
     # netCDF writer rejects. Coerce to str so downstream ds.to_netcdf works.
     ds.attrs = {k: (str(v) if isinstance(v, Path) else v) for k, v in ds.attrs.items()}
