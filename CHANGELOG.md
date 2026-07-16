@@ -1,3 +1,14 @@
+# v0.14.3
+
+### Fixes
+
+- Support `movement` 0.17, which renamed the pose dimensions/coordinates to singular (`keypoint`, `individual`) ([Issue #216](https://github.com/EthoML/VAME/issues/216))
+
+### Docs
+
+- Publish docs from the `dev` branch to a separate `/VAME/dev/` ([Issue #215](https://github.com/EthoML/VAME/issues/215))
+
+
 # v0.14.2
 
 ### Features
