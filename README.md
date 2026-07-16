@@ -9,10 +9,10 @@
   </a>
 </p>
 
-🌟 Welcome to EthoML/VAME (Variational Animal Motion Encoding), an open-source machine learning tool for behavioral action segmentation and analyses.
+🌟 Welcome to EthoML/VAME (Variational Animal Motion Embedding), an open-source machine learning tool for behavioral action segmentation and analyses.
 
 VAME [documentation](https://ethoml.github.io/VAME/). <br/> <br/>
-❗ <b>[Click here to read the NEW peer-reviewed and open-access neuroscience article in <i>Cell Reports</i>.</b>](https://www.cell.com/cms/10.1016/j.celrep.2024.114870/attachment/df29fd8e-66e4-474e-8fdd-8adf5b1e110a/mmc11.pdf) ❗ <br/>
+❗ <b>[Click here to read the open-access 2024 Resource article published in Cell Reports.](https://www.cell.com/cell-reports/fulltext/S2211-1247(24)01221-X) ❗ <br/>
 
 
 We are a group of behavioral enthusiasts, comprising the original VAME developers Kevin Luxem and Pavol Bauer, behavioral neuroscientists Stephanie R. Miller and Jorge J. Palop, and computer scientists and statisticians Alex Pico, Reuben Thomas, and Katie Ly. Our aim is to provide scalable, unbiased and sensitive approaches for assessing mouse behavior using computer vision and machine learning approaches.
