@@ -110,6 +110,8 @@ def add_videos_to_project(
     """
     Add videos to the project, ensuring video stems match session names.
 
+    Records the resulting format as ``video_type`` in the project's config.
+
     Parameters
     ----------
     config : dict
@@ -122,7 +124,7 @@ def add_videos_to_project(
     Raises
     ------
     ValueError
-        If video stems don't match session names.
+        If video stems don't match session names, or a video is not a supported format.
     """
     # Imported lazily to keep this module's import graph free of torch.
     from vame.util.auxiliary import write_config
