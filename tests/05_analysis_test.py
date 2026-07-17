@@ -49,7 +49,6 @@ def test_pose_segmentation_hmm_files_exists(
 def test_motif_videos_mp4_files_exists(setup_project_and_train_model):
     vame.motif_videos(
         config=setup_project_and_train_model["config_data"],
-        output_video_type=".mp4",
         save_logs=True,
     )
     project_path = setup_project_and_train_model["config_data"]["project_path"]
@@ -61,24 +60,8 @@ def test_motif_videos_mp4_files_exists(setup_project_and_train_model):
         save_base_path = Path(project_path) / "results" / file / model_name / f"{seg}-{n_clusters}" / "cluster_videos"
         assert len(list(save_base_path.glob("*.mp4"))) > 0
         assert len(list(save_base_path.glob("*.mp4"))) <= n_clusters
-
-
-def test_motif_videos_avi_files_exists(setup_project_and_train_model):
-    # Check if the files are created
-    vame.motif_videos(
-        config=setup_project_and_train_model["config_data"],
-        output_video_type=".avi",
-        save_logs=True,
-    )
-    project_path = setup_project_and_train_model["config_data"]["project_path"]
-    file = setup_project_and_train_model["config_data"]["session_names"][0]
-    model_name = setup_project_and_train_model["config_data"]["model_name"]
-    n_clusters = setup_project_and_train_model["config_data"]["n_clusters"]
-    segmentation_algorithms = ["hmm", "kmeans"]
-    for seg in segmentation_algorithms:
-        save_base_path = Path(project_path) / "results" / file / model_name / f"{seg}-{n_clusters}" / "cluster_videos"
-        assert len(list(save_base_path.glob("*.avi"))) > 0
-        assert len(list(save_base_path.glob("*.avi"))) <= n_clusters
+        # Clips are always H.264 MP4, whatever format the source video was in.
+        assert not list(save_base_path.glob("*.avi"))
 
 
 def test_cohort_community_files_exists(setup_project_and_train_model):
@@ -106,7 +89,6 @@ def test_cohort_community_files_exists(setup_project_and_train_model):
 def test_community_videos_mp4_files_exists(setup_project_and_train_model):
     vame.community_videos(
         config=setup_project_and_train_model["config_data"],
-        output_video_type=".mp4",
         save_logs=True,
     )
     file = setup_project_and_train_model["config_data"]["session_names"][0]
@@ -120,25 +102,8 @@ def test_community_videos_mp4_files_exists(setup_project_and_train_model):
         )
         assert len(list(save_base_path.glob("*.mp4"))) > 0
         assert len(list(save_base_path.glob("*.mp4"))) <= n_clusters
-
-
-def test_community_videos_avi_files_exists(setup_project_and_train_model):
-    vame.community_videos(
-        config=setup_project_and_train_model["config_data"],
-        output_video_type=".avi",
-        save_logs=True,
-    )
-    file = setup_project_and_train_model["config_data"]["session_names"][0]
-    model_name = setup_project_and_train_model["config_data"]["model_name"]
-    n_clusters = setup_project_and_train_model["config_data"]["n_clusters"]
-    project_path = setup_project_and_train_model["config_data"]["project_path"]
-    segmentation_algorithms = ["hmm", "kmeans"]
-    for seg in segmentation_algorithms:
-        save_base_path = (
-            Path(project_path) / "results" / file / model_name / f"{seg}-{n_clusters}" / "community_videos"
-        )
-        assert len(list(save_base_path.glob("*.avi"))) > 0
-        assert len(list(save_base_path.glob("*.avi"))) <= n_clusters
+        # Clips are always H.264 MP4, whatever format the source video was in.
+        assert not list(save_base_path.glob("*.avi"))
 
 
 def test_visualization_output_files(setup_project_and_train_model):

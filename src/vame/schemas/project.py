@@ -37,6 +37,15 @@ class ProjectSchema(BaseModel):
     pose_estimation_filetype: Literal["csv", "nwb", "slp", "h5", "nc"] = Field(
         title="Pose estimation filetype",
     )
+    video_type: Optional[str] = Field(
+        default=None,
+        title="Video filetype",
+        description=(
+            "Extension of the project's raw videos, recorded when they are loaded. "
+            "None when the project has no videos or mixes formats; each session's "
+            "video is resolved from data/raw either way."
+        ),
+    )
     project_random_state: int = Field(
         title="Project random state",
         default=42,

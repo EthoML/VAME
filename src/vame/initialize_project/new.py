@@ -9,7 +9,7 @@ from vame.schemas.project import ProjectSchema
 from vame.schemas.states import VAMEPipelineStatesSchema
 from vame.logging.logger import VameLogger
 from vame.util.auxiliary import write_config, read_config, get_version
-from vame.video.video import get_video_frame_rate
+from vame.video.video import VIDEO_SUFFIXES, get_video_frame_rate, is_video_file, resolve_video_type
 from vame.io.load_poses import load_pose_estimation
 
 
@@ -23,7 +23,6 @@ def init_new_project(
     source_software: Literal["DeepLabCut", "SLEAP", "LightningPose", "NWB", "auto", "movement"] = "auto",
     working_directory: str = ".",
     videos: Optional[List[str]] = None,
-    video_type: str = ".mp4",
     fps: Optional[float] = None,
     copy_videos: bool = False,
     processing_module_key: str = "behavior",
@@ -71,8 +70,6 @@ def init_new_project(
         ``"LightningPose"``, ``"NWB"``) to override auto-detection.
     working_directory : str, optional
         Working directory. Defaults to '.'.
-    video_type : str, optional
-        Video extension (.mp4 or .avi). Defaults to '.mp4'.
     fps : float, optional
         Sampling rate of the videos. If not passed, it will be estimated from the video file. Defaults to None.
     copy_videos : bool, optional
@@ -146,14 +143,19 @@ def init_new_project(
             for i in videos:
                 # Check if it is a folder  -- WE SHOULD PROBABLY REMOVE THIS OPTION
                 if os.path.isdir(i):
-                    vids_in_dir = [os.path.join(i, vp) for vp in os.listdir(i) if video_type in vp]
+                    vids_in_dir = sorted(os.path.join(i, vp) for vp in os.listdir(i) if is_video_file(vp))
                     if len(vids_in_dir) == 0:
                         logger.info(f"No videos found in {i}")
-                        logger.info(f"Perhaps change the video_type, which is currently set to: {video_type}")
+                        logger.info(f"Supported video formats are: {', '.join(VIDEO_SUFFIXES)}")
                     else:
                         videos_paths.extend(vids_in_dir)
                         logger.info(f"{len(vids_in_dir)} videos from the directory {i} were added to the project.")
                 elif os.path.isfile(i):
+                    if not is_video_file(i):
+                        raise ValueError(
+                            f"Unsupported video format '{Path(i).suffix}' for {i}. "
+                            f"Must be one of: {', '.join(VIDEO_SUFFIXES)}."
+                        )
                     videos_paths.append(i)
                 else:
                     logger.info(f"Invalid video path: {i}")
@@ -236,6 +238,9 @@ def init_new_project(
         if not all(keypoints == keypoints_list[0] for keypoints in keypoints_list):
             raise ValueError("All pose estimation files must have the same keypoint names.")
         config_kwargs["keypoints"] = keypoints_list[0]
+
+        # Record the format the videos were loaded in, so nothing downstream guesses it.
+        config_kwargs.setdefault("video_type", resolve_video_type(videos_paths))
 
         # Create config.yaml file
         new_project = ProjectSchema(

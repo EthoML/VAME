@@ -26,7 +26,6 @@ def init_project(
         poses_estimations=poses_estimations,
         source_software=source_software,
         working_directory=working_directory,
-        video_type=".mp4",
         copy_videos=True,
     )
 

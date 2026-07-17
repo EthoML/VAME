@@ -32,7 +32,6 @@ class VAMEPipeline:
         source_software: Literal["DeepLabCut", "SLEAP", "LightningPose", "NWB", "auto"] = "auto",
         working_directory: str = ".",
         videos: Optional[List[str]] = None,
-        video_type: str = ".mp4",
         fps: Optional[float] = None,
         copy_videos: bool = False,
         processing_module_key: str = "behavior",
@@ -56,8 +55,6 @@ class VAMEPipeline:
             ``"NWB"``) to override.
         working_directory : str, optional
             Working directory, by default ".".
-        video_type : str, optional
-            Video file type, by default ".mp4".
         fps : float, optional
             Sampling rate of the videos. If not passed, it will be estimated from the video file. By default None.
         copy_videos : bool, optional
@@ -85,7 +82,6 @@ class VAMEPipeline:
             source_software=source_software,
             working_directory=working_directory,
             videos=videos,
-            video_type=video_type,
             fps=fps,
             copy_videos=copy_videos,
             processing_module_key=processing_module_key,
@@ -279,17 +275,9 @@ class VAMEPipeline:
             save_logs=self.save_logs,
         )
 
-    def generate_motif_videos(
-        self,
-        video_type: str = ".mp4",
-    ) -> None:
+    def generate_motif_videos(self) -> None:
         """
         Generates motif videos.
-
-        Parameters
-        ----------
-        video_type : str, optional
-            Video type, by default ".mp4".
 
         Returns
         -------
@@ -297,21 +285,12 @@ class VAMEPipeline:
         """
         vame.motif_videos(
             config=self.config,
-            video_type=video_type,
             save_logs=self.save_logs,
         )
 
-    def generate_community_videos(
-        self,
-        video_type: str = ".mp4",
-    ) -> None:
+    def generate_community_videos(self) -> None:
         """
         Generates community videos.
-
-        Parameters
-        ----------
-        video_type : str, optional
-            Video type, by default ".mp4".
 
         Returns
         -------
@@ -319,28 +298,19 @@ class VAMEPipeline:
         """
         vame.community_videos(
             config=self.config,
-            video_type=video_type,
             save_logs=self.save_logs,
         )
 
-    def generate_videos(
-        self,
-        video_type: str = ".mp4",
-    ) -> None:
+    def generate_videos(self) -> None:
         """
         Generates motif and community videos.
-
-        Parameters
-        ----------
-        video_type : str, optional
-            Video type, by default ".mp4".
 
         Returns
         -------
         None
         """
-        self.generate_motif_videos(video_type=video_type)
-        self.generate_community_videos(video_type=video_type)
+        self.generate_motif_videos()
+        self.generate_community_videos()
 
     def visualize_preprocessing(
         self,

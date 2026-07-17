@@ -3,10 +3,9 @@ from pathlib import Path
 import numpy as np
 import cv2 as cv
 import tqdm
-from typing import Union, Optional, List
+from typing import Union
 import imageio
 
-from vame.util.auxiliary import read_config
 from vame.util.cli import get_sessions_from_user_input
 from vame.schemas.states import (
     save_state,
@@ -15,6 +14,7 @@ from vame.schemas.states import (
 )
 from vame.logging.logger import VameLogger, TqdmToLogger
 from vame.schemas.project import SegmentationAlgorithms
+from vame.video.video import get_session_video_path
 
 
 logger_config = VameLogger(__name__)
@@ -26,14 +26,16 @@ def create_cluster_videos(
     path_to_file: str,
     session: str,
     n_clusters: int,
-    video_type: str,
     flag: str,
     segmentation_algorithm: SegmentationAlgorithms,
-    output_video_type: str = ".mp4",
     tqdm_logger_stream: Union[TqdmToLogger, None] = None,
 ) -> None:
     """
     Generate cluster videos and save them to filesystem on project folder.
+
+    The session's source video is resolved from ``data/raw``, whatever format it
+    was loaded in. Clips are always written as H.264 MP4, since they are
+    re-encoded montages rather than copies of the source.
 
     Parameters
     ----------
@@ -45,14 +47,10 @@ def create_cluster_videos(
         Name of the session.
     n_clusters : int
         Number of clusters.
-    video_type : str
-        Type of input video.
     flag : str
         Flag indicating the type of video (motif or community).
     segmentation_algorithm : SegmentationAlgorithms
         Which segmentation algorithm to use. Options are 'hmm' or 'kmeans'.
-    output_video_type : str, optional
-        Type of output video. Default is '.mp4'.
     tqdm_logger_stream : TqdmToLogger, optional
         Tqdm logger stream. Default is None.
 
@@ -60,9 +58,6 @@ def create_cluster_videos(
     -------
     None
     """
-    if output_video_type not in [".mp4", ".avi"]:
-        raise ValueError("Output video type must be either '.avi' or '.mp4'.")
-
     if flag == "motif":
         logger.info("Motif videos getting created for " + session + " ...")
         labels = np.load(
@@ -81,17 +76,10 @@ def create_cluster_videos(
             )
         )
 
-    video_file_path = os.path.join(
-        config["project_path"],
-        "data",
-        "raw",
-        session + video_type,
-    )
+    video_file_path = str(get_session_video_path(config=config, session=session))
     capture = cv.VideoCapture(video_file_path)
     if not capture.isOpened():
         raise ValueError(f"Video capture could not be opened. Ensure the video file is valid.\n {video_file_path}")
-    width = int(capture.get(cv.CAP_PROP_FRAME_WIDTH))
-    height = int(capture.get(cv.CAP_PROP_FRAME_HEIGHT))
     # Display rate for the montage clips
     fps = 25  # capture.get(cv.CAP_PROP_FPS)
 
@@ -116,25 +104,21 @@ def create_cluster_videos(
             output = os.path.join(
                 path_to_file,
                 "cluster_videos",
-                session + f"-motif_%d{output_video_type}" % cluster,
+                session + "-motif_%d.mp4" % cluster,
             )
         else:  # community
             output = os.path.join(
                 path_to_file,
                 "community_videos",
-                session + f"-community_%d{output_video_type}" % cluster,
+                session + "-community_%d.mp4" % cluster,
             )
 
-        if output_video_type == ".avi":
-            codec = cv.VideoWriter_fourcc("M", "J", "P", "G")
-            writer = cv.VideoWriter(output, codec, fps, (width, height))
-        else:  # .mp4
-            writer = imageio.get_writer(
-                output,
-                fps=fps,
-                codec="h264",
-                macro_block_size=None,
-            )
+        writer = imageio.get_writer(
+            output,
+            fps=fps,
+            codec="h264",
+            macro_block_size=None,
+        )
         writers.append(writer)
 
         # First `vid_length` frames of this cluster, re-centered by cluster_start.
@@ -158,24 +142,17 @@ def create_cluster_videos(
         if not ret:
             logger.info("Reached end of video at frame %d before all frames were written." % f)
             break
-        if output_video_type == ".avi":
-            writer.write(frame)
-        else:  # .mp4
-            writer.append_data(frame)
+        # OpenCV decodes BGR; imageio's writer expects RGB.
+        writer.append_data(cv.cvtColor(frame, cv.COLOR_BGR2RGB))
 
     for writer in writers:
-        if output_video_type == ".avi":
-            writer.release()
-        else:
-            writer.close()
+        writer.close()
     capture.release()
 
 
 @save_state(model=MotifVideosFunctionSchema)
 def motif_videos(
     config: dict,
-    video_type: str = ".mp4",
-    output_video_type: str = ".mp4",
     save_logs: bool = True,
 ) -> None:
     """
@@ -199,10 +176,6 @@ def motif_videos(
     segmentation_algorithm : SegmentationAlgorithms
         Which segmentation algorithm to use. Options are 'hmm' or 'kmeans'.
         If None, it will be taken from the config file.
-    video_type : str, optional
-        Type of video. Default is '.mp4'.
-    output_video_type : str, optional
-        Type of output video. Default is '.mp4'.
     save_logs : bool, optional
         Save logs to filesystem. Default is True.
 
@@ -255,10 +228,8 @@ def motif_videos(
                     path_to_file=path_to_file,
                     session=session,
                     n_clusters=n_clusters,
-                    video_type=video_type,
                     flag="motif",
                     segmentation_algorithm=segmentation_algorithm,
-                    output_video_type=output_video_type,
                     tqdm_logger_stream=tqdm_logger_stream,
                 )
             logger.info("All videos have been created!")
@@ -272,8 +243,6 @@ def motif_videos(
 @save_state(model=CommunityVideosFunctionSchema)
 def community_videos(
     config: dict,
-    video_type: str = ".mp4",
-    output_video_type: str = ".mp4",
     save_logs: bool = True,
 ) -> None:
     """
@@ -294,10 +263,6 @@ def community_videos(
     ----------
     config : dict
         Configuration parameters.
-    video_type : str, optional
-        Type of video. Default is '.mp4'.
-    output_video_type : str, optional
-        Type of output video. Default is '.mp4'.
     save_logs : bool, optional
         Save logs to filesystem. Default is True.
 
@@ -350,11 +315,9 @@ def community_videos(
                     path_to_file=path_to_file,
                     session=session,
                     n_clusters=n_clusters,
-                    video_type=video_type,
                     flag="community",
                     segmentation_algorithm=segmentation_algorithm,
                     tqdm_logger_stream=tqdm_logger_stream,
-                    output_video_type=output_video_type,
                 )
 
         logger.info("All videos have been created!")
