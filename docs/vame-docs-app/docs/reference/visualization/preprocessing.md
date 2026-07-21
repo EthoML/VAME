@@ -13,7 +13,8 @@ title: visualization.preprocessing
 @save_state(model=PreprocessingVisualizationFunctionSchema)
 def preprocessing_visualization(config: dict,
                                 save_to_file: bool = False,
-                                show_figure: bool = True) -> None
+                                show_figure: bool = True,
+                                save_logs: bool = True) -> None
 ```
 
 #### visualize\_preprocessing\_scatter
