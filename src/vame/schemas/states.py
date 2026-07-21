@@ -132,6 +132,10 @@ class PreprocessingVisualizationFunctionSchema(BaseStateSchema):
         title="Whether to show the figure",
         default=True,
     )
+    save_logs: bool = Field(
+        title="Whether to save logs",
+        default=False,
+    )
 
 
 class GenerativeModelFunctionSchema(BaseStateSchema):

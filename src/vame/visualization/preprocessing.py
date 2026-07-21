@@ -17,9 +17,14 @@ def preprocessing_visualization(
     config: dict,
     save_to_file: bool = False,
     show_figure: bool = True,
+    save_logs: bool = True,
 ) -> None:
     # Reproducibility: seed all RNGs from project_random_state.
     from vame.util.seed import seed_everything
+
+    if save_logs:
+        log_path = Path(config["project_path"]) / "logs" / "preprocessing.log"
+        logger_config.add_file_handler(str(log_path))
 
     seed_everything(config.get("project_random_state", 42))
     sessions = config["session_names"]
