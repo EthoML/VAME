@@ -76,6 +76,9 @@ def savgol_filtering(
 
         # Save the filtered dataset to file
         filtered_file_path = str(Path(project_path) / "data" / "processed" / f"{session}_processed.nc")
+        # ds lazily reads the file we're about to overwrite.
+        ds.load()
+        ds.close()
         ds.to_netcdf(
             path=filtered_file_path,
             engine="netcdf4",

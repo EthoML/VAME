@@ -22,7 +22,9 @@ def preprocessing_visualization(
     from vame.util.seed import seed_everything
 
     seed_everything(config.get("project_random_state", 42))
-    for session_index in range(len(config["session_names"])):
+    sessions = config["session_names"]
+    for session_index in range(len(sessions)):
+        logger.info(f"Visualizing session {session_index + 1}/{len(sessions)}: {sessions[session_index]}")
         visualize_preprocessing_scatter(
             config=config,
             session_index=session_index,

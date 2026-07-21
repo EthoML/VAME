@@ -91,6 +91,9 @@ def lowconf_cleaning(
 
         # Save the cleaned dataset to file
         cleaned_file_path = Path(project_path) / "data" / "processed" / f"{session}_processed.nc"
+        # ds lazily reads the file we're about to overwrite.
+        ds.load()
+        ds.close()
         ds.to_netcdf(
             path=cleaned_file_path,
             engine="netcdf4",
@@ -184,6 +187,9 @@ def outlier_cleaning(
 
         # Save the cleaned dataset to file
         cleaned_file_path = str(Path(project_path) / "data" / "processed" / f"{session}_processed.nc")
+        # ds lazily reads the file we're about to overwrite.
+        ds.load()
+        ds.close()
         ds.to_netcdf(
             path=cleaned_file_path,
             engine="netcdf4",

@@ -1,6 +1,6 @@
 from typing import Literal, Optional, Tuple
 from pathlib import Path
-from movement.io.load import load_dataset
+from movement.io.load import load_dataset, infer_source_software
 import xarray as xr
 import numpy as np
 import pandas as pd
@@ -157,6 +157,10 @@ def load_pose_estimation(
         if video_file:
             ds.attrs["video_path"] = str(video_file)
         return ds
+
+    # Must resolve before the NWB check below
+    if source_software == "auto":
+        source_software = infer_source_software(file_path)
 
     nwb_kwargs = {}
     if source_software == "NWB":
