@@ -24,7 +24,6 @@ def __init__(project_name: str,
                                       "NWB", "auto"] = "auto",
              working_directory: str = ".",
              videos: Optional[List[str]] = None,
-             video_type: str = ".mp4",
              fps: Optional[float] = None,
              copy_videos: bool = False,
              processing_module_key: str = "behavior",
@@ -44,7 +43,6 @@ which lets movement infer the format from the file. Pass an explicit
 value (``&quot;DeepLabCut&quot;``, ``&quot;SLEAP&quot;``, ``&quot;LightningPose&quot;``,
 ``&quot;NWB&quot;``) to override.
 * **working_directory** (`str, optional`): Working directory, by default &quot;.&quot;.
-* **video_type** (`str, optional`): Video file type, by default &quot;.mp4&quot;.
 * **fps** (`float, optional`): Sampling rate of the videos. If not passed, it will be estimated from the video file. By default None.
 * **copy_videos** (`bool, optional`): Copy videos, by default False.
 * **processing_module_key** (`str, optional`): Only used when ``source_software=&quot;NWB&quot;``. Name of the NWB processing
@@ -194,14 +192,10 @@ Runs the community clustering.
 #### generate\_motif\_videos
 
 ```python
-def generate_motif_videos(video_type: str = ".mp4") -> None
+def generate_motif_videos() -> None
 ```
 
 Generates motif videos.
-
-**Parameters**
-
-* **video_type** (`str, optional`): Video type, by default &quot;.mp4&quot;.
 
 **Returns**
 
@@ -210,14 +204,10 @@ Generates motif videos.
 #### generate\_community\_videos
 
 ```python
-def generate_community_videos(video_type: str = ".mp4") -> None
+def generate_community_videos() -> None
 ```
 
 Generates community videos.
-
-**Parameters**
-
-* **video_type** (`str, optional`): Video type, by default &quot;.mp4&quot;.
 
 **Returns**
 
@@ -226,14 +216,10 @@ Generates community videos.
 #### generate\_videos
 
 ```python
-def generate_videos(video_type: str = ".mp4") -> None
+def generate_videos() -> None
 ```
 
 Generates motif and community videos.
-
-**Parameters**
-
-* **video_type** (`str, optional`): Video type, by default &quot;.mp4&quot;.
 
 **Returns**
 
