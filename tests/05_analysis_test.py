@@ -46,6 +46,30 @@ def test_pose_segmentation_hmm_files_exists(
     assert motif_usage_path.exists()
 
 
+def test_pose_segmentation_hmm_warmstart_files_exists(setup_project_and_train_model):
+    mock_config = {
+        **setup_project_and_train_model["config_data"],
+        "segmentation_algorithms": ["hmm_warmstart"],
+        "individual_segmentation": False,
+    }
+    with patch("builtins.input", return_value="yes"):
+        vame.segment_session(
+            config=mock_config,
+            save_logs=True,
+        )
+    project_path = mock_config["project_path"]
+    file = mock_config["session_names"][0]
+    model_name = mock_config["model_name"]
+    n_clusters = mock_config["n_clusters"]
+    save_base_path = Path(project_path) / "results" / file / model_name
+    motif_usage_path = save_base_path / f"hmm_warmstart-{n_clusters}" / f"motif_usage_{file}.npy"
+    label_path = save_base_path / f"hmm_warmstart-{n_clusters}" / f"{n_clusters}_hmm_warmstart_label_{file}.npy"
+
+    assert motif_usage_path.exists()
+    assert label_path.exists()
+    assert (Path(project_path) / "results" / "hmm_warmstart_trained.pkl").exists()
+
+
 def test_motif_videos_mp4_files_exists(setup_project_and_train_model):
     vame.motif_videos(
         config=setup_project_and_train_model["config_data"],

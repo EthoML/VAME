@@ -260,7 +260,7 @@ def create_cohort_community_bag(
     trans_mat_full: np.ndarray,
     cut_tree: int | None,
     n_clusters: int,
-    segmentation_algorithm: Literal["hmm", "kmeans"],
+    segmentation_algorithm: Literal["hmm", "kmeans", "hmm_warmstart"],
 ) -> list:
     """
     Create cohort community bag for given motif labels, transition matrix,

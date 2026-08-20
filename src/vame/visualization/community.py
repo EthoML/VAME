@@ -168,7 +168,7 @@ def draw_tree(
 
 def visualize_hierarchical_tree(
     config: dict,
-    segmentation_algorithm: Literal["hmm", "kmeans"] = "hmm",
+    segmentation_algorithm: Literal["hmm", "kmeans", "hmm_warmstart"] = "hmm",
 ) -> None:
     """
     Visualizes the hierarchical tree.
@@ -177,7 +177,7 @@ def visualize_hierarchical_tree(
     ----------
     config : dict
         Configuration dictionary.
-    segmentation_algorithm : Literal["hmm", "kmeans"]
+    segmentation_algorithm : Literal["hmm", "kmeans", "hmm_warmstart"]
         Segmentation algorithm. Defaults to "hmm".
 
     Returns

@@ -89,15 +89,11 @@ def umap_embedding(
     )
     umap_embeddings = reducer.fit_transform(all_latent_vectors_selected)
 
-    # Gather motifs and communities aligned with selected points for UMAP
-    all_motifs = {
-        "hmm": np.array([]),
-        "kmeans": np.array([]),
-    }
-    all_communities = {
-        "hmm": np.array([]),
-        "kmeans": np.array([]),
-    }
+    # Gather motifs and communities aligned with selected points for UMAP.
+    # Built dynamically from segmentation_algorithms (not hardcoded to
+    # "hmm"/"kmeans") so any registered algorithm, e.g. "hmm_warmstart", works.
+    all_motifs = {seg: np.array([]) for seg in segmentation_algorithms}
+    all_communities = {seg: np.array([]) for seg in segmentation_algorithms}
     for session in config["session_names"]:
         for seg in segmentation_algorithms:
             # Gather all motifs
@@ -148,21 +144,11 @@ def umap_embedding(
         "session_names": ("points", all_session_names_selected.astype(str)),
     }
 
-    if len(all_motifs["hmm"]) > 0:
-        motifs_selected_hmm = all_motifs["hmm"][indices]
-        data_vars["motifs_hmm"] = ("points", motifs_selected_hmm)
-
-    if len(all_motifs["kmeans"]) > 0:
-        motifs_selected_kmeans = all_motifs["kmeans"][indices]
-        data_vars["motifs_kmeans"] = ("points", motifs_selected_kmeans)
-
-    if len(all_communities["hmm"]) > 0:
-        communities_selected_hmm = all_communities["hmm"][indices]
-        data_vars["communities_hmm"] = ("points", communities_selected_hmm)
-
-    if len(all_communities["kmeans"]) > 0:
-        communities_selected_kmeans = all_communities["kmeans"][indices]
-        data_vars["communities_kmeans"] = ("points", communities_selected_kmeans)
+    for seg in segmentation_algorithms:
+        if len(all_motifs[seg]) > 0:
+            data_vars[f"motifs_{seg}"] = ("points", all_motifs[seg][indices])
+        if len(all_communities[seg]) > 0:
+            data_vars[f"communities_{seg}"] = ("points", all_communities[seg][indices])
 
     # Build an xarray.Dataset
     ds = xr.Dataset(
@@ -690,36 +676,24 @@ def visualize_umap(
         embeddings = umap_ds.umap_embeddings.values
         session_names = umap_ds.session_names.values
 
-        if "motifs_hmm" in umap_ds and len(umap_ds.motifs_hmm.values) > 0:
-            motifs_hmm = umap_ds.motifs_hmm.values
-        else:
-            motifs_hmm = None
-
-        if "motifs_kmeans" in umap_ds and len(umap_ds.motifs_kmeans.values) > 0:
-            motifs_kmeans = umap_ds.motifs_kmeans.values
-        else:
-            motifs_kmeans = None
-
-        if "communities_hmm" in umap_ds and len(umap_ds.communities_hmm.values) > 0:
-            communities_hmm = umap_ds.communities_hmm.values
-        else:
-            communities_hmm = None
-
-        if "communities_kmeans" in umap_ds and len(umap_ds.communities_kmeans.values) > 0:
-            communities_kmeans = umap_ds.communities_kmeans.values
-        else:
-            communities_kmeans = None
-
-        # Create label dictionaries organized by segmentation algorithm
+        # Create label dictionaries organized by segmentation algorithm.
+        # Built dynamically from segmentation_algorithms (not hardcoded to
+        # "hmm"/"kmeans") so any registered algorithm works, e.g. "hmm_warmstart".
         motif_labels = {}
         community_labels = {}
         for seg in segmentation_algorithms:
-            if seg == "hmm":
-                motif_labels[f"{seg}-{n_clusters}"] = motifs_hmm
-                community_labels[f"{seg}-{n_clusters}"] = communities_hmm
-            elif seg == "kmeans":
-                motif_labels[f"{seg}-{n_clusters}"] = motifs_kmeans
-                community_labels[f"{seg}-{n_clusters}"] = communities_kmeans
+            motif_key = f"motifs_{seg}"
+            community_key = f"communities_{seg}"
+            motif_labels[f"{seg}-{n_clusters}"] = (
+                umap_ds[motif_key].values
+                if motif_key in umap_ds and len(umap_ds[motif_key].values) > 0
+                else None
+            )
+            community_labels[f"{seg}-{n_clusters}"] = (
+                umap_ds[community_key].values
+                if community_key in umap_ds and len(umap_ds[community_key].values) > 0
+                else None
+            )
 
         # Define label types
         labels_names = ["none", "motif", "community"]

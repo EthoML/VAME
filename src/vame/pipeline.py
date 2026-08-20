@@ -387,7 +387,7 @@ class VAMEPipeline:
 
     def visualize_motif_thresholding(
         self,
-        segmentation_algorithm: Literal["hmm", "kmeans"] = "hmm",
+        segmentation_algorithm: Literal["hmm", "kmeans", "hmm_warmstart"] = "hmm",
         n_clusters: Optional[int] = None,
         threshold: float = 1.0,
         show_figure: bool = True,
@@ -399,7 +399,7 @@ class VAMEPipeline:
 
         Parameters
         ----------
-        segmentation_algorithm : Literal["hmm", "kmeans"], optional
+        segmentation_algorithm : Literal["hmm", "kmeans", "hmm_warmstart"], optional
             Segmentation algorithm, by default "hmm".
         n_clusters : Optional[int], optional
             Number of clusters, by default None.
@@ -422,14 +422,14 @@ class VAMEPipeline:
 
     def visualize_hierarchical_tree(
         self,
-        segmentation_algorithm: Literal["hmm", "kmeans"],
+        segmentation_algorithm: Literal["hmm", "kmeans", "hmm_warmstart"],
     ) -> None:
         """
         Visualizes the hierarchical tree.
 
         Parameters
         ----------
-        segmentation_algorithm : Literal["hmm", "kmeans"]
+        segmentation_algorithm : Literal["hmm", "kmeans", "hmm_warmstart"]
             Segmentation algorithm.
 
         Returns
@@ -480,7 +480,7 @@ class VAMEPipeline:
 
         Parameters
         ----------
-        segmentation_algorithm : Literal["hmm", "kmeans"], optional
+        segmentation_algorithm : Literal["hmm", "kmeans", "hmm_warmstart"], optional
             Segmentation algorithm, by default "hmm".
 
         Returns

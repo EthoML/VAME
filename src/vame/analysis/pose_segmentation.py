@@ -7,6 +7,8 @@ from pathlib import Path
 from typing import List, Tuple, Union
 from hmmlearn import hmm
 from sklearn.cluster import KMeans
+from sklearn.utils import check_array
+from joblib import Parallel, delayed
 
 from vame.schemas.states import save_state, SegmentSessionFunctionSchema
 from vame.logging.logger import VameLogger, TqdmToLogger
@@ -398,7 +400,7 @@ def save_session_data(
     n_clusters : int
         Number of clusters.
     segmentation_algorithm: str
-        Type of segmentation method, either 'kmeans or 'hmm'.
+        Type of segmentation method: 'kmeans', 'hmm', or 'hmm_warmstart'.
 
     Returns
     -------
@@ -431,6 +433,94 @@ def save_session_data(
         motif_usage,
     )
     logger.info(f"Saved {session} segmentation data")
+
+
+def _session_estep(model: "hmm.GaussianHMM", session_data: np.ndarray) -> Tuple[dict, float]:
+    """
+    The expensive, session-independent half of one Baum-Welch iteration:
+    forward-backward + sufficient-statistics accumulation for a single
+    session, against the model's current parameters. Designed to be run in
+    parallel across sessions via joblib - safe to do so because sufficient
+    statistics are purely additive across independent sequences (this is the
+    same assumption hmmlearn's own sequential per-sequence loop relies on).
+    """
+    impl = {"scaling": model._fit_scaling, "log": model._fit_log}[model.implementation]
+    lattice, logprob, posteriors, fwdlattice, bwdlattice = impl(session_data)
+    stats = model._initialize_sufficient_statistics()
+    model._accumulate_sufficient_statistics(stats, session_data, lattice, posteriors, fwdlattice, bwdlattice)
+    return stats, logprob
+
+
+def _merge_stats(stats_list: List[dict]) -> dict:
+    """
+    Sum per-session sufficient statistics into one combined stats dict.
+    Values are either plain int (nobs) or np.ndarray; `+` handles both and
+    always returns a new object, so no explicit .copy() is needed.
+    """
+    merged: dict = {}
+    for stats in stats_list:
+        for key, val in stats.items():
+            merged[key] = val if key not in merged else merged[key] + val
+    return merged
+
+
+def parallel_gaussian_hmm_fit(
+    model: "hmm.GaussianHMM",
+    session_arrays: List[np.ndarray],
+    n_jobs: int = 1,
+) -> "hmm.GaussianHMM":
+    """
+    Equivalent to model.fit(np.concatenate(session_arrays), lengths=[...]),
+    with the E-step (forward-backward per session) parallelized across
+    processes instead of hmmlearn's own single-threaded per-sequence loop.
+    Mirrors hmmlearn.base.BaseHMM.fit() exactly (same _init/_check/monitor_
+    calls) - only how the E-step's stats/logprob get computed differs.
+
+    Parameters
+    ----------
+    model : hmm.GaussianHMM
+        A configured (not yet fit) GaussianHMM instance.
+    session_arrays : List[np.ndarray]
+        Per-session latent vector arrays.
+    n_jobs : int, optional
+        Passed to joblib.Parallel. 1 = sequential (no process overhead),
+        -1 = use all available cores. Defaults to 1.
+
+    Returns
+    -------
+    hmm.GaussianHMM
+        The same model instance, fit in place.
+    """
+    X = check_array(np.concatenate(session_arrays, axis=0))
+    lengths = np.asarray([len(s) for s in session_arrays])
+
+    model._init(X, lengths)
+    model._check()
+    model.monitor_._reset()
+
+    # backend="threading", not joblib's default "loky": hmmlearn's Cython core
+    # releases the GIL during its numeric loops, so threads give real parallel
+    # speedup. Process-based "loky" was measured ~260x slower here because each
+    # worker process re-imports the full torch/CUDA-heavy module chain.
+    with Parallel(n_jobs=n_jobs, backend="threading") as parallel:
+        for _ in range(model.n_iter):
+            results = parallel(delayed(_session_estep)(model, s) for s in session_arrays)
+            stats_list, logprobs = zip(*results)
+            stats = _merge_stats(stats_list)
+            curr_logprob = sum(logprobs)
+
+            lower_bound = model._compute_lower_bound(curr_logprob)
+            model._do_mstep(stats)
+            model.monitor_.report(lower_bound)
+            if model.monitor_.converged:
+                break
+
+            if (model.transmat_.sum(axis=1) == 0).any():
+                logger.warning(
+                    "Some rows of transmat_ have zero sum because no "
+                    "transition from the state was ever observed."
+                )
+    return model
 
 
 def same_segmentation(
@@ -501,6 +591,123 @@ def same_segmentation(
             with open(model_path, "rb") as file:
                 hmm_model = pickle.load(file)
             labels = hmm_model.predict(latent_vector_cat)
+
+    elif segmentation_algorithm == "hmm_warmstart":
+        logger.info("Using a warm-started HMM as segmentation algorithm!")
+        hmm_stride = config.get("hmm_warmstart_stride", 5)
+        hmm_n_iter = config.get("hmm_warmstart_n_iter", 500)
+        hmm_tol = config.get("hmm_warmstart_tol", 1e-2)
+        hmm_n_jobs = config.get("hmm_warmstart_n_jobs", 1)
+
+        n_features_dim = latent_vector_cat.shape[1]
+        pretrained_path = config.get("hmm_warmstart_pretrained_path")
+        warmstart_model = None
+
+        if pretrained_path:
+            logger.info(f"Warm-start stage 1: loading pretrained model from {pretrained_path}")
+            with open(pretrained_path, "rb") as file:
+                candidate = pickle.load(file)
+            if candidate.n_components != n_clusters or candidate.n_features != n_features_dim:
+                logger.warning(
+                    f"Pretrained model at {pretrained_path} has n_components={candidate.n_components}, "
+                    f"n_features={candidate.n_features}, but this project needs n_clusters={n_clusters}, "
+                    f"zdims={n_features_dim}. Ignoring it and fitting stage 1 from scratch instead."
+                )
+            else:
+                warmstart_model = candidate
+
+        if warmstart_model is None:
+            # A full-covariance Gaussian needs roughly n_features samples per state
+            # just to be non-singular. Guard against strides that would leave too
+            # little data for stage 1 on small/pilot datasets (falls back to no
+            # striding rather than risk a singular-covariance fit).
+            min_frames_needed = n_clusters * n_features_dim * 2
+            strided_sessions = [v[::hmm_stride] for v in latent_vectors]
+            total_strided_frames = sum(v.shape[0] for v in strided_sessions)
+            if total_strided_frames < min_frames_needed:
+                logger.warning(
+                    f"hmm_warmstart_stride={hmm_stride} would leave only {total_strided_frames} frames "
+                    f"for {n_clusters} clusters x {n_features_dim} dims, too few for a stable "
+                    "full-covariance fit. Falling back to no striding for the warm-start pre-fit."
+                )
+                strided_sessions = latent_vectors
+                total_strided_frames = sum(v.shape[0] for v in strided_sessions)
+
+            # Stage 1: cheap fit on strided (subsampled) data to find a good rough
+            # state structure. A cold (randomly initialized) full-resolution fit on
+            # this kind of data has been observed to converge to a degenerate local
+            # optimum with several near-zero self-transition ("flicker") states.
+            # Pre-fitting on strided data and using its parameters to initialize the
+            # full-resolution fit reliably avoids that failure mode.
+            logger.info(
+                f"Warm-start stage 1: fitting on {total_strided_frames} frames "
+                f"across {len(strided_sessions)} sessions (stride={hmm_stride}, n_jobs={hmm_n_jobs})"
+            )
+            warmstart_model = hmm.GaussianHMM(
+                n_components=n_clusters,
+                covariance_type="full",
+                n_iter=hmm_n_iter,
+                tol=hmm_tol,
+                random_state=random_state,
+                verbose=True,
+            )
+            parallel_gaussian_hmm_fit(warmstart_model, strided_sessions, n_jobs=hmm_n_jobs)
+
+        # Stage 2: fine-tune at full resolution, seeded from stage 1's (freshly
+        # fit or pretrained) parameters. The pretrained path is never used as-is,
+        # this step always re-fits it on the current project's own data.
+        # Small/edge-case datasets can leave stage 1 with a degenerate covariance
+        # (fails hmmlearn's validation the moment it's assigned below) - fall back
+        # to a plain cold-started fit rather than crash the whole pipeline on it.
+        hmm_model = None
+        try:
+            logger.info(f"Warm-start stage 2: fine-tuning on full-resolution data (n_jobs={hmm_n_jobs})")
+            candidate_model = hmm.GaussianHMM(
+                n_components=n_clusters,
+                covariance_type="full",
+                n_iter=hmm_n_iter,
+                tol=hmm_tol,
+                random_state=random_state,
+                init_params="",  # skip auto-init, use the seeded params below
+                verbose=True,
+            )
+            candidate_model.startprob_ = warmstart_model.startprob_
+            candidate_model.transmat_ = warmstart_model.transmat_
+            candidate_model.means_ = warmstart_model.means_
+            candidate_model.covars_ = warmstart_model.covars_
+            candidate_model.n_features = warmstart_model.n_features
+            parallel_gaussian_hmm_fit(candidate_model, latent_vectors, n_jobs=hmm_n_jobs)
+            hmm_model = candidate_model
+        except ValueError as e:
+            logger.warning(
+                f"Warm-start seeding produced an unusable model ({e}); "
+                "falling back to a cold-started HMM fit on the full-resolution data instead."
+            )
+
+        if hmm_model is None:
+            hmm_model = hmm.GaussianHMM(
+                n_components=n_clusters,
+                covariance_type="full",
+                n_iter=hmm_n_iter,
+                tol=hmm_tol,
+                random_state=random_state,
+                verbose=True,
+            )
+            parallel_gaussian_hmm_fit(hmm_model, latent_vectors, n_jobs=hmm_n_jobs)
+
+        labels = hmm_model.predict(latent_vector_cat)
+
+        # Saved under its own filename so it can be reused as a future project's
+        # hmm_warmstart_pretrained_path. Unlike "hmm"'s hmm_trained flag, this is
+        # never auto-reused within *this* project on a later rerun - only an
+        # explicit path passed by the caller triggers reuse, and stage 2 always
+        # fine-tunes on the target data rather than using it as-is. That silent
+        # same-project auto-reuse pattern is what caused the original "hmm"
+        # pipeline to keep serving a stale, undertrained model across reruns;
+        # this method intentionally doesn't repeat it.
+        model_path = Path(config["project_path"]) / "results" / "hmm_warmstart_trained.pkl"
+        with open(model_path, "wb") as file:
+            pickle.dump(hmm_model, file)
 
     idx = 0  # start index for each session
     for i, session in enumerate(sessions):
@@ -600,10 +807,14 @@ def segment_session(
     - project_name/
         - results/
             - hmm_trained.pkl
+            - hmm_warmstart_trained.pkl
             - session/
                 - model_name/
                     - latent_vectors.npy
                     - hmm-n_clusters/
+                        - motif_usage_session.npy
+                        - n_cluster_label_session.npy
+                    - hmm_warmstart-n_clusters/
                         - motif_usage_session.npy
                         - n_cluster_label_session.npy
                     - kmeans-n_clusters/

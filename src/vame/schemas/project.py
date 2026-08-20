@@ -7,6 +7,7 @@ from enum import Enum
 class SegmentationAlgorithms(str, Enum):
     hmm = "hmm"
     kmeans = "kmeans"
+    hmm_warmstart = "hmm_warmstart"
 
     class Config:
         use_enum_values = True
@@ -215,6 +216,35 @@ class ProjectSchema(BaseModel):
     hmm_n_iter: int = Field(
         title="Number of iterations for HMM",
         default=100,
+    )
+    hmm_warmstart_stride: int = Field(
+        title="Frame stride used to pre-fit the warm-start HMM before polishing at full resolution. "
+        "Default tuned on one diagnostic dataset (stride 5 beat 3 and 6 on both speed and stability); "
+        "the sweet spot can vary by project and may be worth tuning.",
+        default=5,
+    )
+    hmm_warmstart_n_iter: int = Field(
+        title="Max iterations for each stage of the warm-start HMM (both stages stop early on convergence)",
+        default=500,
+    )
+    hmm_warmstart_tol: float = Field(
+        title="Convergence tolerance (log-likelihood delta) for the warm-start HMM",
+        default=1e-2,
+    )
+    hmm_warmstart_n_jobs: int = Field(
+        title="Parallel workers for the warm-start HMM's E-step (forward-backward), split across "
+        "sessions. 1 = sequential (default, matches original single-threaded behavior), "
+        "-1 = use all available cores. Speedup is bounded by min(n_sessions, n_jobs), and only "
+        "the E-step is parallelized (the M-step stays sequential, but is comparatively cheap).",
+        default=1,
+    )
+    hmm_warmstart_pretrained_path: Optional[str] = Field(
+        title="Path to a previously saved hmm_warmstart model (.pkl) to use as the stage-1 "
+        "initialization instead of fitting fresh on strided data. The model is always "
+        "fine-tuned (re-fit) on the current project's own latent vectors in stage 2 - it is "
+        "never used as-is. Must be None/unset for stage 1 to fit from scratch (the default); "
+        "must match the current project's n_clusters and zdims or it is rejected.",
+        default=None,
     )
     individual_segmentation: bool = Field(
         default=False,
