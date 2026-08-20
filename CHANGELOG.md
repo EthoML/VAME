@@ -1,3 +1,18 @@
+# v0.14.4
+
+### Fixes
+
+- Accept `.avi` videos throughout the pipeline. The `video_type` / `output_video_type` arguments were dropped from `init_new_project`, `motif_videos` and `community_videos`. Motif/community clips are still written as H.264 MP4 ([Issue #226](https://github.com/EthoML/VAME/issues/226))
+- Forward `processing_module_key` and `pose_estimation_key` for NWB files loaded with `source_software="auto"` ([PR #225](https://github.com/EthoML/VAME/pull/225))
+- Save the full per-epoch test loss history to `mse_test_losses_*.npy` instead of only the last epoch's value ([PR #225](https://github.com/EthoML/VAME/pull/225))
+- Load and close the processed dataset before overwriting it during cleaning, filtering, scaling and alignment ([PR #225](https://github.com/EthoML/VAME/pull/225))
+- Infer the pose source software once per project instead of re-reading every pose file, and log per-file loading progress during project initialization ([PR #225](https://github.com/EthoML/VAME/pull/225))
+
+### Features
+
+- `vame.visualization.preprocessing_visualization` accepts `save_logs` and logs per-session progress ([PR #225](https://github.com/EthoML/VAME/pull/225))
+
+
 # v0.14.3
 
 ### Fixes
