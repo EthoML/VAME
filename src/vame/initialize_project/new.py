@@ -11,6 +11,7 @@ from vame.logging.logger import VameLogger
 from vame.util.auxiliary import write_config, read_config, get_version
 from vame.video.video import VIDEO_SUFFIXES, get_video_frame_rate, is_video_file, resolve_video_type
 from vame.io.load_poses import load_pose_estimation
+from movement.io.load import infer_source_software
 
 
 logger_config = VameLogger(__name__)
@@ -200,9 +201,19 @@ def init_new_project(
 
         # Copy pose estimation data
         logger.info("Copying pose estimation raw data...\n")
+        # Detection re-reads the whole file; all files share a format, so infer once.
+        if source_software == "auto" and poses_estimations:
+            try:
+                source_software = infer_source_software(poses_estimations[0])
+                logger.info(f"Detected source software: {source_software}")
+            except Exception as e:
+                logger.warning(f"Could not infer source software, falling back to auto: {e}")
+
         num_features_list = []
         keypoints_list = []
-        for pes_path, video_path in zip(poses_estimations, videos_paths):
+        total = len(poses_estimations)
+        for i, (pes_path, video_path) in enumerate(zip(poses_estimations, videos_paths)):
+            logger.info(f"Loading pose file {i + 1}/{total}: {Path(pes_path).name}")
             ds = load_pose_estimation(
                 pose_estimation_file=pes_path,
                 source_software=source_software,

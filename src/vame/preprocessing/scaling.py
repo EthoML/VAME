@@ -76,6 +76,9 @@ def rescaling(
 
         # Save the updated dataset to file
         scaled_file_path = str(Path(project_path) / "data" / "processed" / f"{session}_processed.nc")
+        # ds lazily reads the file we're about to overwrite.
+        ds.load()
+        ds.close()
         ds.to_netcdf(
             path=scaled_file_path,
             engine="netcdf4",

@@ -715,6 +715,7 @@ def train_model(
         kl_losses = []
         weight_values = []
         mse_losses = []
+        mse_test_losses = []
         fut_losses = []
 
         # Reproducibility: seed all RNGs (torch seeded to SEED right before model
@@ -904,6 +905,7 @@ def train_model(
             kl_losses.append(kl_loss)
             weight_values.append(weight)
             mse_losses.append(mse_loss)
+            mse_test_losses.append(current_loss)
             fut_losses.append(fut_loss)
 
             # save best model
@@ -1012,7 +1014,7 @@ def train_model(
                     "model_losses",
                     "mse_test_losses_" + model_name,
                 ),
-                current_loss,
+                mse_test_losses,
             )
             np.save(
                 os.path.join(

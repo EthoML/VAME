@@ -17,7 +17,6 @@ def init_new_project(project_name: str,
                                               "movement"] = "auto",
                      working_directory: str = ".",
                      videos: Optional[List[str]] = None,
-                     video_type: str = ".mp4",
                      fps: Optional[float] = None,
                      copy_videos: bool = False,
                      processing_module_key: str = "behavior",
@@ -60,7 +59,6 @@ lets movement infer the format from the file extension and contents.
 Pass an explicit value (``&quot;DeepLabCut&quot;``, ``&quot;SLEAP&quot;``,
 ``&quot;LightningPose&quot;``, ``&quot;NWB&quot;``) to override auto-detection.
 * **working_directory** (`str, optional`): Working directory. Defaults to &#x27;.&#x27;.
-* **video_type** (`str, optional`): Video extension (.mp4 or .avi). Defaults to &#x27;.mp4&#x27;.
 * **fps** (`float, optional`): Sampling rate of the videos. If not passed, it will be estimated from the video file. Defaults to None.
 * **copy_videos** (`bool, optional`): If True, the videos will be copied to the project directory. If False, symbolic links will be created instead. Defaults to False.
 * **processing_module_key** (`str, optional`): Only used when ``source_software=&quot;NWB&quot;``. Name of the NWB processing
