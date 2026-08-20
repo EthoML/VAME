@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.3.2">
 <title data-rh="true">Project Configuration | VAME</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:image" content="https://ethoml.github.io/VAME/img/vame_social_card.jpg"><meta data-rh="true" name="twitter:image" content="https://ethoml.github.io/VAME/img/vame_social_card.jpg"><meta data-rh="true" property="og:url" content="https://ethoml.github.io/VAME/docs/project-config"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="Project Configuration | VAME"><meta data-rh="true" name="description" content="The project configuration YAML file exists in the root of the project folder and holds the main parameters for the VAME workflow. The configuration file is created when initializing a new project with the initnewproject function."><meta data-rh="true" property="og:description" content="The project configuration YAML file exists in the root of the project folder and holds the main parameters for the VAME workflow. The configuration file is created when initializing a new project with the initnewproject function."><link data-rh="true" rel="canonical" href="https://ethoml.github.io/VAME/docs/project-config"><link data-rh="true" rel="alternate" href="https://ethoml.github.io/VAME/docs/project-config" hreflang="en"><link data-rh="true" rel="alternate" href="https://ethoml.github.io/VAME/docs/project-config" hreflang="x-default"><link rel="stylesheet" href="/VAME/assets/css/styles.4c206fe6.css">
-<script src="/VAME/assets/js/runtime~main.fcd51204.js" defer="defer"></script>
+<script src="/VAME/assets/js/runtime~main.eac257fe.js" defer="defer"></script>
 <script src="/VAME/assets/js/main.5117210f.js" defer="defer"></script>
 </head>
 <body class="navigation-with-keyboard">
@@ -20,6 +20,7 @@
 <li><strong>project_path</strong> (<code>str</code>): The path to the project.</li>
 <li><strong>session_names</strong> (<code>List[str]</code>): The names of the sessions.</li>
 <li><strong>pose_estimation_filetype</strong> (<code>PoseEstimationFiletype</code>): The pose estimation filetype.</li>
+<li><strong>video_type</strong> (<code>Optional[str]</code>): The extension of the project&#x27;s raw videos (<code>.mp4</code> or <code>.avi</code>), recorded when they are loaded. <code>None</code> when the project has no videos or mixes formats; each session&#x27;s video is resolved from <code>data/raw</code> either way.</li>
 </ul>
 <h3 class="anchor anchorWithStickyNavbar_LWe7" id="data">Data<a href="#data" class="hash-link" aria-label="Direct link to Data" title="Direct link to Data">​</a></h3>
 <ul>
