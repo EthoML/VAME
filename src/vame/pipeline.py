@@ -271,9 +271,14 @@ class VAMEPipeline:
             save_logs=self.save_logs,
         )
 
-    def run_community_clustering(self) -> None:
+    def run_community_clustering(self, cut_tree: int = 2) -> None:
         """
         Runs the community clustering.
+
+        Parameters
+        ----------
+        cut_tree : int, optional
+            Cut level for the hierarchical clustering, by default 2.
 
         Returns
         -------
@@ -281,7 +286,7 @@ class VAMEPipeline:
         """
         vame.community(
             config=self.config,
-            cut_tree=2,
+            cut_tree=cut_tree,
             save_logs=self.save_logs,
         )
 
@@ -488,11 +493,6 @@ class VAMEPipeline:
         """
         Generates the project report.
 
-        Parameters
-        ----------
-        segmentation_algorithm : Literal["hmm", "kmeans"], optional
-            Segmentation algorithm, by default "hmm".
-
         Returns
         -------
         None
@@ -502,8 +502,9 @@ class VAMEPipeline:
     def run_pipeline(
         self,
         from_step: int = 0,
-        preprocessing_kwargs: dict = {},
-        trainingset_kwargs: dict = {},
+        preprocessing_kwargs: Optional[dict] = None,
+        trainingset_kwargs: Optional[dict] = None,
+        community_kwargs: Optional[dict] = None,
     ) -> None:
         """
         Runs the pipeline.
@@ -513,14 +514,21 @@ class VAMEPipeline:
         from_step : int, optional
             Start from step, by default 0.
         preprocessing_kwargs : dict, optional
-            Preprocessing keyword arguments, by default {}.
+            Preprocessing keyword arguments, by default None.
         trainingset_kwargs : dict, optional
-            Training set keyword arguments, by default {}.
+            Training set keyword arguments, by default None.
+        community_kwargs : dict, optional
+            Community clustering keyword arguments (e.g. ``cut_tree``), by default None.
 
         Returns
         -------
         None
         """
+        # Copy so the caller's dicts aren't mutated
+        preprocessing_kwargs = dict(preprocessing_kwargs or {})
+        trainingset_kwargs = dict(trainingset_kwargs or {})
+        community_kwargs = dict(community_kwargs or {})
+
         if from_step == 0:
             trainingset_kwargs["read_from_variable"] = self.preprocessing(**preprocessing_kwargs)
         if from_step <= 1:
@@ -532,7 +540,7 @@ class VAMEPipeline:
         if from_step <= 4:
             self.run_segmentation()
         if from_step <= 5:
-            self.run_community_clustering()
+            self.run_community_clustering(**community_kwargs)
 
 
 def unique_in_order(sequence):
