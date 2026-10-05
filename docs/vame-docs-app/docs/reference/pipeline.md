@@ -127,7 +127,9 @@ Preprocesses the data.
 def create_training_set(
         test_fraction: float = 0.1,
         split_mode: Literal["mode_1", "mode_2"] = "mode_2",
-        read_from_variable: str = "position_processed") -> None
+        read_from_variable: str = "position_processed",
+        keypoints_to_include: Optional[List[str]] = None,
+        keypoints_to_exclude: Optional[List[str]] = None) -> None
 ```
 
 Creates the training set.
@@ -136,6 +138,9 @@ Creates the training set.
 
 * **test_fraction** (`float`): Test fraction.
 * **split_mode** (`str, optional`): Split mode, by default &quot;mode_2&quot;.
+* **read_from_variable** (`str, optional`): Variable to read the training data from, by default &quot;position_processed&quot;.
+* **keypoints_to_include** (`List[str], optional`): Keypoints to use for training. Defaults to all keypoints.
+* **keypoints_to_exclude** (`List[str], optional`): Keypoints to leave out of training. Defaults to None.
 
 **Returns**
 
