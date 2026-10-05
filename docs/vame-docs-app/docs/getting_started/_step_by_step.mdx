@@ -156,6 +156,21 @@ vame.create_trainset(
 )
 ```
 
+Before training, you can adjust the model hyperparameters with `vame.update_config`. Here we use fewer epochs and a smaller network so the tutorial runs quickly, especially without a GPU. For real projects you will likely want to keep the defaults; see [config.yaml](/docs/project-config) for all available parameters.
+
+```python
+config_data = vame.update_config(
+    config=config_data,
+    config_update={
+        "max_epochs": 30,
+        "hidden_size_layer_1": 128,
+        "hidden_size_layer_2": 128,
+        "hidden_size_rec": 128,
+        "hidden_size_pred": 128,
+    },
+)
+```
+
 Now we can train the VAME model. This migth take a while, depending on dataset size and your hardware.
 
 ```python
