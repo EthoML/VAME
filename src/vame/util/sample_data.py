@@ -1,4 +1,41 @@
+import time
 from pathlib import Path
+from typing import Callable, TypeVar
+
+from requests.exceptions import RequestException
+
+from vame.logging.logger import VameLogger
+
+
+logger_config = VameLogger(__name__)
+logger = logger_config.logger
+
+T = TypeVar("T")
+
+GIN_UNREACHABLE_MSG = (
+    "Could not reach the movement sample-data server (gin.g-node.org) after {attempts} attempts. "
+    "The server is likely slow or temporarily unavailable; please try again later."
+)
+
+
+def _with_retries(func: Callable[[], T], attempts: int = 4, base_delay: float = 5.0) -> T:
+    """Call func, retrying on network errors with exponential backoff."""
+    for attempt in range(1, attempts + 1):
+        try:
+            return func()
+        except RequestException as exc:
+            if attempt == attempts:
+                raise ConnectionError(GIN_UNREACHABLE_MSG.format(attempts=attempts)) from exc
+            delay = base_delay * 2 ** (attempt - 1)
+            logger.warning(f"Sample-data download failed (attempt {attempt}/{attempts}), retrying in {delay:.0f}s...")
+            time.sleep(delay)
+
+
+def _import_movement_sample_data():
+    # movement fetches its metadata from GIN at import time; a failed import isn't cached, so retrying re-runs it
+    import movement.sample_data
+
+    return movement.sample_data
 
 
 def download_sample_data(source_software: str, with_video: bool = True) -> dict:
@@ -17,7 +54,7 @@ def download_sample_data(source_software: str, with_video: bool = True) -> dict:
     dict
         Dictionary with the paths to the downloaded sample data.
     """
-    from movement.sample_data import fetch_dataset_paths, metadata
+    movement_sample_data = _with_retries(_import_movement_sample_data)
 
     download_path = Path("~", ".movement", "data").expanduser().resolve()
     if not download_path.exists():
@@ -28,9 +65,11 @@ def download_sample_data(source_software: str, with_video: bool = True) -> dict:
         "SLEAP": "SLEAP_single-mouse_EPM.predictions.slp",
     }
 
-    info_dict = fetch_dataset_paths(
-        filename=dataset_options[source_software],
-        with_video=with_video,
+    info_dict = _with_retries(
+        lambda: movement_sample_data.fetch_dataset_paths(
+            filename=dataset_options[source_software],
+            with_video=with_video,
+        )
     )
 
     video_path = info_dict.get("video")
@@ -41,6 +80,6 @@ def download_sample_data(source_software: str, with_video: bool = True) -> dict:
     info_dict["video"] = str(video_path) if video_path is not None else ""
     info_dict["poses"] = str(info_dict["poses"])
     info_dict["frame"] = str(info_dict["frame"])
-    info_dict["fps"] = metadata[dataset_options[source_software]]["fps"]
+    info_dict["fps"] = movement_sample_data.metadata[dataset_options[source_software]]["fps"]
 
     return info_dict

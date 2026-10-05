@@ -36,6 +36,7 @@ dependencies = [
     "tables>=3.10.0",
     "movement>=0.16.0",
     "netCDF4>=1.7.2",
+    "requests>=2.31.0",
 ]
 
 [project.optional-dependencies]
