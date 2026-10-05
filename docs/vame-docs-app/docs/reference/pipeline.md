@@ -185,10 +185,14 @@ Runs the pose estimation segmentation into motifs.
 #### run\_community\_clustering
 
 ```python
-def run_community_clustering() -> None
+def run_community_clustering(cut_tree: int = 2) -> None
 ```
 
 Runs the community clustering.
+
+**Parameters**
+
+* **cut_tree** (`int, optional`): Cut level for the hierarchical clustering, by default 2.
 
 **Returns**
 
@@ -347,10 +351,6 @@ def report() -> None
 
 Generates the project report.
 
-**Parameters**
-
-* **segmentation_algorithm** (`Literal["hmm", "kmeans"], optional`): Segmentation algorithm, by default &quot;hmm&quot;.
-
 **Returns**
 
 * `None`
@@ -359,8 +359,9 @@ Generates the project report.
 
 ```python
 def run_pipeline(from_step: int = 0,
-                 preprocessing_kwargs: dict = {},
-                 trainingset_kwargs: dict = {}) -> None
+                 preprocessing_kwargs: Optional[dict] = None,
+                 trainingset_kwargs: Optional[dict] = None,
+                 community_kwargs: Optional[dict] = None) -> None
 ```
 
 Runs the pipeline.
@@ -368,8 +369,9 @@ Runs the pipeline.
 **Parameters**
 
 * **from_step** (`int, optional`): Start from step, by default 0.
-* **preprocessing_kwargs** (`dict, optional`): Preprocessing keyword arguments, by default {}.
-* **trainingset_kwargs** (`dict, optional`): Training set keyword arguments, by default {}.
+* **preprocessing_kwargs** (`dict, optional`): Preprocessing keyword arguments, by default None.
+* **trainingset_kwargs** (`dict, optional`): Training set keyword arguments, by default None.
+* **community_kwargs** (`dict, optional`): Community clustering keyword arguments (e.g. ``cut_tree``), by default None.
 
 **Returns**
 
