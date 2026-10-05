@@ -199,6 +199,8 @@ class VAMEPipeline:
         test_fraction: float = 0.1,
         split_mode: Literal["mode_1", "mode_2"] = "mode_2",
         read_from_variable: str = "position_processed",
+        keypoints_to_include: Optional[List[str]] = None,
+        keypoints_to_exclude: Optional[List[str]] = None,
     ) -> None:
         """
         Creates the training set.
@@ -209,6 +211,12 @@ class VAMEPipeline:
             Test fraction.
         split_mode : str, optional
             Split mode, by default "mode_2".
+        read_from_variable : str, optional
+            Variable to read the training data from, by default "position_processed".
+        keypoints_to_include : List[str], optional
+            Keypoints to use for training. Defaults to all keypoints.
+        keypoints_to_exclude : List[str], optional
+            Keypoints to leave out of training. Defaults to None.
 
         Returns
         -------
@@ -219,6 +227,8 @@ class VAMEPipeline:
             test_fraction=test_fraction,
             read_from_variable=read_from_variable,
             split_mode=split_mode,
+            keypoints_to_include=keypoints_to_include,
+            keypoints_to_exclude=keypoints_to_exclude,
             save_logs=self.save_logs,
         )
 
