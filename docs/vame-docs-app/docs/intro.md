@@ -5,7 +5,7 @@ sidebar_position: 1
 
 🌟 Welcome to EthoML/VAME (Variational Animal Motion Embedding), an open-source machine learning tool for behavioral segmentation and analyses.
 
-We are a group of behavioral enthusiasts, comprising the original VAME developers Kevin Luxem and Pavol Bauer, behavioral neuroscientists Stephanie R. Miller and Jorge J. Palop, and computer scientists and statisticians Alex Pico, Reuben Thomas, and Katie Ly). Our aim is to provide scalable, unbiased and sensitive approaches for assessing mouse behavior using computer vision and machine learning approaches.
+We are a group of behavioral enthusiasts, comprising the original VAME developers Kevin Luxem and Pavol Bauer; behavioral neuroscientists Stephanie R. Miller, Jorge J. Palop; statisticians Alex Pico, Reuben Thomas; and machine learning researchers Pranav Nambiar, Katie Ly, Shreya Bangera, Dakota Mallen, Zhihao Cheng. Our aim is to provide scalable, unbiased and sensitive approaches for assessing mouse behavior using computer vision and machine learning approaches.
 
 We are focused on the expanding the analytical capabilities of VAME segmentation by providing curated scripts for VAME implementation and tools for data processing, visualization, and statistical analyses.
 
