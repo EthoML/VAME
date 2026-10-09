@@ -12,6 +12,8 @@
 - Segmentation logs a warning when a session's normalized input is far from the training distribution
 - Optimized embedding builds sliding windows as (time, features) with a vectorized view, replacing the slow fallback loop that every session hit. Fixes transposed encoder input when the number of features equaled `time_window`
 - Segmentation embeds the same variable the model was trained on, read from `data/train/metadata.json`. Before, it always read `position_processed`, so models trained on `position_scaled` (e.g. through `Pipeline.run_pipeline` with rescaling) were segmented on unscaled data
+- `embed_latent_vectors` and `embed_latent_vectors_optimized` create the session results folder before saving, so they also work when called outside `segment_session`
+- `download_sample_data` downloads from movement's sample-data repository on SWC GIN (gin.swc.ucl.ac.uk) with `pooch`, instead of through `movement.sample_data`, which up to movement 0.17.0 uses G-Node GIN (gin.g-node.org) and is often unreachable. `pooch` is now a direct dependency
 
 
 # v0.14.4

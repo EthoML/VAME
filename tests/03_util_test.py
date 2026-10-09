@@ -65,6 +65,8 @@ def test_download_sample_data():
     assert Path(paths_dict["poses"]).exists()
     assert "frame" in paths_dict
     assert Path(paths_dict["frame"]).exists()
+    assert Path(paths_dict["video"]).stem == Path(paths_dict["poses"]).stem
+    assert paths_dict["fps"] == 30
 
 
 def _raw_project(tmp_path, filenames):

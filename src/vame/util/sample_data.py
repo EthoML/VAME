@@ -2,6 +2,8 @@ import time
 from pathlib import Path
 from typing import Callable, TypeVar
 
+import pooch
+import yaml
 from requests.exceptions import RequestException
 
 from vame.logging.logger import VameLogger
@@ -12,8 +14,17 @@ logger = logger_config.logger
 
 T = TypeVar("T")
 
+SAMPLE_DATA_URL = "https://gin.swc.ucl.ac.uk/neuroinformatics/movement-sample-data/raw/master"
+# Same cache folder and layout as movement, so earlier downloads are reused
+DOWNLOAD_PATH = Path("~", ".movement", "data").expanduser()
+
+DATASETS = {
+    "DeepLabCut": "DLC_single-mouse_EPM.predictions.csv",
+    "SLEAP": "SLEAP_single-mouse_EPM.predictions.slp",
+}
+
 GIN_UNREACHABLE_MSG = (
-    "Could not reach the movement sample-data server (gin.g-node.org) after {attempts} attempts. "
+    "Could not reach the movement sample-data server (gin.swc.ucl.ac.uk) after {attempts} attempts. "
     "The server is likely slow or temporarily unavailable; please try again later."
 )
 
@@ -31,16 +42,32 @@ def _with_retries(func: Callable[[], T], attempts: int = 4, base_delay: float = 
             time.sleep(delay)
 
 
-def _import_movement_sample_data():
-    # movement fetches its metadata from GIN at import time; a failed import isn't cached, so retrying re-runs it
-    import movement.sample_data
-
-    return movement.sample_data
+def _fetch(remote_path: str, sha256: str | None, fname: str | None = None) -> Path:
+    """Download one file from the sample-data repository, or reuse the cached copy if its hash matches."""
+    remote = Path(remote_path)
+    return Path(
+        _with_retries(
+            lambda: pooch.retrieve(
+                url=f"{SAMPLE_DATA_URL}/{remote_path}",
+                known_hash=f"sha256:{sha256}" if sha256 else None,
+                fname=fname or remote.name,
+                path=DOWNLOAD_PATH / remote.parent,
+                progressbar=True,
+            )
+        )
+    )
 
 
 def download_sample_data(source_software: str, with_video: bool = True) -> dict:
     """
     Download sample data.
+
+    Files are downloaded from movement's sample-data repository on SWC GIN and cached in
+    ~/.movement/data. This bypasses `movement.sample_data` for now: up to movement 0.17.0 it
+    downloads from G-Node GIN (gin.g-node.org), which is often unreachable. movement moved to
+    SWC GIN in https://github.com/neuroinformatics-unit/movement/pull/1080, which is not yet
+    released. Once a movement release includes it, go back to
+    `movement.sample_data.fetch_dataset_paths` and require that version.
 
     Parameters
     ----------
@@ -52,34 +79,30 @@ def download_sample_data(source_software: str, with_video: bool = True) -> dict:
     Returns
     -------
     dict
-        Dictionary with the paths to the downloaded sample data.
+        Dictionary with the paths to the downloaded sample data ("poses", "video", "frame")
+        and the video frame rate ("fps"). The video is saved under the pose file's name.
     """
-    movement_sample_data = _with_retries(_import_movement_sample_data)
+    with open(_fetch("metadata.yaml", sha256=None)) as f:
+        metadata = yaml.safe_load(f)
 
-    download_path = Path("~", ".movement", "data").expanduser().resolve()
-    if not download_path.exists():
-        download_path.mkdir(parents=True, exist_ok=True)
+    filename = DATASETS[source_software]
+    entry = metadata[filename]
 
-    dataset_options = {
-        "DeepLabCut": "DLC_single-mouse_EPM.predictions.csv",
-        "SLEAP": "SLEAP_single-mouse_EPM.predictions.slp",
-    }
-
-    info_dict = _with_retries(
-        lambda: movement_sample_data.fetch_dataset_paths(
-            filename=dataset_options[source_software],
-            with_video=with_video,
+    poses = _fetch(f"poses/{filename}", entry["sha256sum"])
+    frame = _fetch(f"frames/{entry['frame']['file_name']}", entry["frame"]["sha256sum"])
+    video = ""
+    if with_video:
+        video_file = entry["video"]["file_name"]
+        # Saved under the pose file's name, as before, so pose and video share a session name
+        video = _fetch(
+            f"videos/{video_file}",
+            entry["video"]["sha256sum"],
+            fname=f"{poses.stem}{Path(video_file).suffix}",
         )
-    )
 
-    video_path = info_dict.get("video")
-    if video_path and video_path.stem != info_dict["poses"].stem:
-        # rename video file to match pose file (use replace so it works on Windows too)
-        video_path = video_path.replace(video_path.parent / (str(info_dict["poses"].stem) + video_path.suffix))
-
-    info_dict["video"] = str(video_path) if video_path is not None else ""
-    info_dict["poses"] = str(info_dict["poses"])
-    info_dict["frame"] = str(info_dict["frame"])
-    info_dict["fps"] = movement_sample_data.metadata[dataset_options[source_software]]["fps"]
-
-    return info_dict
+    return {
+        "poses": str(poses),
+        "video": str(video),
+        "frame": str(frame),
+        "fps": entry["fps"],
+    }
