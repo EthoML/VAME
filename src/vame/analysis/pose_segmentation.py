@@ -154,6 +154,7 @@ def embed_latent_vectors(
         latent_vector = np.concatenate(latent_vector_list, axis=0)
 
         # Save latent vector to file
+        latent_vector_path.parent.mkdir(parents=True, exist_ok=True)
         np.save(latent_vector_path, latent_vector)
 
         latent_vector_sessions.append(latent_vector)
@@ -342,6 +343,7 @@ def embed_latent_vectors_optimized(
                     torch.mps.empty_cache()
 
         # Save latent vector to file
+        latent_vector_path.parent.mkdir(parents=True, exist_ok=True)
         np.save(latent_vector_path, latent_vectors)
         latent_vector_sessions.append(latent_vectors)
 
