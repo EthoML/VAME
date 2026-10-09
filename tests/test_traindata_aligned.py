@@ -1,3 +1,4 @@
+import json
 import numpy as np
 import pytest
 from pathlib import Path
@@ -116,3 +117,16 @@ def test_traindata_aligned_data_continuity(setup_project_and_align_egocentric):
 
     # Verify feature dimensions match
     assert train_data.shape[0] == test_data.shape[0]
+
+
+def test_traindata_aligned_reads_preprocessed_variable(setup_project_and_align_egocentric):
+    """Training data comes from the last preprocessing output, rescaled by default"""
+    config = setup_project_and_align_egocentric["config_data"]
+    assert config["preprocessed_variable"] == "position_scaled"
+
+    traindata_aligned(config=config)
+
+    metadata_path = Path(config["project_path"]) / "data" / "train" / "metadata.json"
+    with open(metadata_path) as f:
+        metadata = json.load(f)
+    assert metadata["parameters"]["read_from_variable"] == "position_scaled"

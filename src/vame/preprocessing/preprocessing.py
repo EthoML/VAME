@@ -5,6 +5,7 @@ from vame.preprocessing.alignment import egocentrically_align_and_center
 from vame.preprocessing.filter import savgol_filtering
 from vame.preprocessing.scaling import rescaling
 from vame.schemas.states import save_state, PreprocessingFunctionSchema
+from vame.util.auxiliary import update_config
 
 
 logger_config = VameLogger(__name__)
@@ -20,7 +21,7 @@ def preprocessing(
     run_egocentric_alignment: bool = True,
     run_outlier_cleaning: bool = True,
     run_savgol_filtering: bool = True,
-    run_rescaling: bool = False,
+    run_rescaling: bool = True,
     save_logs: bool = True,
 ) -> str:
     """
@@ -28,8 +29,8 @@ def preprocessing(
         - Cleaning low confidence data points
         - Egocentric alignment
         - Outlier cleaning using IQR
-        - Rescaling
         - Savitzky-Golay filtering
+        - Rescaling
 
     Parameters
     ----------
@@ -48,13 +49,14 @@ def preprocessing(
     run_savgol_filtering : bool, optional
         Whether to run Savitzky-Golay filtering.
     run_rescaling : bool, optional
-        Whether to run rescaling.
+        Whether to run rescaling. Defaults to True.
     save_logs : bool, optional
         Whether to save logs.
 
     Returns
     -------
-    variable name of the last-executed preprocessing step output
+    variable name of the last-executed preprocessing step output, also saved
+    to the config as ``preprocessed_variable``
     """
     if save_logs:
         log_path = Path(config["project_path"]) / "logs" / "preprocessing.log"
@@ -118,5 +120,8 @@ def preprocessing(
             save_logs=save_logs,
         )
         latest_output = "position_scaled"
+
+    # create_trainset reads this by default
+    update_config(config=config, config_update={"preprocessed_variable": latest_output})
 
     return latest_output

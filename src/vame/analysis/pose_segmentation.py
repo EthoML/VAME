@@ -27,7 +27,7 @@ def embed_latent_vectors(
     config: dict,
     sessions: List[str],
     fixed: bool,
-    read_from_variable: str = "position_processed",
+    read_from_variable: str | None = None,
     overwrite: bool = False,
     tqdm_stream: Union[TqdmToLogger, None] = None,
 ) -> List[np.ndarray]:
@@ -43,7 +43,8 @@ def embed_latent_vectors(
     fixed : bool
         Whether the model is fixed.
     read_from_variable : str, optional
-        Variable to read from the dataset. Defaults to "position_processed".
+        Variable to read from the dataset. Defaults to the variable recorded in
+        the training metadata, so inference uses the same input as training.
     overwrite : bool, optional
         Whether to overwrite existing latent vector files. Defaults to False.
     tqdm_stream : TqdmToLogger, optional
@@ -68,11 +69,15 @@ def embed_latent_vectors(
         training_metadata = load_training_metadata(config)
         keypoints_used = training_metadata["parameters"]["keypoints_used"]
         extra_features_used = list(training_metadata["parameters"].get("extra_features") or [])
+        training_variable = training_metadata["parameters"].get("read_from_variable", "position_processed")
     except (FileNotFoundError, ValueError) as e:
         logger.warning(f"Could not load training metadata: {e}")
         logger.warning("Using all available keypoints - this may cause shape mismatch errors")
         keypoints_used = None
         extra_features_used = []
+        training_variable = "position_processed"
+    read_from_variable = read_from_variable or training_variable
+    logger.info(f"Reading model input from variable: {read_from_variable}")
 
     # Validate extra features against the *training* metadata (not the live
     # config), so inference fails fast if the model's inputs aren't available.
@@ -135,7 +140,7 @@ def embed_latent_vectors_optimized(
     config: dict,
     sessions: List[str],
     fixed: bool,
-    read_from_variable: str = "position_processed",
+    read_from_variable: str | None = None,
     overwrite: bool = False,
     batch_size: int = 64,
     tqdm_stream: Union[TqdmToLogger, None] = None,
@@ -158,7 +163,8 @@ def embed_latent_vectors_optimized(
     fixed : bool
         Whether the model is fixed.
     read_from_variable : str, optional
-        Variable to read from the dataset. Defaults to "position_processed".
+        Variable to read from the dataset. Defaults to the variable recorded in
+        the training metadata, so inference uses the same input as training.
     overwrite : bool, optional
         Whether to overwrite existing latent vector files. Defaults to False.
     batch_size : int, optional
@@ -186,11 +192,15 @@ def embed_latent_vectors_optimized(
         training_metadata = load_training_metadata(config)
         keypoints_used = training_metadata["parameters"]["keypoints_used"]
         extra_features_used = list(training_metadata["parameters"].get("extra_features") or [])
+        training_variable = training_metadata["parameters"].get("read_from_variable", "position_processed")
     except (FileNotFoundError, ValueError) as e:
         logger.warning(f"Could not load training metadata: {e}")
         logger.warning("Using all available keypoints - this may cause shape mismatch errors")
         keypoints_used = None
         extra_features_used = []
+        training_variable = "position_processed"
+    read_from_variable = read_from_variable or training_variable
+    logger.info(f"Reading model input from variable: {read_from_variable}")
 
     # Validate extra features against the *training* metadata (not the live
     # config), so inference fails fast if the model's inputs aren't available.

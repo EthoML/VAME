@@ -1,3 +1,15 @@
+# Unreleased
+
+### Changes
+
+- `vame.preprocessing` runs rescaling by default (`run_rescaling=True`). Pose coordinates are divided by each animal's `individual_scale`, so models train on body-size-normalized poses
+- `vame.preprocessing` saves its last output variable to the config as `preprocessed_variable`, and `create_trainset` reads from it by default. Before, `create_trainset` read `position_processed` unless `read_from_variable` was passed, so rescaled data was ignored
+
+### Fixes
+
+- Segmentation embeds the same variable the model was trained on, read from `data/train/metadata.json`. Before, it always read `position_processed`, so models trained on `position_scaled` (e.g. through `Pipeline.run_pipeline` with rescaling) were segmented on unscaled data
+
+
 # v0.14.4
 
 ### Fixes

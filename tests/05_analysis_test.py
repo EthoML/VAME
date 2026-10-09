@@ -4,6 +4,9 @@ import pytest
 from matplotlib.figure import Figure
 from unittest.mock import patch
 from vame.util.gif_pose_helper import background
+from vame.util.model_util import load_training_metadata
+from vame.preprocessing.to_model import format_xarray_for_rnn
+from vame.analysis.pose_segmentation import embed_latent_vectors_optimized
 from vame.visualization import visualize_umap, generate_reports
 
 
@@ -223,3 +226,22 @@ def test_generative_kmeans_wrong_mode(setup_project_and_train_model):
 
 #     gif_frames_path = save_base_path / "gif_frames"
 #     assert len(list(gif_frames_path.glob("*.png"))) == VIDEO_LEN
+
+
+def test_embedding_reads_training_variable(setup_project_and_train_model):
+    """Segmentation encodes the same preprocessed variable the model was trained on"""
+    config = setup_project_and_train_model["config_data"]
+    training_variable = load_training_metadata(config)["parameters"]["read_from_variable"]
+    assert training_variable == "position_scaled"
+
+    with patch(
+        "vame.analysis.pose_segmentation.format_xarray_for_rnn",
+        wraps=format_xarray_for_rnn,
+    ) as mock_format:
+        embed_latent_vectors_optimized(
+            config=config,
+            sessions=config["session_names"][:1],
+            fixed=config["egocentric_data"],
+            overwrite=True,
+        )
+    assert mock_format.call_args.kwargs["read_from_variable"] == training_variable

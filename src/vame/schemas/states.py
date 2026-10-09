@@ -111,7 +111,7 @@ class PreprocessingFunctionSchema(BaseStateSchema):
     )
     run_rescaling: bool = Field(
         title="Whether to run rescaling",
-        default=False,
+        default=True,
     )
     save_logs: bool = Field(
         title="Whether to save logs",

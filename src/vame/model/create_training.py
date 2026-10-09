@@ -20,7 +20,7 @@ def traindata_aligned(
     config: dict,
     sessions: List[str] | None = None,
     test_fraction: float = 0.1,
-    read_from_variable: str = "position_processed",
+    read_from_variable: str | None = None,
     split_mode: Literal["mode_1", "mode_2"] = "mode_2",
     keypoints_to_include: List[str] | None = None,
     keypoints_to_exclude: List[str] | None = None,
@@ -38,7 +38,8 @@ def traindata_aligned(
     test_fraction : float, optional
         Fraction of data to use as test data. Defaults to 0.1.
     read_from_variable : str, optional
-        Variable name to read from the processed data. Defaults to "position_processed".
+        Variable name to read from the processed data. Defaults to the config's
+        "preprocessed_variable", the output of the last preprocessing step.
     split_mode : Literal["mode_1", "mode_2"], optional
         Mode for splitting data into train/test sets:
         - mode_1: Original mode that takes the initial test_fraction portion of the combined data
@@ -52,6 +53,9 @@ def traindata_aligned(
     None
     """
     project_path = config["project_path"]
+    if read_from_variable is None:
+        read_from_variable = config.get("preprocessed_variable", "position_processed")
+    logger.info(f"Reading training data from variable: {read_from_variable}")
     if sessions is None:
         sessions = config["session_names"]
     if test_fraction is None:
@@ -261,7 +265,7 @@ def traindata_aligned(
 def create_trainset(
     config: dict,
     test_fraction: float = 0.1,
-    read_from_variable: str = "position_processed",
+    read_from_variable: str | None = None,
     split_mode: Literal["mode_1", "mode_2"] = "mode_2",
     keypoints_to_include: List[str] | None = None,
     keypoints_to_exclude: List[str] | None = None,
@@ -290,7 +294,8 @@ def create_trainset(
     test_fraction : float, optional
         Fraction of data to use as test data. Defaults to 0.1.
     read_from_variable : str, optional
-        Variable name to read from the processed data. Defaults to "position_processed".
+        Variable name to read from the processed data. Defaults to the config's
+        "preprocessed_variable", the output of the last preprocessing step.
     split_mode : Literal["mode_1", "mode_2"], optional
         Mode for splitting data into train/test sets:
         - mode_1: Original mode that takes the initial test_fraction portion of the combined data
