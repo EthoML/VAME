@@ -17,10 +17,30 @@ from vame.util.model_util import load_model, load_training_metadata
 from vame.util.auxiliary import get_device
 from vame.preprocessing.extra import validate_extra_features
 from vame.preprocessing.to_model import format_xarray_for_rnn
+from vame.model.dataloader import load_normalization
 
 
 logger_config = VameLogger(__name__)
 logger = logger_config.logger
+
+
+def sliding_windows(data: np.ndarray, temp_win: int) -> np.ndarray:
+    """
+    View of all windows of temp_win frames, shape (n_windows, temp_win, n_features),
+    from data of shape (n_features, n_frames). Window i covers frames i to i + temp_win - 1.
+    """
+    return np.lib.stride_tricks.sliding_window_view(data.T, temp_win, axis=0).transpose(0, 2, 1)
+
+
+def check_input_distribution(data: np.ndarray, session: str) -> None:
+    """Warn when a session's normalized input is far from the training distribution (mean 0, std 1)."""
+    mean = float(np.mean(data))
+    std = float(np.std(data))
+    if not (abs(mean) <= 1 and 0.5 <= std <= 2):
+        logger.warning(
+            f"Session {session}: normalized input has mean {mean:.2f} and std {std:.2f}, "
+            "far from the training data (0 and 1). Check keypoints, alignment and rescaling."
+        )
 
 
 def embed_latent_vectors(
@@ -87,6 +107,9 @@ def embed_latent_vectors(
         extra_features=extra_features_used,
     )
 
+    # Same input normalization as training
+    norm_mean, norm_std = load_normalization(Path(project_path) / "data" / "train")
+
     latent_vector_sessions = []
     for session in sessions:
         latent_vector_path = Path(project_path) / "results" / session / config["model_name"] / "latent_vectors.npy"
@@ -116,6 +139,8 @@ def embed_latent_vectors(
             keypoints=keypoints_used,
             extra_features=extra_features_used,
         )
+        data = (data - norm_mean) / norm_std
+        check_input_distribution(data, session)
 
         latent_vector_list = []
         with torch.no_grad():
@@ -181,7 +206,6 @@ def embed_latent_vectors_optimized(
     project_path = config["project_path"]
     model_name = config["model_name"]
     temp_win = config["time_window"]
-    num_features = config["num_features"]
     model = None
 
     logger.info("---------------------------------------------------------------------")
@@ -209,6 +233,9 @@ def embed_latent_vectors_optimized(
         sessions=sessions,
         extra_features=extra_features_used,
     )
+
+    # Same input normalization as training
+    norm_mean, norm_std = load_normalization(Path(project_path) / "data" / "train")
 
     latent_vector_sessions = []
 
@@ -246,6 +273,8 @@ def embed_latent_vectors_optimized(
             keypoints=keypoints_used,
             extra_features=extra_features_used,
         )
+        data = (data - norm_mean) / norm_std
+        check_input_distribution(data, session)
 
         # Calculate number of windows
         n_windows = data.shape[1] - temp_win + 1
@@ -254,31 +283,8 @@ def embed_latent_vectors_optimized(
             latent_vector_sessions.append(np.array([]))
             continue
 
-        # Create all sliding windows at once using vectorized operations
         logger.info(f"Creating {n_windows} sliding windows for session {session}")
-
-        # Use stride_tricks for efficient sliding window creation (no data copying)
-        try:
-            # Transpose data to (time, features) for sliding window
-            data_transposed = data.T  # Shape: (time, features)
-
-            # Use sliding_window_view on each axis separately
-            windows = np.lib.stride_tricks.sliding_window_view(
-                data_transposed,
-                window_shape=temp_win,
-                axis=0
-            )
-            # Result shape: (n_windows, temp_win, num_features)
-
-            # Verify shape is correct
-            if windows.shape != (n_windows, temp_win, num_features):
-                raise ValueError(f"Unexpected window shape: {windows.shape}")
-
-        except Exception as e:
-            logger.warning(f"Stride tricks failed ({e}), using fallback method")
-            windows = np.zeros((n_windows, temp_win, num_features))
-            for i in range(n_windows):
-                windows[i] = data[:, i:i + temp_win].T
+        windows = sliding_windows(data, temp_win)
 
         # Pre-allocate output array
         latent_dim = config["zdims"]
@@ -299,10 +305,7 @@ def embed_latent_vectors_optimized(
                 # Get batch of windows
                 batch_windows = windows[start_idx:end_idx]
 
-                # Convert to tensor
-                batch_tensor = torch.from_numpy(batch_windows).type("torch.FloatTensor")
-
-                batch_tensor = batch_tensor.to(device)
+                batch_tensor = torch.from_numpy(np.ascontiguousarray(batch_windows, dtype=np.float32)).to(device)
 
                 try:
                     # Process entire batch through encoder
@@ -324,8 +327,7 @@ def embed_latent_vectors_optimized(
                         # Process windows one by one for this batch
                         for i in range(current_batch_size):
                             single_window = batch_windows[i:i+1]
-                            single_tensor = torch.from_numpy(single_window).type("torch.FloatTensor")
-                            single_tensor = single_tensor.to(device)
+                            single_tensor = torch.from_numpy(np.ascontiguousarray(single_window, dtype=np.float32)).to(device)
 
                             h_n = model.encoder(single_tensor)
                             mu, _, _ = model.lmbda(h_n)

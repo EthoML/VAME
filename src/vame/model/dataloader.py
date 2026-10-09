@@ -1,9 +1,40 @@
 import torch
 from torch.utils.data.dataset import Dataset
 import numpy as np
-import os
+from pathlib import Path
 from typing import Optional
 from vame.logging.logger import VameLogger
+
+
+def save_normalization(train_dir: str | Path, data_train: np.ndarray) -> dict:
+    """
+    Compute the model input normalization from the training data and save it to
+    seq_mean.npy and seq_std.npy in train_dir, overwriting existing files.
+
+    Returns
+    -------
+    dict
+        {"mean": float, "std": float}
+    """
+    mean = float(np.mean(data_train))
+    std = float(np.std(data_train))
+    np.save(Path(train_dir) / "seq_mean.npy", mean)
+    np.save(Path(train_dir) / "seq_std.npy", std)
+    return {"mean": mean, "std": std}
+
+
+def load_normalization(train_dir: str | Path) -> tuple[float, float]:
+    """
+    Load the model input normalization (mean, std) saved with the training data.
+    Training and inference both use these values.
+    """
+    mean_path = Path(train_dir) / "seq_mean.npy"
+    std_path = Path(train_dir) / "seq_std.npy"
+    if not mean_path.exists() or not std_path.exists():
+        raise FileNotFoundError(
+            f"Normalization statistics not found in {train_dir}. Run vame.create_trainset first."
+        )
+    return float(np.load(mean_path)), float(np.load(std_path))
 
 
 class SEQUENCE_DATASET(Dataset):
@@ -18,7 +49,7 @@ class SEQUENCE_DATASET(Dataset):
     ) -> None:
         """
         Initialize the Sequence Dataset.
-        Creates files at:
+        Normalizes the data with the statistics saved by create_trainset at:
         - project_name/
         - data/
             - train/
@@ -50,15 +81,7 @@ class SEQUENCE_DATASET(Dataset):
 
         self.data_points = len(self.X[0, :])
 
-        if train and not os.path.exists(os.path.join(path_to_file, "seq_mean.npy")):
-            self.logger.info("Compute mean and std for temporal dataset.")
-            self.mean = np.mean(self.X)
-            self.std = np.std(self.X)
-            np.save(path_to_file + "seq_mean.npy", self.mean)
-            np.save(path_to_file + "seq_std.npy", self.std)
-        else:
-            self.mean = np.load(path_to_file + "seq_mean.npy")
-            self.std = np.load(path_to_file + "seq_std.npy")
+        self.mean, self.std = load_normalization(path_to_file)
 
         # Normalize once and store as float32. Previously each __getitem__ did
         # (x - mean) / std in float64 and the train loop cast to float32 — same

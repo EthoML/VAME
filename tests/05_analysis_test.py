@@ -1,12 +1,16 @@
 from pathlib import Path
+import numpy as np
+import torch
 import vame
 import pytest
 from matplotlib.figure import Figure
 from unittest.mock import patch
 from vame.util.gif_pose_helper import background
-from vame.util.model_util import load_training_metadata
+from vame.util.model_util import load_model, load_training_metadata
+from vame.io.load_poses import read_pose_estimation_file
+from vame.model.dataloader import load_normalization
 from vame.preprocessing.to_model import format_xarray_for_rnn
-from vame.analysis.pose_segmentation import embed_latent_vectors_optimized
+from vame.analysis.pose_segmentation import embed_latent_vectors_optimized, sliding_windows
 from vame.visualization import visualize_umap, generate_reports
 
 
@@ -245,3 +249,44 @@ def test_embedding_reads_training_variable(setup_project_and_train_model):
             overwrite=True,
         )
     assert mock_format.call_args.kwargs["read_from_variable"] == training_variable
+
+
+def test_embedding_matches_normalized_encoding(setup_project_and_train_model):
+    """Segmentation latents equal encoding a window normalized as in training"""
+    config = setup_project_and_train_model["config_data"]
+    session = config["session_names"][0]
+    latent_vectors = embed_latent_vectors_optimized(
+        config=config,
+        sessions=[session],
+        fixed=config["egocentric_data"],
+        overwrite=True,
+    )[0]
+
+    parameters = load_training_metadata(config)["parameters"]
+    file_path = Path(config["project_path"]) / "data" / "processed" / f"{session}_processed.nc"
+    _, _, ds = read_pose_estimation_file(file_path=str(file_path))
+    data, _ = format_xarray_for_rnn(
+        ds=ds,
+        read_from_variable=parameters["read_from_variable"],
+        keypoints=parameters["keypoints_used"],
+        extra_features=parameters.get("extra_features"),
+    )
+    mean, std = load_normalization(Path(config["project_path"]) / "data" / "train")
+    i = 10
+    window = (data[:, i : i + config["time_window"]].T - mean) / std
+
+    model = load_model(config, config["model_name"], config["egocentric_data"])
+    device = next(model.parameters()).device
+    with torch.no_grad():
+        mu, _, _ = model.lmbda(model.encoder(torch.from_numpy(window[None]).float().to(device)))
+    np.testing.assert_allclose(latent_vectors[i], mu.cpu().numpy()[0], atol=1e-4)
+
+
+def test_sliding_windows_layout():
+    """Window i holds frames i to i + temp_win - 1 as (time, features), also when n_features == temp_win"""
+    temp_win = n_features = 4
+    data = np.arange(n_features * 10, dtype=float).reshape(n_features, 10)
+    windows = sliding_windows(data, temp_win)
+    assert windows.shape == (10 - temp_win + 1, temp_win, n_features)
+    for i in range(len(windows)):
+        np.testing.assert_array_equal(windows[i], data[:, i : i + temp_win].T)

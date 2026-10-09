@@ -10,6 +10,7 @@ from vame.schemas.states import CreateTrainsetFunctionSchema, save_state
 from vame.io.load_poses import read_pose_estimation_file
 from vame.preprocessing.extra import validate_extra_features
 from vame.preprocessing.to_model import format_xarray_for_rnn
+from vame.model.dataloader import save_normalization
 
 
 logger_config = VameLogger(__name__)
@@ -216,10 +217,15 @@ def traindata_aligned(
     test_data_path = train_dir / "test_seq.npy"
     np.save(str(test_data_path), data_test)
 
+    # Model input normalization, shared by training and inference
+    normalization = save_normalization(train_dir, data_train)
+    logger.info(f"Normalization: mean {normalization['mean']:.4f}, std {normalization['std']:.4f}")
+
     # Create and save single metadata file for provenance tracking
     metadata = {
         "feature_mapping": session_metadata["feature_mapping"],
         "parameters": session_metadata["parameters"],
+        "normalization": normalization,
         "split_information": {
             "split_mode": split_mode,
             "test_fraction": test_fraction,
@@ -280,6 +286,8 @@ def create_trainset(
             - train/
                 - test_seq.npy
                 - train_seq.npy
+                - seq_mean.npy
+                - seq_std.npy
                 - metadata.json
 
     The produced test_seq.npy contains the combined data in the shape of (num_features, num_video_frames * test_fraction).

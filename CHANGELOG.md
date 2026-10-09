@@ -7,6 +7,10 @@
 
 ### Fixes
 
+- Segmentation normalizes its input with the training statistics (`data/train/seq_mean.npy`, `seq_std.npy`) before encoding. Trained models are not affected. Regenerate results with `vame.segment_session(config, overwrite_embeddings=True, overwrite_segmentation=True)`
+- `create_trainset` computes the normalization statistics and overwrites them on every run, and records them in `metadata.json` under `normalization`. Before, the training dataloader wrote them only if the files did not exist, so re-creating the training set with other keypoints, features or sessions reused stale values
+- Segmentation logs a warning when a session's normalized input is far from the training distribution
+- Optimized embedding builds sliding windows as (time, features) with a vectorized view, replacing the slow fallback loop that every session hit. Fixes transposed encoder input when the number of features equaled `time_window`
 - Segmentation embeds the same variable the model was trained on, read from `data/train/metadata.json`. Before, it always read `position_processed`, so models trained on `position_scaled` (e.g. through `Pipeline.run_pipeline` with rescaling) were segmented on unscaled data
 
 
