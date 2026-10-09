@@ -102,7 +102,7 @@ def preprocessing(centered_reference_keypoint: str = "snout",
                   run_egocentric_alignment: bool = True,
                   run_outlier_cleaning: bool = True,
                   run_savgol_filtering: bool = True,
-                  run_rescaling: bool = False) -> str
+                  run_rescaling: bool = True) -> str
 ```
 
 Preprocesses the data.
@@ -115,7 +115,7 @@ Preprocesses the data.
 * **run_egocentric_alignment** (`bool, optional`): Whether to run egocentric alignment, by default True.
 * **run_outlier_cleaning** (`bool, optional`): Whether to run outlier cleaning, by default True.
 * **run_savgol_filtering** (`bool, optional`): Whether to run Savitzky-Golay filtering, by default True.
-* **run_rescaling** (`bool, optional`): Whether to run rescaling, by default False.
+* **run_rescaling** (`bool, optional`): Whether to run rescaling, by default True.
 
 **Returns**
 
@@ -127,7 +127,7 @@ Preprocesses the data.
 def create_training_set(
         test_fraction: float = 0.1,
         split_mode: Literal["mode_1", "mode_2"] = "mode_2",
-        read_from_variable: str = "position_processed",
+        read_from_variable: Optional[str] = None,
         keypoints_to_include: Optional[List[str]] = None,
         keypoints_to_exclude: Optional[List[str]] = None) -> None
 ```
@@ -138,7 +138,7 @@ Creates the training set.
 
 * **test_fraction** (`float`): Test fraction.
 * **split_mode** (`str, optional`): Split mode, by default &quot;mode_2&quot;.
-* **read_from_variable** (`str, optional`): Variable to read the training data from, by default &quot;position_processed&quot;.
+* **read_from_variable** (`str, optional`): Variable to read the training data from, by default the output of the last preprocessing step.
 * **keypoints_to_include** (`List[str], optional`): Keypoints to use for training. Defaults to all keypoints.
 * **keypoints_to_exclude** (`List[str], optional`): Keypoints to leave out of training. Defaults to None.
 

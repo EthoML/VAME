@@ -13,7 +13,7 @@ title: model.create_training
 def traindata_aligned(config: dict,
                       sessions: List[str] | None = None,
                       test_fraction: float = 0.1,
-                      read_from_variable: str = "position_processed",
+                      read_from_variable: str | None = None,
                       split_mode: Literal["mode_1", "mode_2"] = "mode_2",
                       keypoints_to_include: List[str] | None = None,
                       keypoints_to_exclude: List[str] | None = None) -> None
@@ -27,7 +27,8 @@ Save numpy arrays with the test/train info to the project folder.
 * **config** (`dict`): Configuration parameters dictionary.
 * **sessions** (`List[str], optional`): List of session names. If None, all sessions will be used. Defaults to None.
 * **test_fraction** (`float, optional`): Fraction of data to use as test data. Defaults to 0.1.
-* **read_from_variable** (`str, optional`): Variable name to read from the processed data. Defaults to &quot;position_processed&quot;.
+* **read_from_variable** (`str, optional`): Variable name to read from the processed data. Defaults to the config&#x27;s
+&quot;preprocessed_variable&quot;, the output of the last preprocessing step.
 * **split_mode** (`Literal["mode_1", "mode_2"], optional`): Mode for splitting data into train/test sets:
 - mode_1: Original mode that takes the initial test_fraction portion of the combined data
          for testing and the rest for training.
@@ -45,7 +46,7 @@ Defaults to &quot;mode_2&quot;.
 @save_state(model=CreateTrainsetFunctionSchema)
 def create_trainset(config: dict,
                     test_fraction: float = 0.1,
-                    read_from_variable: str = "position_processed",
+                    read_from_variable: str | None = None,
                     split_mode: Literal["mode_1", "mode_2"] = "mode_2",
                     keypoints_to_include: List[str] | None = None,
                     keypoints_to_exclude: List[str] | None = None,
@@ -71,7 +72,8 @@ correspond to each feature in the numpy arrays, along with detailed split inform
 
 * **config** (`dict`): Configuration parameters dictionary.
 * **test_fraction** (`float, optional`): Fraction of data to use as test data. Defaults to 0.1.
-* **read_from_variable** (`str, optional`): Variable name to read from the processed data. Defaults to &quot;position_processed&quot;.
+* **read_from_variable** (`str, optional`): Variable name to read from the processed data. Defaults to the config&#x27;s
+&quot;preprocessed_variable&quot;, the output of the last preprocessing step.
 * **split_mode** (`Literal["mode_1", "mode_2"], optional`): Mode for splitting data into train/test sets:
 - mode_1: Original mode that takes the initial test_fraction portion of the combined data
          for testing and the rest for training.

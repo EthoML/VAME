@@ -14,7 +14,7 @@ def embed_latent_vectors(
         config: dict,
         sessions: List[str],
         fixed: bool,
-        read_from_variable: str = "position_processed",
+        read_from_variable: str | None = None,
         overwrite: bool = False,
         tqdm_stream: Union[TqdmToLogger, None] = None) -> List[np.ndarray]
 ```
@@ -26,7 +26,8 @@ Embed latent vectors for the given sessions using the VAME model.
 * **config** (`dict`): Configuration dictionary.
 * **sessions** (`List[str]`): List of session names.
 * **fixed** (`bool`): Whether the model is fixed.
-* **read_from_variable** (`str, optional`): Variable to read from the dataset. Defaults to &quot;position_processed&quot;.
+* **read_from_variable** (`str, optional`): Variable to read from the dataset. Defaults to the variable recorded in
+the training metadata, so inference uses the same input as training.
 * **overwrite** (`bool, optional`): Whether to overwrite existing latent vector files. Defaults to False.
 * **tqdm_stream** (`TqdmToLogger, optional`): TQDM Stream to redirect the tqdm output to logger.
 
@@ -41,7 +42,7 @@ def embed_latent_vectors_optimized(
         config: dict,
         sessions: List[str],
         fixed: bool,
-        read_from_variable: str = "position_processed",
+        read_from_variable: str | None = None,
         overwrite: bool = False,
         batch_size: int = 64,
         tqdm_stream: Union[TqdmToLogger, None] = None) -> List[np.ndarray]
@@ -60,7 +61,8 @@ This function provides significant performance improvements over the original im
 * **config** (`dict`): Configuration dictionary.
 * **sessions** (`List[str]`): List of session names.
 * **fixed** (`bool`): Whether the model is fixed.
-* **read_from_variable** (`str, optional`): Variable to read from the dataset. Defaults to &quot;position_processed&quot;.
+* **read_from_variable** (`str, optional`): Variable to read from the dataset. Defaults to the variable recorded in
+the training metadata, so inference uses the same input as training.
 * **overwrite** (`bool, optional`): Whether to overwrite existing latent vector files. Defaults to False.
 * **batch_size** (`int, optional`): Number of windows to process simultaneously. Defaults to 64.
 Larger values use more GPU memory but may be faster.

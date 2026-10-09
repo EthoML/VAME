@@ -104,9 +104,6 @@ Outliers will be removed based on the interquartile range (IQR) method. This mea
 #### Savitzky-Golay filtering
 The data will be further smoothed using a Savitzky-Golay filter.
 
-#### Rescaling
-Coordinates are divided by each animal's median distance between the two reference keypoints, so poses are comparable across animals of different sizes and recordings at different camera distances. The result is saved as `position_scaled`, and the training set is created from it. Pass `run_rescaling=False` to keep pixel units.
-
 ```python
 vame.preprocessing(
     config=config_data,
