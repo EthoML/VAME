@@ -14,7 +14,7 @@ def save_normalization(train_dir: str | Path, data_train: np.ndarray) -> dict:
     Returns
     -------
     dict
-        {"mean": float, "std": float}
+        Normalization statistics, with float values under the keys ``mean`` and ``std``.
     """
     mean = float(np.mean(data_train))
     std = float(np.std(data_train))
