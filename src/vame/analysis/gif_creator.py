@@ -1,6 +1,5 @@
 import os
 import tqdm
-import umap
 import numpy as np
 from pathlib import Path
 import matplotlib
@@ -200,6 +199,8 @@ def gif(
                 num_points = embed.shape[0]
         except Exception:
             logger.info(f"Compute embedding for session {session}")
+            import umap  # imported here because it takes seconds to load (numba compilation)
+
             reducer = umap.UMAP(
                 n_components=2,
                 min_dist=config["min_dist"],

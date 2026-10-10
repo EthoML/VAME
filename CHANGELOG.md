@@ -2,6 +2,8 @@
 
 ### Changes
 
+- `vame.preprocessing` reads and writes each session's file once, instead of once per step. Results are unchanged and preprocessing is 4-5x faster. New per-dataset functions: `lowconf_clean_dataset`, `egocentrically_align_dataset`, `outlier_clean_dataset`, `savgol_filter_dataset`, `rescale_dataset`
+- `umap` is imported only when a UMAP embedding is computed (`visualize_umap`, `gif`)
 - `vame.preprocessing` runs rescaling by default (`run_rescaling=True`). Pose coordinates are divided by each animal's `individual_scale`, so models train on body-size-normalized poses
 - `vame.preprocessing` saves its last output variable to the config as `preprocessed_variable`, and `create_trainset` reads from it by default. Before, `create_trainset` read `position_processed` unless `read_from_variable` was passed, so rescaled data was ignored
 

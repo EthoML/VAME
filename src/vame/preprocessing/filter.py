@@ -1,5 +1,6 @@
 from scipy.signal import savgol_filter
 import numpy as np
+import xarray as xr
 from pathlib import Path
 
 from vame.logging.logger import VameLogger
@@ -50,29 +51,13 @@ def savgol_filtering(
         file_path = str(Path(project_path) / "data" / "processed" / f"{session}_processed.nc")
         _, _, ds = read_pose_estimation_file(file_path=file_path)
 
-        # Extract processed positions values, with shape: (time, space, keypoints, individuals)
-        position = np.copy(ds[read_from_variable].values)
-        filtered_position = np.copy(position)
-        for individual in range(position.shape[3]):
-            for keypoint in range(position.shape[2]):
-                for space in range(position.shape[1]):
-                    series = np.copy(position[:, space, keypoint, individual])
-
-                    # Check if all values are zero, then skip
-                    if np.all(series == 0):
-                        continue
-
-                    # Apply Savitzky-Golay filter
-                    filtered_position[:, space, keypoint, individual] = savgol_filter(
-                        x=series,
-                        window_length=savgol_length,
-                        polyorder=savgol_order,
-                        axis=0,
-                    )
-
-        # Update the dataset with the filtered position values
-        ds[save_to_variable] = (ds[read_from_variable].dims, filtered_position)
-        ds.attrs.update({"processed_filtered": "True"})
+        savgol_filter_dataset(
+            ds=ds,
+            savgol_length=savgol_length,
+            savgol_order=savgol_order,
+            read_from_variable=read_from_variable,
+            save_to_variable=save_to_variable,
+        )
 
         # Save the filtered dataset to file
         filtered_file_path = str(Path(project_path) / "data" / "processed" / f"{session}_processed.nc")
@@ -83,3 +68,55 @@ def savgol_filtering(
             path=filtered_file_path,
             engine="netcdf4",
         )
+
+
+def savgol_filter_dataset(
+    ds: xr.Dataset,
+    savgol_length: int,
+    savgol_order: int,
+    read_from_variable: str,
+    save_to_variable: str,
+) -> None:
+    """
+    Apply a Savitzky-Golay filter to one session's dataset, in place.
+
+    Parameters
+    ----------
+    ds : xr.Dataset
+        Session dataset.
+    savgol_length : int
+        Filter window length.
+    savgol_order : int
+        Polynomial order.
+    read_from_variable : str
+        Variable to read from the dataset.
+    save_to_variable : str
+        Variable to save the filtered data to.
+
+    Returns
+    -------
+    None
+    """
+    # Extract processed positions values, with shape: (time, space, keypoints, individuals)
+    position = np.copy(ds[read_from_variable].values)
+    filtered_position = np.copy(position)
+    for individual in range(position.shape[3]):
+        for keypoint in range(position.shape[2]):
+            for space in range(position.shape[1]):
+                series = np.copy(position[:, space, keypoint, individual])
+
+                # Check if all values are zero, then skip
+                if np.all(series == 0):
+                    continue
+
+                # Apply Savitzky-Golay filter
+                filtered_position[:, space, keypoint, individual] = savgol_filter(
+                    x=series,
+                    window_length=savgol_length,
+                    polyorder=savgol_order,
+                    axis=0,
+                )
+
+    # Update the dataset with the filtered position values
+    ds[save_to_variable] = (ds[read_from_variable].dims, filtered_position)
+    ds.attrs.update({"processed_filtered": "True"})
