@@ -29,3 +29,25 @@ Apply Savitzky-Golay filter to the data.
 
 * `None`
 
+#### savgol\_filter\_dataset
+
+```python
+def savgol_filter_dataset(ds: xr.Dataset, savgol_length: int,
+                          savgol_order: int, read_from_variable: str,
+                          save_to_variable: str) -> None
+```
+
+Apply a Savitzky-Golay filter to one session&#x27;s dataset, in place.
+
+**Parameters**
+
+* **ds** (`xr.Dataset`): Session dataset.
+* **savgol_length** (`int`): Filter window length.
+* **savgol_order** (`int`): Polynomial order.
+* **read_from_variable** (`str`): Variable to read from the dataset.
+* **save_to_variable** (`str`): Variable to save the filtered data to.
+
+**Returns**
+
+* `None`
+

@@ -46,3 +46,22 @@ Preprocess the data by:
 * `variable name of the last-executed preprocessing step output, also saved`
 * `to the config as ``preprocessed_variable```
 
+#### preprocess\_session
+
+```python
+def preprocess_session(file_path: str, steps: List[Tuple[Callable,
+                                                         dict]]) -> None
+```
+
+Run preprocessing steps on one session&#x27;s processed file: read once, apply the
+steps in order, and replace the file once.
+
+**Parameters**
+
+* **file_path** (`str`): Path to the session&#x27;s processed netCDF file.
+* **steps** (`list of (function, kwargs)`): Dataset functions to apply in order, each called as ``function(ds=ds, **kwargs)``.
+
+**Returns**
+
+* `None`
+

@@ -61,6 +61,8 @@ Creates the training dataset for VAME at:
         - train/
             - test_seq.npy
             - train_seq.npy
+            - seq_mean.npy
+            - seq_std.npy
             - metadata.json
 
 The produced test_seq.npy contains the combined data in the shape of (num_features, num_video_frames * test_fraction).

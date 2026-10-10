@@ -7,6 +7,23 @@ title: analysis.pose_segmentation
 
 #### logger
 
+#### sliding\_windows
+
+```python
+def sliding_windows(data: np.ndarray, temp_win: int) -> np.ndarray
+```
+
+View of all windows of temp_win frames, shape (n_windows, temp_win, n_features),
+from data of shape (n_features, n_frames). Window i covers frames i to i + temp_win - 1.
+
+#### check\_input\_distribution
+
+```python
+def check_input_distribution(data: np.ndarray, session: str) -> None
+```
+
+Warn when a session&#x27;s normalized input is far from the training distribution (mean 0, std 1).
+
 #### embed\_latent\_vectors
 
 ```python

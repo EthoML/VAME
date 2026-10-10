@@ -3,6 +3,28 @@ sidebar_label: dataloader
 title: model.dataloader
 ---
 
+#### save\_normalization
+
+```python
+def save_normalization(train_dir: str | Path, data_train: np.ndarray) -> dict
+```
+
+Compute the model input normalization from the training data and save it to
+seq_mean.npy and seq_std.npy in train_dir, overwriting existing files.
+
+**Returns**
+
+* `dict`: Normalization statistics, with float values under the keys ``mean`` and ``std``.
+
+#### load\_normalization
+
+```python
+def load_normalization(train_dir: str | Path) -> tuple[float, float]
+```
+
+Load the model input normalization (mean, std) saved with the training data.
+Training and inference both use these values.
+
 ## SEQUENCE\_DATASET Objects
 
 ```python
@@ -21,7 +43,7 @@ def __init__(path_to_file: str,
 ```
 
 Initialize the Sequence Dataset.
-Creates files at:
+Normalizes the data with the statistics saved by create_trainset at:
 - project_name/
 - data/
     - train/
