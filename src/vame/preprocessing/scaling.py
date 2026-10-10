@@ -1,5 +1,6 @@
 from pathlib import Path
 import numpy as np
+import xarray as xr
 
 from vame.logging.logger import VameLogger
 from vame.io.load_poses import read_pose_estimation_file
@@ -46,33 +47,12 @@ def rescaling(
         file_path = str(Path(project_path) / "data" / "processed" / f"{session}_processed.nc")
         _, _, ds = read_pose_estimation_file(file_path=file_path)
 
-        # Check if individual_scale exists
-        if "individual_scale" not in ds:
-            logger.warning(f"No individual_scale found for session {session}. Skipping rescaling.")
+        if not rescale_dataset(
+            ds=ds,
+            read_from_variable=read_from_variable,
+            save_to_variable=save_to_variable,
+        ):
             continue
-
-        # Extract position and scale values
-        position = np.copy(ds[read_from_variable].values)  # shape: (time, space, keypoints, individuals)
-        individual_scales = ds["individual_scale"].values  # shape: (individuals,)
-
-        # Create scaled position array
-        scaled_position = np.empty_like(position)
-
-        # Apply scaling to each individual
-        for individual in range(position.shape[3]):
-            scale = individual_scales[individual]
-
-            # Handle potential division by zero or very small values
-            if scale < 1e-10:
-                logger.warning(f"Very small scale ({scale}) for individual {individual}. Using default scale of 1.0")
-                scale = 1.0
-
-            # Scale all positions for this individual
-            scaled_position[:, :, :, individual] = position[:, :, :, individual] / scale
-
-        # Update the dataset with the scaled position values
-        ds[save_to_variable] = (ds[read_from_variable].dims, scaled_position)
-        ds.attrs.update({"processed_rescaled": "True"})
 
         # Save the updated dataset to file
         scaled_file_path = str(Path(project_path) / "data" / "processed" / f"{session}_processed.nc")
@@ -83,3 +63,55 @@ def rescaling(
             path=scaled_file_path,
             engine="netcdf4",
         )
+
+
+def rescale_dataset(
+    ds: xr.Dataset,
+    read_from_variable: str,
+    save_to_variable: str,
+) -> bool:
+    """
+    Divide one session's positions by each individual's ``individual_scale``, in place.
+
+    Parameters
+    ----------
+    ds : xr.Dataset
+        Session dataset.
+    read_from_variable : str
+        Variable to read from the dataset.
+    save_to_variable : str
+        Variable to save the rescaled data to.
+
+    Returns
+    -------
+    bool
+        False if the dataset has no ``individual_scale`` and was left unchanged.
+    """
+    if "individual_scale" not in ds:
+        logger.warning("No individual_scale found in dataset. Skipping rescaling.")
+        return False
+
+    # Extract position and scale values
+    position = np.copy(ds[read_from_variable].values)  # shape: (time, space, keypoints, individuals)
+    individual_scales = ds["individual_scale"].values  # shape: (individuals,)
+
+    # Create scaled position array
+    scaled_position = np.empty_like(position)
+
+    # Apply scaling to each individual
+    for individual in range(position.shape[3]):
+        scale = individual_scales[individual]
+
+        # Handle potential division by zero or very small values
+        if scale < 1e-10:
+            logger.warning(f"Very small scale ({scale}) for individual {individual}. Using default scale of 1.0")
+            scale = 1.0
+
+        # Scale all positions for this individual
+        scaled_position[:, :, :, individual] = position[:, :, :, individual] / scale
+
+    # Update the dataset with the scaled position values
+    ds[save_to_variable] = (ds[read_from_variable].dims, scaled_position)
+    ds.attrs.update({"processed_rescaled": "True"})
+
+    return True

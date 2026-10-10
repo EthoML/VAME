@@ -98,6 +98,11 @@ def init_new_project(
     project_path = Path(working_directory).resolve() / project_name
     if project_path.exists():
         logger.info('Project "{}" already exists!'.format(project_path))
+        if config_kwargs:
+            logger.warning(
+                "config_kwargs are ignored for an existing project. "
+                "Use vame.update_config, or a new project_name, to change the configuration."
+            )
         projconfigfile = os.path.join(str(project_path), "config.yaml")
         return projconfigfile, read_config(projconfigfile)
 

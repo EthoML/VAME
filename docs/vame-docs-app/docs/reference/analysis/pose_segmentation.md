@@ -7,6 +7,23 @@ title: analysis.pose_segmentation
 
 #### logger
 
+#### sliding\_windows
+
+```python
+def sliding_windows(data: np.ndarray, temp_win: int) -> np.ndarray
+```
+
+View of all windows of temp_win frames, shape (n_windows, temp_win, n_features),
+from data of shape (n_features, n_frames). Window i covers frames i to i + temp_win - 1.
+
+#### check\_input\_distribution
+
+```python
+def check_input_distribution(data: np.ndarray, session: str) -> None
+```
+
+Warn when a session&#x27;s normalized input is far from the training distribution (mean 0, std 1).
+
 #### embed\_latent\_vectors
 
 ```python
@@ -14,7 +31,7 @@ def embed_latent_vectors(
         config: dict,
         sessions: List[str],
         fixed: bool,
-        read_from_variable: str = "position_processed",
+        read_from_variable: str | None = None,
         overwrite: bool = False,
         tqdm_stream: Union[TqdmToLogger, None] = None) -> List[np.ndarray]
 ```
@@ -26,7 +43,8 @@ Embed latent vectors for the given sessions using the VAME model.
 * **config** (`dict`): Configuration dictionary.
 * **sessions** (`List[str]`): List of session names.
 * **fixed** (`bool`): Whether the model is fixed.
-* **read_from_variable** (`str, optional`): Variable to read from the dataset. Defaults to &quot;position_processed&quot;.
+* **read_from_variable** (`str, optional`): Variable to read from the dataset. Defaults to the variable recorded in
+the training metadata, so inference uses the same input as training.
 * **overwrite** (`bool, optional`): Whether to overwrite existing latent vector files. Defaults to False.
 * **tqdm_stream** (`TqdmToLogger, optional`): TQDM Stream to redirect the tqdm output to logger.
 
@@ -41,7 +59,7 @@ def embed_latent_vectors_optimized(
         config: dict,
         sessions: List[str],
         fixed: bool,
-        read_from_variable: str = "position_processed",
+        read_from_variable: str | None = None,
         overwrite: bool = False,
         batch_size: int = 64,
         tqdm_stream: Union[TqdmToLogger, None] = None) -> List[np.ndarray]
@@ -60,7 +78,8 @@ This function provides significant performance improvements over the original im
 * **config** (`dict`): Configuration dictionary.
 * **sessions** (`List[str]`): List of session names.
 * **fixed** (`bool`): Whether the model is fixed.
-* **read_from_variable** (`str, optional`): Variable to read from the dataset. Defaults to &quot;position_processed&quot;.
+* **read_from_variable** (`str, optional`): Variable to read from the dataset. Defaults to the variable recorded in
+the training metadata, so inference uses the same input as training.
 * **overwrite** (`bool, optional`): Whether to overwrite existing latent vector files. Defaults to False.
 * **batch_size** (`int, optional`): Number of windows to process simultaneously. Defaults to 64.
 Larger values use more GPU memory but may be faster.

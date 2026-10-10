@@ -1,8 +1,10 @@
+import json
 import numpy as np
 import pytest
 from pathlib import Path
 from typing import Literal
 from vame.model.create_training import traindata_aligned
+from vame.model.dataloader import load_normalization
 
 
 def test_traindata_aligned_basic(setup_project_and_align_egocentric):
@@ -116,3 +118,39 @@ def test_traindata_aligned_data_continuity(setup_project_and_align_egocentric):
 
     # Verify feature dimensions match
     assert train_data.shape[0] == test_data.shape[0]
+
+
+def test_traindata_aligned_reads_preprocessed_variable(setup_project_and_align_egocentric):
+    """Training data comes from the last preprocessing output, rescaled by default"""
+    config = setup_project_and_align_egocentric["config_data"]
+    assert config["preprocessed_variable"] == "position_scaled"
+
+    traindata_aligned(config=config)
+
+    metadata_path = Path(config["project_path"]) / "data" / "train" / "metadata.json"
+    with open(metadata_path) as f:
+        metadata = json.load(f)
+    assert metadata["parameters"]["read_from_variable"] == "position_scaled"
+
+
+def test_traindata_aligned_recomputes_normalization(setup_project_and_align_egocentric):
+    """Normalization statistics are recomputed with every training set and recorded in metadata"""
+    fixture = setup_project_and_align_egocentric
+    config = fixture["config_data"]
+    train_dir = Path(config["project_path"]) / "data" / "train"
+
+    traindata_aligned(config=config)
+    mean_all, std_all = load_normalization(train_dir)
+    with open(train_dir / "metadata.json") as f:
+        metadata = json.load(f)
+    assert metadata["normalization"] == {"mean": mean_all, "std": std_all}
+
+    reference_keypoints = {fixture["centered_reference_keypoint"], fixture["orientation_reference_keypoint"]}
+    keypoint = next(k for k in metadata["parameters"]["keypoints_available"] if k not in reference_keypoints)
+    try:
+        traindata_aligned(config=config, keypoints_to_exclude=[keypoint])
+        mean_excluded, _ = load_normalization(train_dir)
+        assert mean_excluded != mean_all
+    finally:
+        # The project is shared with other tests
+        traindata_aligned(config=config)
