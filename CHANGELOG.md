@@ -1,5 +1,10 @@
 # Unreleased
 
+### Features
+
+- `dandiset_parse` and `dandiset_load` take `dandi_instance` (default `"dandi"`) to read from other DANDI instances such as `"dandi-sandbox"`, and authenticate when the instance's API key is set (`DANDI_API_KEY`, `DANDI_SANDBOX_API_KEY`), so embargoed dandisets can be read
+- `dandiset_load(..., download=True)` downloads each NWB file to a temporary folder and reads it locally instead of streaming it, which is faster for files that hold little besides pose data
+
 ### Changes
 
 - `vame.preprocessing` reads and writes each session's file once, instead of once per step. Results are unchanged and preprocessing is 4-5x faster. New per-dataset functions: `lowconf_clean_dataset`, `egocentrically_align_dataset`, `outlier_clean_dataset`, `savgol_filter_dataset`, `rescale_dataset`
