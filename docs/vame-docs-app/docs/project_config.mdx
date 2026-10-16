@@ -35,7 +35,7 @@ Some fields are kept so older projects still load, but are not read by the curre
 | `savgol_length` | `int` | `5` | Window length of the Savitzky-Golay filter. |
 | `savgol_order` | `int` | `2` | Polynomial order of the Savitzky-Golay filter. |
 | `test_fraction` | `float` | `0.1` | Fraction of the data held out for testing, used when `create_trainset` is called with `test_fraction=None`. |
-| `egocentric_data` | `bool` | `False` | Not used. |
+| `egocentric_data` | `bool` | `False` | Whether the data is egocentric from the start, as with head-fixed animals. Only read by `vame.pose_to_numpy`, which requires it to be true. |
 | `savgol_filter` | `bool` | `True` | Not used. Pass `run_savgol_filtering` to `vame.preprocessing` instead. |
 
 ### RNN model general hyperparameters
