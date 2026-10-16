@@ -1,4 +1,9 @@
-# Unreleased
+# v0.15.0
+
+### Upgrading from 0.14
+
+- `vame.preprocessing` now rescales poses by default, so new models train on body-size-normalized poses. Pass `run_rescaling=False` to keep the previous behavior
+- Regenerate segmentation results computed with earlier versions: `vame.segment_session(config, overwrite_embeddings=True, overwrite_segmentation=True)`. Trained models do not need retraining
 
 ### Features
 
