@@ -1,6 +1,6 @@
 [project]
 name = "vame-py"
-version = '0.14.4'
+version = '0.15.0'
 description = "Variational Animal Motion Embedding."
 authors = [{ name = "K. Luxem & " }, { name = "P. Bauer" }]
 requires-python = ">=3.12"
@@ -35,7 +35,9 @@ dependencies = [
     "ndx-vame==0.2.2",
     "tables>=3.10.0",
     "movement>=0.16.0",
+    "pooch>=1.8.0",
     "netCDF4>=1.7.2",
+    "requests>=2.31.0",
 ]
 
 [project.optional-dependencies]

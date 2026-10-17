@@ -76,6 +76,11 @@ class ProjectSchema(BaseModel):
         default=False,
         title="Egocentric data",
     )
+    preprocessed_variable: str = Field(
+        default="position_processed",
+        title="Preprocessed variable",
+        description="Output variable of the last preprocessing step. Set by vame.preprocessing.",
+    )
     pose_confidence: float = Field(
         default=0.99,
         title="Pose confidence",
