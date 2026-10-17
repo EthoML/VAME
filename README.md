@@ -36,19 +36,29 @@ The development of VAME is heavily inspired by [DeepLabCut](https://github.com/D
 ## VAME in a Nutshell
 
 VAME is a framework to cluster behavioral signals obtained from pose-estimation tools. It is a [PyTorch](https://pytorch.org/)-based deep learning framework which leverages the power of recurrent neural networks (RNN) to model sequential data. In order to learn the underlying complex data distribution, we use the RNN in a variational autoencoder setting to extract the latent state of the animal in every step of the input time series.
-The workflow of VAME consists of 5 steps and we explain them in detail [here](https://github.com/LINCellularNeuroscience/VAME/wiki/1.-VAME-Workflow)
+The [step-by-step guide](https://ethoml.github.io/VAME/docs/getting_started/step_by_step/) walks through each step of the VAME workflow.
 
 ## Installation
 
-To get started we recommend using [Anaconda](https://www.anaconda.com/distribution/) with Python 3.11 or higher. Here, you can create a [virtual enviroment](https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html) to store all the dependencies necessary for VAME. You can also use the `environment-<os>.yaml` files supplied here, by simply opening the terminal, running git clone https://github.com/LINCellularNeuroscience/VAME.git, then typ cd VAME then run: `conda env create -f environment-<os>.yaml`).
+VAME requires Python 3.12 or higher.
 
-* Go to the locally cloned VAME directory and run python setup.py install in order to install VAME in your active conda environment.
-* Install the current stable Pytorch release using the OS-dependent instructions from the [Pytorch website](https://pytorch.org/get-started/locally/). Currently, VAME is tested on PyTorch 2.2.2. (Note, if you use the conda file we supply, PyTorch is already installed and you don't need to do this step.)
+```bash
+pip install vame-py
+```
+
+To read pose data from DANDI, install the `dandi` extra:
+
+```bash
+pip install "vame-py[dandi]"
+```
+
+See the [installation guide](https://ethoml.github.io/VAME/docs/getting_started/installation/) for installing from source.
 
 ## Getting Started
-First, you should make sure that you have a GPU powerful enough to train deep learning networks. In our original 2022 paper, we were using a single Nvidia GTX 1080 Ti GPU to train our network. A hardware guide can be found [here](https://timdettmers.com/2018/12/16/deep-learning-hardware-guide/). VAME can also be trained in Google Colab or on a HPC cluster. Once you have your computing setup ready, begin using VAME by following the [workflow guide](https://github.com/LINCellularNeuroscience/VAME/wiki/1.-VAME-Workflow).
 
-Once you have VAME installed, you can try VAME out on a set of mouse behavioral videos and .csv files publicly available in the [examples folder](https://github.com/LINCellularNeuroscience/VAME/tree/master/examples).
+Follow the [step-by-step guide](https://ethoml.github.io/VAME/docs/getting_started/step_by_step/), or run the whole workflow with the [pipeline](https://ethoml.github.io/VAME/docs/getting_started/pipeline/). Both are also available as notebooks in the [examples folder](https://github.com/EthoML/VAME/tree/main/examples). To use VAME without writing code, see [VAME App](https://ethoml.github.io/VAME/docs/vame_app/).
+
+VAME trains on a GPU when one is available (CUDA or Apple MPS) and falls back to the CPU otherwise.
 
 ## References
 New 2024 Miller <i>et al</i>.: [Machine learning reveals prominent spontaneous behavioral changes and treatment efficacy in humanized and transgenic Alzheimer's disease models](https://www.cell.com/cell-reports/fulltext/S2211-1247(24)01221-X) <br/>
@@ -59,6 +69,4 @@ Kingma & Welling: [Auto-Encoding Variational Bayes](https://arxiv.org/abs/1312.6
 Pereira & Silveira: [Learning Representations from Healthcare Time Series Data for Unsupervised Anomaly Detection](https://www.joao-pereira.pt/publications/accepted_version_BigComp19.pdf)
 
 ## License: GPLv3
-See the [LICENSE file](https://github.com/LINCellularNeuroscience/VAME/blob/master/LICENSE) for the full statement.
-
-## Code Reference (DOI)
+See the [LICENSE file](https://github.com/EthoML/VAME/blob/main/LICENSE) for the full statement.
