@@ -1,6 +1,14 @@
 from pathlib import Path
 from pytest import raises
 import os
+import matplotlib
+import pytest
+
+from vame.visualization import (
+    visualize_preprocessing_scatter,
+    visualize_preprocessing_timeseries,
+    visualize_preprocessing_cloud,
+)
 
 
 def test_pose_to_numpy_file_exists(setup_project_and_convert_pose_to_numpy):
@@ -110,3 +118,18 @@ def test_get_session_video_path_does_not_match_other_sessions(tmp_path):
     config = _raw_project(tmp_path, ["Session1.mp4", "Session10.avi"])
     assert get_session_video_path(config=config, session="Session10").name == "Session10.avi"
     assert get_session_video_path(config=config, session="Session1").name == "Session1.mp4"
+
+
+@pytest.mark.parametrize(
+    "plot_function",
+    [visualize_preprocessing_scatter, visualize_preprocessing_timeseries, visualize_preprocessing_cloud],
+)
+def test_preprocessing_plots_keep_matplotlib_backend(setup_project_and_align_egocentric, plot_function):
+    """Plotting with show_figure=False does not change the session's matplotlib backend"""
+    config = setup_project_and_align_egocentric["config_data"]
+    matplotlib.use("pdf")
+    try:
+        plot_function(config=config, show_figure=False)
+        assert matplotlib.get_backend() == "pdf"
+    finally:
+        matplotlib.use("Agg")

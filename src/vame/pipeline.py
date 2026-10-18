@@ -438,6 +438,7 @@ class VAMEPipeline:
     def visualize_hierarchical_tree(
         self,
         segmentation_algorithm: Literal["hmm", "kmeans"],
+        show_figure: bool = True,
     ) -> None:
         """
         Visualizes the hierarchical tree.
@@ -446,6 +447,8 @@ class VAMEPipeline:
         ----------
         segmentation_algorithm : Literal["hmm", "kmeans"]
             Segmentation algorithm.
+        show_figure : bool
+            Whether to show the figure. Defaults to True.
 
         Returns
         -------
@@ -454,6 +457,7 @@ class VAMEPipeline:
         visualize_hierarchical_tree(
             config=self.config,
             segmentation_algorithm=segmentation_algorithm,
+            show_figure=show_figure,
         )
 
     def visualize_umap(

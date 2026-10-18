@@ -4,6 +4,7 @@ import torch
 import vame
 import pytest
 from matplotlib.figure import Figure
+import matplotlib.pyplot as plt
 from unittest.mock import patch
 from vame.util.gif_pose_helper import background
 from vame.util.model_util import load_model, load_training_metadata
@@ -12,7 +13,7 @@ from vame.io.load_poses import read_pose_estimation_file
 from vame.model.dataloader import load_normalization
 from vame.preprocessing.to_model import format_xarray_for_rnn
 from vame.analysis.pose_segmentation import embed_latent_vectors_optimized, sliding_windows
-from vame.visualization import visualize_umap, generate_reports
+from vame.visualization import visualize_umap, generate_reports, visualize_hierarchical_tree
 
 
 @pytest.mark.parametrize(
@@ -301,3 +302,16 @@ def test_segment_session_failure_raises_and_records_failed(tmp_path):
     with pytest.raises(KeyError):
         vame.segment_session(config, save_logs=False)
     assert read_states(config)["segment_session"]["execution_state"] == "failed"
+
+
+def test_visualize_hierarchical_tree_without_showing(tmp_path):
+    """show_figure=False returns the tree figure without calling plt.show"""
+    tree_dir = tmp_path / "results" / "community_cohort" / "hmm-2"
+    tree_dir.mkdir(parents=True)
+    plt.imsave(tree_dir / "tree.png", np.zeros((4, 4)))
+    config = {"project_path": str(tmp_path), "n_clusters": 2}
+    with patch("vame.visualization.community.plt.show") as mock_show:
+        fig = visualize_hierarchical_tree(config, segmentation_algorithm="hmm", show_figure=False)
+    mock_show.assert_not_called()
+    assert isinstance(fig, Figure)
+    plt.close(fig)

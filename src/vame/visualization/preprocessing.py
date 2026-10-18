@@ -1,5 +1,6 @@
 from pathlib import Path
 from matplotlib import colormaps
+import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
 import numpy as np
 
@@ -93,12 +94,6 @@ def visualize_preprocessing_scatter(
     -------
     None
     """
-    if not show_figure:
-        import matplotlib
-
-        matplotlib.use("Agg")
-    import matplotlib.pyplot as plt
-
     project_path = config["project_path"]
     sessions = config["session_names"]
     session = sessions[session_index]
@@ -304,12 +299,6 @@ def visualize_preprocessing_timeseries(
     -------
     None
     """
-    import matplotlib
-
-    if not show_figure:
-        matplotlib.use("Agg")
-    import matplotlib.pyplot as plt
-
     project_path = config["project_path"]
     sessions = config["session_names"]
     session = sessions[session_index]
@@ -492,12 +481,6 @@ def visualize_preprocessing_cloud(
     -------
     None
     """
-    import matplotlib
-
-    if not show_figure:
-        matplotlib.use("Agg")
-    import matplotlib.pyplot as plt
-
     project_path = config["project_path"]
     sessions = config["session_names"]
     session = sessions[session_index]
