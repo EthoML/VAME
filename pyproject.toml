@@ -41,7 +41,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dandi = ["remfile>=0.1.13", "dandi>=0.60.0"]
+dandi = ["remfile>=0.1.14", "dandi>=0.81.0"]
 
 [project.urls]
 homepage = "https://github.com/EthoML/VAME/"

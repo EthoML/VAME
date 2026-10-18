@@ -12,6 +12,7 @@
 
 ### Changes
 
+- The `dandi` extra requires `dandi>=0.81.0` and `remfile>=0.1.14`.
 - `vame.preprocessing` reads and writes each session's file once, instead of once per step. Results are unchanged and preprocessing is 4-5x faster. New per-dataset functions: `lowconf_clean_dataset`, `egocentrically_align_dataset`, `outlier_clean_dataset`, `savgol_filter_dataset`, `rescale_dataset`
 - `umap` is imported only when a UMAP embedding is computed (`visualize_umap`, `gif`)
 - `vame.preprocessing` runs rescaling by default (`run_rescaling=True`). Pose coordinates are divided by each animal's `individual_scale`, so models train on body-size-normalized poses
