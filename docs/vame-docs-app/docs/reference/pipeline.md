@@ -303,8 +303,9 @@ Visualizes the motif usage with thresholding.
 #### visualize\_hierarchical\_tree
 
 ```python
-def visualize_hierarchical_tree(
-        segmentation_algorithm: Literal["hmm", "kmeans"]) -> None
+def visualize_hierarchical_tree(segmentation_algorithm: Literal["hmm",
+                                                                "kmeans"],
+                                show_figure: bool = True) -> None
 ```
 
 Visualizes the hierarchical tree.
@@ -312,6 +313,7 @@ Visualizes the hierarchical tree.
 **Parameters**
 
 * **segmentation_algorithm** (`Literal["hmm", "kmeans"]`): Segmentation algorithm.
+* **show_figure** (`bool`): Whether to show the figure. Defaults to True.
 
 **Returns**
 
