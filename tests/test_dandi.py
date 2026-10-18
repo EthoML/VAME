@@ -124,6 +124,7 @@ def test_find_pose_estimations(asset_urls, two_files):
     assert set(KEYPOINTS).issubset(series)
 
 
+@pytest.mark.usefixtures("asset_urls")  # skips when DANDI is unreachable
 def test_dandiset_parse_n_items():
     # `limit` stops the resolver early — exactly n assets.
     assert len(_resolve_asset_urls(DANDISET, VERSION, limit=2)) == 2
@@ -154,6 +155,7 @@ def test_dandiset_load(two_files, tmp_path):
         assert str(ds.individuals.values[0]).startswith("H")
 
 
+@pytest.mark.skip(reason="Downloads a full 17 GB NWB file")
 def test_dandiset_load_download(two_files, tmp_path):
     streamed = dandiset_load(
         DANDISET, VERSION,
