@@ -47,12 +47,11 @@ def rescaling(
         file_path = str(Path(project_path) / "data" / "processed" / f"{session}_processed.nc")
         _, _, ds = read_pose_estimation_file(file_path=file_path)
 
-        if not rescale_dataset(
+        rescale_dataset(
             ds=ds,
             read_from_variable=read_from_variable,
             save_to_variable=save_to_variable,
-        ):
-            continue
+        )
 
         # Save the updated dataset to file
         scaled_file_path = str(Path(project_path) / "data" / "processed" / f"{session}_processed.nc")
@@ -69,7 +68,7 @@ def rescale_dataset(
     ds: xr.Dataset,
     read_from_variable: str,
     save_to_variable: str,
-) -> bool:
+) -> None:
     """
     Divide one session's positions by each individual's ``individual_scale``, in place.
 
@@ -84,12 +83,10 @@ def rescale_dataset(
 
     Returns
     -------
-    bool
-        False if the dataset has no ``individual_scale`` and was left unchanged.
+    None
     """
     if "individual_scale" not in ds:
-        logger.warning("No individual_scale found in dataset. Skipping rescaling.")
-        return False
+        raise KeyError("No individual_scale found in dataset. Run egocentric alignment before rescaling.")
 
     # Extract position and scale values
     position = np.copy(ds[read_from_variable].values)  # shape: (time, space, keypoints, individuals)
@@ -113,5 +110,3 @@ def rescale_dataset(
     # Update the dataset with the scaled position values
     ds[save_to_variable] = (ds[read_from_variable].dims, scaled_position)
     ds.attrs.update({"processed_rescaled": "True"})
-
-    return True

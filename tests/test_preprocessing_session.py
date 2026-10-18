@@ -1,6 +1,7 @@
 import shutil
 from pathlib import Path
 
+import numpy as np
 import pytest
 import xarray as xr
 
@@ -9,7 +10,8 @@ from vame.io.load_poses import load_vame_dataset
 from vame.preprocessing.alignment import egocentrically_align_and_center
 from vame.preprocessing.cleaning import lowconf_cleaning, outlier_cleaning
 from vame.preprocessing.filter import savgol_filtering
-from vame.preprocessing.scaling import rescaling
+from vame.preprocessing.scaling import rescaling, rescale_dataset
+from vame.util.auxiliary import read_config
 
 SAMPLE_POSES = Path(__file__).parent / "tests_project_sample_data" / "cropped_video.csv"
 CENTER = "Nose"
@@ -70,3 +72,27 @@ def test_matches_step_functions(tmp_path, pose_files):
 
     assert_same_processed(stepwise, combined)
 
+
+def test_rescaling_without_alignment_raises(tmp_path, pose_files):
+    """Rescaling without alignment fails before preprocessing and leaves the config unchanged"""
+    config = make_project(tmp_path, "no_alignment", pose_files)
+    config_path = Path(config["project_path"]) / "config.yaml"
+    config_before = read_config(str(config_path))
+
+    with pytest.raises(ValueError, match="run_egocentric_alignment"):
+        vame.preprocessing(
+            config=config,
+            centered_reference_keypoint=CENTER,
+            orientation_reference_keypoint=ORIENTATION,
+            run_egocentric_alignment=False,
+            run_rescaling=True,
+        )
+    assert read_config(str(config_path)) == config_before
+
+
+def test_rescale_dataset_without_individual_scale_raises():
+    """A dataset without individual_scale raises instead of being skipped"""
+    ds = xr.Dataset({"position": (("time", "space", "keypoints", "individuals"), np.ones((3, 2, 2, 1)))})
+    with pytest.raises(KeyError, match="individual_scale"):
+        rescale_dataset(ds=ds, read_from_variable="position", save_to_variable="position_scaled")
+    assert "position_scaled" not in ds

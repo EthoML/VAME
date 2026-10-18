@@ -55,7 +55,7 @@ def preprocessing(
     run_savgol_filtering : bool, optional
         Whether to run Savitzky-Golay filtering.
     run_rescaling : bool, optional
-        Whether to run rescaling. Defaults to True.
+        Whether to run rescaling. Defaults to True. Requires run_egocentric_alignment.
     save_logs : bool, optional
         Whether to save logs.
 
@@ -64,6 +64,12 @@ def preprocessing(
     variable name of the last-executed preprocessing step output, also saved
     to the config as ``preprocessed_variable``
     """
+    if run_rescaling and not run_egocentric_alignment:
+        raise ValueError(
+            "Rescaling uses the body scale (individual_scale) computed during egocentric alignment. "
+            "Set run_egocentric_alignment=True, or run_rescaling=False."
+        )
+
     if save_logs:
         log_path = Path(config["project_path"]) / "logs" / "preprocessing.log"
         for step_logger_config in (

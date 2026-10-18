@@ -174,7 +174,7 @@ class VAMEPipeline:
         run_savgol_filtering : bool, optional
             Whether to run Savitzky-Golay filtering, by default True.
         run_rescaling : bool, optional
-            Whether to run rescaling, by default True.
+            Whether to run rescaling, by default True. Requires run_egocentric_alignment.
 
         Returns
         -------
