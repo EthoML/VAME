@@ -1,3 +1,7 @@
+import matplotlib
+
+matplotlib.use("Agg")
+
 from pytest import fixture, raises
 from pathlib import Path
 import shutil
