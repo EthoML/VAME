@@ -33,7 +33,7 @@ Rescale the position data by dividing by the individual scale values.
 
 ```python
 def rescale_dataset(ds: xr.Dataset, read_from_variable: str,
-                    save_to_variable: str) -> bool
+                    save_to_variable: str) -> None
 ```
 
 Divide one session&#x27;s positions by each individual&#x27;s ``individual_scale``, in place.
@@ -46,5 +46,5 @@ Divide one session&#x27;s positions by each individual&#x27;s ``individual_scale
 
 **Returns**
 
-* `bool`: False if the dataset has no ``individual_scale`` and was left unchanged.
+* `None`
 

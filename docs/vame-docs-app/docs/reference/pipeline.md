@@ -115,7 +115,7 @@ Preprocesses the data.
 * **run_egocentric_alignment** (`bool, optional`): Whether to run egocentric alignment, by default True.
 * **run_outlier_cleaning** (`bool, optional`): Whether to run outlier cleaning, by default True.
 * **run_savgol_filtering** (`bool, optional`): Whether to run Savitzky-Golay filtering, by default True.
-* **run_rescaling** (`bool, optional`): Whether to run rescaling, by default True.
+* **run_rescaling** (`bool, optional`): Whether to run rescaling, by default True. Requires run_egocentric_alignment.
 
 **Returns**
 

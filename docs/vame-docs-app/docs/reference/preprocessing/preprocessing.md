@@ -38,7 +38,7 @@ Preprocess the data by:
 * **run_egocentric_alignment** (`bool, optional`): Whether to run egocentric alignment.
 * **run_outlier_cleaning** (`bool, optional`): Whether to run outlier cleaning.
 * **run_savgol_filtering** (`bool, optional`): Whether to run Savitzky-Golay filtering.
-* **run_rescaling** (`bool, optional`): Whether to run rescaling. Defaults to True.
+* **run_rescaling** (`bool, optional`): Whether to run rescaling. Defaults to True. Requires run_egocentric_alignment.
 * **save_logs** (`bool, optional`): Whether to save logs.
 
 **Returns**
