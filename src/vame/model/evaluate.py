@@ -298,5 +298,6 @@ def evaluate_model(
         )
     except Exception as e:
         logger.exception(f"An error occurred during model evaluation: {e}")
+        raise
     finally:
         logger_config.remove_file_handler()

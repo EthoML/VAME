@@ -7,6 +7,7 @@ from matplotlib.figure import Figure
 from unittest.mock import patch
 from vame.util.gif_pose_helper import background
 from vame.util.model_util import load_model, load_training_metadata
+from vame.util.auxiliary import read_states
 from vame.io.load_poses import read_pose_estimation_file
 from vame.model.dataloader import load_normalization
 from vame.preprocessing.to_model import format_xarray_for_rnn
@@ -290,3 +291,13 @@ def test_sliding_windows_layout():
     assert windows.shape == (10 - temp_win + 1, temp_win, n_features)
     for i in range(len(windows)):
         np.testing.assert_array_equal(windows[i], data[:, i : i + temp_win].T)
+
+
+def test_segment_session_failure_raises_and_records_failed(tmp_path):
+    """A failing segmentation raises and is recorded as failed in states.json"""
+    (tmp_path / "states").mkdir()
+    (tmp_path / "states" / "states.json").write_text("{}")
+    config = {"project_path": str(tmp_path)}
+    with pytest.raises(KeyError):
+        vame.segment_session(config, save_logs=False)
+    assert read_states(config)["segment_session"]["execution_state"] == "failed"

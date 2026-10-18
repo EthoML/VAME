@@ -760,5 +760,6 @@ def segment_session(
 
     except Exception as e:
         logger.exception(f"An error occurred during pose segmentation: {e}")
+        raise
     finally:
         logger_config.remove_file_handler()
