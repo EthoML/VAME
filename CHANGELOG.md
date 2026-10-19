@@ -9,6 +9,7 @@
 
 - `dandiset_parse` and `dandiset_load` take `dandi_instance` (default `"dandi"`) to read from other DANDI instances such as `"dandi-sandbox"`, and authenticate when the instance's API key is set (`DANDI_API_KEY`, `DANDI_SANDBOX_API_KEY`), so embargoed dandisets can be read
 - `dandiset_load(..., download=True)` downloads each NWB file to a temporary folder and reads it locally instead of streaming it, which is faster for files that hold little besides pose data
+- `motif_videos` and `community_videos` take `sessions` to write videos only for specific sessions
 
 ### Changes
 
@@ -22,6 +23,7 @@
 
 - `segment_session` and `evaluate_model` raise when they fail, and `states.json` records the step as `failed`.
 - `preprocessing` raises when `run_rescaling=True` and `run_egocentric_alignment=False`, since rescaling needs the body scale computed during alignment.
+- Segmentation raises when a session has fewer frames than `time_window`.
 - Segmentation normalizes its input with the training statistics (`data/train/seq_mean.npy`, `seq_std.npy`) before encoding. Trained models are not affected. Regenerate results with `vame.segment_session(config, overwrite_embeddings=True, overwrite_segmentation=True)`
 - `create_trainset` computes the normalization statistics and overwrites them on every run, and records them in `metadata.json` under `normalization`. Before, the training dataloader wrote them only if the files did not exist, so re-creating the training set with other keypoints, features or sessions reused stale values
 - Segmentation logs a warning when a session's normalized input is far from the training distribution

@@ -49,136 +49,12 @@ def embed_latent_vectors(
     fixed: bool,
     read_from_variable: str | None = None,
     overwrite: bool = False,
-    tqdm_stream: Union[TqdmToLogger, None] = None,
-) -> List[np.ndarray]:
-    """
-    Embed latent vectors for the given sessions using the VAME model.
-
-    Parameters
-    ----------
-    config : dict
-        Configuration dictionary.
-    sessions : List[str]
-        List of session names.
-    fixed : bool
-        Whether the model is fixed.
-    read_from_variable : str, optional
-        Variable to read from the dataset. Defaults to the variable recorded in
-        the training metadata, so inference uses the same input as training.
-    overwrite : bool, optional
-        Whether to overwrite existing latent vector files. Defaults to False.
-    tqdm_stream : TqdmToLogger, optional
-        TQDM Stream to redirect the tqdm output to logger.
-
-    Returns
-    -------
-    List[np.ndarray]
-        List of latent vectors for all sessions.
-    """
-    project_path = config["project_path"]
-    model_name = config["model_name"]
-    temp_win = config["time_window"]
-    num_features = config["num_features"]
-    model = None
-
-    logger.info("---------------------------------------------------------------------")
-    logger.info(f"Embedding latent vectors for {model_name} model")
-
-    # Load training metadata to get keypoints used during training
-    try:
-        training_metadata = load_training_metadata(config)
-        keypoints_used = training_metadata["parameters"]["keypoints_used"]
-        extra_features_used = list(training_metadata["parameters"].get("extra_features") or [])
-        training_variable = training_metadata["parameters"].get("read_from_variable", "position_processed")
-    except (FileNotFoundError, ValueError) as e:
-        logger.warning(f"Could not load training metadata: {e}")
-        logger.warning("Using all available keypoints - this may cause shape mismatch errors")
-        keypoints_used = None
-        extra_features_used = []
-        training_variable = "position_processed"
-    read_from_variable = read_from_variable or training_variable
-    logger.info(f"Reading model input from variable: {read_from_variable}")
-
-    # Validate extra features against the *training* metadata (not the live
-    # config), so inference fails fast if the model's inputs aren't available.
-    validate_extra_features(
-        config=config,
-        sessions=sessions,
-        extra_features=extra_features_used,
-    )
-
-    # Same input normalization as training
-    norm_mean, norm_std = load_normalization(Path(project_path) / "data" / "train")
-
-    latent_vector_sessions = []
-    for session in sessions:
-        latent_vector_path = Path(project_path) / "results" / session / config["model_name"] / "latent_vectors.npy"
-        if latent_vector_path.exists():
-            if not overwrite:
-                logger.info(f"Latent vector for {session} already exists, skipping...")
-                latent_vector = np.load(latent_vector_path)
-                latent_vector_sessions.append(latent_vector)
-                continue
-            else:
-                logger.info(f"Latent vector for {session} already exists, but will be overwritten.")
-        logger.info(f"Embedding of latent vector for file {session}")
-
-        # Load the model, if not yet loaded
-        if model is None:
-            device = get_device()
-            model = load_model(config, model_name, fixed)
-
-        # Read session data
-        file_path = str(Path(project_path) / "data" / "processed" / f"{session}_processed.nc")
-        _, _, ds = read_pose_estimation_file(file_path=file_path)
-
-        # Format the data for the RNN model using the same keypoints as training
-        data, _ = format_xarray_for_rnn(
-            ds=ds,
-            read_from_variable=read_from_variable,
-            keypoints=keypoints_used,
-            extra_features=extra_features_used,
-        )
-        data = (data - norm_mean) / norm_std
-        check_input_distribution(data, session)
-
-        latent_vector_list = []
-        with torch.no_grad():
-            for i in tqdm.tqdm(range(data.shape[1] - temp_win + 1), file=tqdm_stream):
-                data_sample_np = data[:, i : temp_win + i].T
-                data_sample_np = np.reshape(data_sample_np, (1, temp_win, num_features))
-                h_n = model.encoder(torch.from_numpy(data_sample_np).float().to(device))
-                mu, _, _ = model.lmbda(h_n)
-                latent_vector_list.append(mu.cpu().data.numpy())
-
-        latent_vector = np.concatenate(latent_vector_list, axis=0)
-
-        # Save latent vector to file
-        latent_vector_path.parent.mkdir(parents=True, exist_ok=True)
-        np.save(latent_vector_path, latent_vector)
-
-        latent_vector_sessions.append(latent_vector)
-
-    return latent_vector_sessions
-
-
-def embed_latent_vectors_optimized(
-    config: dict,
-    sessions: List[str],
-    fixed: bool,
-    read_from_variable: str | None = None,
-    overwrite: bool = False,
     batch_size: int = 64,
     tqdm_stream: Union[TqdmToLogger, None] = None,
 ) -> List[np.ndarray]:
     """
-    Optimized version of embed_latent_vectors with batch processing and vectorized operations.
-
-    This function provides significant performance improvements over the original implementation:
-    - Vectorized sliding window creation (no data copying)
-    - Batch processing of multiple windows simultaneously
-    - GPU memory optimization with pre-allocated tensors
-    - Model optimizations for faster inference
+    Embed each session's sliding windows into the latent space, encoding windows in batches.
+    Saves the latent vectors to results/<session>/<model_name>/latent_vectors.npy.
 
     Parameters
     ----------
@@ -210,7 +86,7 @@ def embed_latent_vectors_optimized(
     model = None
 
     logger.info("---------------------------------------------------------------------")
-    logger.info(f"Embedding latent vectors for {model_name} model (OPTIMIZED)")
+    logger.info(f"Embedding latent vectors for {model_name} model")
 
     # Load training metadata to get keypoints used during training
     try:
@@ -280,9 +156,10 @@ def embed_latent_vectors_optimized(
         # Calculate number of windows
         n_windows = data.shape[1] - temp_win + 1
         if n_windows <= 0:
-            logger.warning(f"Session {session} has insufficient data for time window {temp_win}")
-            latent_vector_sessions.append(np.array([]))
-            continue
+            raise ValueError(
+                f"Session {session} has {data.shape[1]} frames, fewer than time_window ({temp_win}). "
+                "Remove it from session_names in config.yaml."
+            )
 
         logger.info(f"Creating {n_windows} sliding windows for session {session}")
         windows = sliding_windows(data, temp_win)
@@ -605,7 +482,6 @@ def segment_session(
     overwrite_segmentation: bool = False,
     overwrite_embeddings: bool = False,
     save_logs: bool = True,
-    optimized: bool = True,
 ) -> None:
     """
     Perform pose segmentation using the VAME model.
@@ -643,9 +519,6 @@ def segment_session(
     overwrite_embeddings : bool, optional
         If True, runs embedding function and re-creates embeddings files, even if they already exist.
         Defaults to False.
-    optimized : bool, optional
-        If True, uses the optimized version of the embedding function.
-        If False, uses the original version. Defaults to True.
     save_logs : bool, optional
         Whether to save logs. Defaults to True.
 
@@ -693,16 +566,7 @@ def segment_session(
                 os.mkdir(session_results_path)
 
         # Create latent vector files
-        if optimized:
-            latent_vectors = embed_latent_vectors_optimized(
-                config=config,
-                sessions=sessions,
-                fixed=fixed,
-                overwrite=overwrite_embeddings,
-                tqdm_stream=tqdm_stream,
-            )
-        else:
-            latent_vectors = embed_latent_vectors(
+        latent_vectors = embed_latent_vectors(
             config=config,
             sessions=sessions,
             fixed=fixed,

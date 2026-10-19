@@ -12,7 +12,7 @@ from vame.util.auxiliary import read_states
 from vame.io.load_poses import read_pose_estimation_file
 from vame.model.dataloader import load_normalization
 from vame.preprocessing.to_model import format_xarray_for_rnn
-from vame.analysis.pose_segmentation import embed_latent_vectors_optimized, sliding_windows
+from vame.analysis.pose_segmentation import embed_latent_vectors, sliding_windows
 from vame.visualization import visualize_umap, generate_reports, visualize_hierarchical_tree
 
 
@@ -244,7 +244,7 @@ def test_embedding_reads_training_variable(setup_project_and_train_model):
         "vame.analysis.pose_segmentation.format_xarray_for_rnn",
         wraps=format_xarray_for_rnn,
     ) as mock_format:
-        embed_latent_vectors_optimized(
+        embed_latent_vectors(
             config=config,
             sessions=config["session_names"][:1],
             fixed=config["egocentric_data"],
@@ -257,7 +257,7 @@ def test_embedding_matches_normalized_encoding(setup_project_and_train_model):
     """Segmentation latents equal encoding a window normalized as in training"""
     config = setup_project_and_train_model["config_data"]
     session = config["session_names"][0]
-    latent_vectors = embed_latent_vectors_optimized(
+    latent_vectors = embed_latent_vectors(
         config=config,
         sessions=[session],
         fixed=config["egocentric_data"],
@@ -282,6 +282,18 @@ def test_embedding_matches_normalized_encoding(setup_project_and_train_model):
     with torch.no_grad():
         mu, _, _ = model.lmbda(model.encoder(torch.from_numpy(window[None]).float().to(device)))
     np.testing.assert_allclose(latent_vectors[i], mu.cpu().numpy()[0], atol=1e-4)
+
+
+def test_embedding_session_shorter_than_time_window_raises(setup_project_and_train_model):
+    """A session with fewer frames than time_window raises"""
+    config = {**setup_project_and_train_model["config_data"], "time_window": 10**7}
+    with pytest.raises(ValueError, match="fewer than time_window"):
+        embed_latent_vectors(
+            config=config,
+            sessions=config["session_names"][:1],
+            fixed=config["egocentric_data"],
+            overwrite=True,
+        )
 
 
 def test_sliding_windows_layout():
@@ -315,3 +327,39 @@ def test_visualize_hierarchical_tree_without_showing(tmp_path):
     mock_show.assert_not_called()
     assert isinstance(fig, Figure)
     plt.close(fig)
+
+
+@pytest.fixture
+def video_config(tmp_path):
+    (tmp_path / "states").mkdir()
+    (tmp_path / "states" / "states.json").write_text("{}")
+    for session in ("s1", "s2"):
+        (tmp_path / "results" / session / "VAME" / "hmm-2").mkdir(parents=True)
+    return {
+        "project_path": str(tmp_path),
+        "session_names": ["s1", "s2"],
+        "all_data": "no",
+        "model_name": "VAME",
+        "n_clusters": 2,
+        "segmentation_algorithms": ["hmm"],
+    }
+
+
+@pytest.mark.parametrize("video_function", [vame.motif_videos, vame.community_videos])
+def test_videos_for_given_sessions(video_config, video_function):
+    """Passing sessions writes videos for those sessions only, without prompting"""
+    with (
+        patch("vame.analysis.videowriter.create_cluster_videos") as mock_create,
+        patch("builtins.input") as mock_input,
+    ):
+        video_function(config=video_config, sessions=["s2"], save_logs=False)
+    mock_input.assert_not_called()
+    assert [c.kwargs["session"] for c in mock_create.call_args_list] == ["s2"]
+
+
+@pytest.mark.parametrize("video_function", [vame.motif_videos, vame.community_videos])
+def test_videos_unknown_session_raises(video_config, video_function):
+    with patch("vame.analysis.videowriter.create_cluster_videos") as mock_create:
+        with pytest.raises(ValueError, match="Unknown session"):
+            video_function(config=video_config, sessions=["s3"], save_logs=False)
+    mock_create.assert_not_called()
