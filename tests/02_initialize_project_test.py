@@ -3,6 +3,7 @@ from vame.util.auxiliary import read_config
 from vame import init_new_project
 from vame.io.load_poses import load_vame_dataset
 import shutil
+import pytest
 
 
 def test_project_config_exists(setup_project_not_aligned_data):
@@ -116,3 +117,22 @@ def test_init_project_from_movement_nc():
         assert len(ds["keypoints"].values) > 0
     finally:
         shutil.rmtree(Path(config_path).parent)
+
+
+def test_init_project_duplicate_pose_names_raises(tmp_path):
+    """Pose files with the same name in different folders are rejected before anything is written"""
+    poses_estimations = []
+    for folder in ("day1", "day2"):
+        (tmp_path / folder).mkdir()
+        dst = tmp_path / folder / "pose.csv"
+        shutil.copy("./tests/tests_project_sample_data/cropped_video.csv", dst)
+        poses_estimations.append(str(dst))
+
+    with pytest.raises(ValueError, match="unique file names"):
+        init_new_project(
+            project_name="test_duplicate_pose_names",
+            poses_estimations=poses_estimations,
+            source_software="DeepLabCut",
+            working_directory=str(tmp_path),
+        )
+    assert not (tmp_path / "test_duplicate_pose_names").exists()

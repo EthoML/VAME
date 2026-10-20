@@ -106,6 +106,16 @@ def init_new_project(
         projconfigfile = os.path.join(str(project_path), "config.yaml")
         return projconfigfile, read_config(projconfigfile)
 
+    # Session names
+    pes_paths = [Path(vp).resolve() for vp in poses_estimations]
+    session_names = [s.stem for s in pes_paths]
+    duplicates = sorted({s for s in session_names if session_names.count(s) > 1})
+    if duplicates:
+        raise ValueError(
+            "Pose estimation files must have unique file names, since each name becomes a session name. "
+            f"Duplicated: {duplicates}. Rename the files, for example to include the animal and day."
+        )
+
     data_path = project_path / "data"
     data_raw_path = data_path / "raw"
     data_processed_path = data_path / "processed"
@@ -131,12 +141,6 @@ def init_new_project(
         if filetype not in ("csv", "nwb", "slp", "h5", "nc"):
             raise ValueError(f"Unsupported pose estimation file type: {filetype}. Must be one of: csv, nwb, slp, h5, nc")
         pose_estimation_filetype = cast(Literal["csv", "nwb", "slp", "h5", "nc"], filetype)
-
-        # Session names
-        pes_paths = [Path(vp).resolve() for vp in poses_estimations]
-        session_names = []
-        for s in pes_paths:
-            session_names.append(s.stem)
 
         # Creates directories under project/results/
         dirs_results = [results_path / Path(i.stem) for i in pes_paths]
