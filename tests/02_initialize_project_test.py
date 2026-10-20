@@ -136,3 +136,19 @@ def test_init_project_duplicate_pose_names_raises(tmp_path):
             working_directory=str(tmp_path),
         )
     assert not (tmp_path / "test_duplicate_pose_names").exists()
+
+
+def test_init_project_relative_video_symlink(tmp_path, monkeypatch):
+    """A relative video path gives a symlink that resolves from the project folder"""
+    for name in ("cropped_video.mp4", "cropped_video.csv"):
+        shutil.copy(Path("./tests/tests_project_sample_data") / name, tmp_path / name)
+    monkeypatch.chdir(tmp_path)
+
+    _, config = init_new_project(
+        project_name="test_relative_video_symlink",
+        poses_estimations=["cropped_video.csv"],
+        videos=["cropped_video.mp4"],
+        source_software="DeepLabCut",
+        copy_videos=False,
+    )
+    assert (Path(config["project_path"]) / "data" / "raw" / "cropped_video.mp4").exists()

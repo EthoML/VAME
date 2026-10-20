@@ -192,7 +192,7 @@ def init_new_project(
                 else:
                     try:
                         logger.info(f"Creating symbolic link from {src} to {dst}")
-                        os.symlink(os.fspath(src), os.fspath(dst))
+                        os.symlink(os.fspath(Path(src).resolve()), os.fspath(dst))
                     except OSError as e:
                         raise OSError(
                             f"Failed to create a symbolic link from {src} to {dst}. "
