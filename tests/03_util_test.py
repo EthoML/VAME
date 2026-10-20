@@ -133,3 +133,21 @@ def test_preprocessing_plots_keep_matplotlib_backend(setup_project_and_align_ego
         assert matplotlib.get_backend() == "pdf"
     finally:
         matplotlib.use("Agg")
+
+
+def test_save_state_records_positional_args_and_function_defaults(tmp_path):
+    """save_state binds args to the function signature and records its defaults"""
+    import json
+    from vame.schemas.states import save_state, CreateTrainsetFunctionSchema, VAMEPipelineStatesSchema
+
+    (tmp_path / "states").mkdir()
+    states_file = tmp_path / "states" / "states.json"
+    states_file.write_text(json.dumps(VAMEPipelineStatesSchema().model_dump()))
+
+    @save_state(model=CreateTrainsetFunctionSchema)
+    def create_trainset(config, test_fraction=0.1, split_mode="mode_2", keypoints_to_include=None):
+        return test_fraction
+
+    assert create_trainset({"project_path": str(tmp_path)}, 0.2, keypoints_to_include=["nose"]) == 0.2
+    record = json.loads(states_file.read_text())["create_trainset"]
+    assert record == {"execution_state": "success", "test_fraction": 0.2, "split_mode": "mode_2"}
