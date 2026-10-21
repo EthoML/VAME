@@ -74,8 +74,6 @@ Some fields are kept so older projects still load, but are not read by the curre
 | `segmentation_algorithms` | `List[str]` | `["hmm", "kmeans"]` | Algorithms used to segment the latent space into motifs. |
 | `hmm_trained` | `bool` | `False` | When true, segmentation loads the HMM saved in `results/hmm_trained.pkl` instead of fitting a new one. |
 | `hmm_n_iter` | `int` | `100` | Maximum number of iterations when fitting the HMM. |
-| `individual_segmentation` | `bool` | `False` | When true, k-means is fit to each session separately instead of to all sessions together. |
-| `n_init_kmeans` | `int` | `15` | Number of k-means initializations when `individual_segmentation` is true. |
 
 ### Video writer
 

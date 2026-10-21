@@ -4,7 +4,7 @@ import torch
 import pickle
 import numpy as np
 from pathlib import Path
-from typing import List, Tuple, Union
+from typing import List, Union
 from hmmlearn import hmm
 from sklearn.cluster import KMeans
 
@@ -414,68 +414,6 @@ def same_segmentation(
         )
 
 
-def individual_segmentation(
-    config: dict,
-    sessions: List[str],
-    latent_vectors: List[np.ndarray],
-    n_clusters: int,
-) -> Tuple:
-    """
-    Apply individual segmentation to each session.
-
-    Parameters
-    ----------
-    config : dict
-        Configuration dictionary.
-    sessions : List[str]
-        List of session names.
-    latent_vectors : List[np.ndarray]
-        List of latent vector arrays.
-    n_clusters : int
-        Number of clusters.
-
-    Returns
-    -------
-    Tuple
-        Tuple of labels, cluster centers, and motif usages.
-    """
-    random_state = config.get("project_random_state", 42)
-    n_init = config["n_init_kmeans"]
-    labels = []
-    cluster_centers = []
-    motif_usages = []
-    for i, session in enumerate(sessions):
-        logger.info(f"Processing session: {session}")
-        kmeans = KMeans(
-            init="k-means++",
-            n_clusters=n_clusters,
-            random_state=random_state,
-            n_init=n_init,
-        ).fit(latent_vectors[i])
-        clust_center = kmeans.cluster_centers_
-        label = kmeans.predict(latent_vectors[i])
-        motif_usage = get_motif_usage(
-            session_labels=label,
-            n_clusters=n_clusters,
-        )
-        motif_usages.append(motif_usage)
-        labels.append(label)
-        cluster_centers.append(clust_center)
-
-        save_session_data(
-            config["project_path"],
-            session,
-            config["model_name"],
-            labels[i],
-            cluster_centers[i],
-            latent_vectors[i],
-            motif_usages[i],
-            n_clusters,
-            "kmeans",
-        )
-    return labels, cluster_centers, motif_usages
-
-
 @save_state(model=SegmentSessionFunctionSchema)
 def segment_session(
     config: dict,
@@ -542,7 +480,6 @@ def segment_session(
         n_clusters = config["n_clusters"]
         fixed = config["egocentric_data"]
         segmentation_algorithms = config["segmentation_algorithms"]
-        ind_seg = config["individual_segmentation"]
 
         # Get sessions to analyze
         sessions = []
@@ -596,24 +533,14 @@ def segment_session(
                 )
             logger.info(f"Starting segmentation for {seg} algorithm and cluster size {n_clusters}...")
 
-            # Apply same or indiv segmentation of latent vectors for each session
-            if ind_seg:
-                logger.info(f"Apply individual segmentation of latent vectors for each session, {n_clusters} clusters")
-                labels, cluster_center, motif_usages = individual_segmentation(
-                    config=config,
-                    sessions=sessions,
-                    latent_vectors=latent_vectors,
-                    n_clusters=n_clusters,
-                )
-            else:
-                logger.info(f"Apply the same segmentation of latent vectors for all sessions, {n_clusters} clusters")
-                same_segmentation(
-                    config=config,
-                    sessions=sessions,
-                    latent_vectors=latent_vectors,
-                    n_clusters=n_clusters,
-                    segmentation_algorithm=seg,
-                )
+            logger.info(f"Apply the same segmentation of latent vectors for all sessions, {n_clusters} clusters")
+            same_segmentation(
+                config=config,
+                sessions=sessions,
+                latent_vectors=latent_vectors,
+                n_clusters=n_clusters,
+                segmentation_algorithm=seg,
+            )
 
             logger.info(
                 "You succesfully extracted motifs with VAME! From here, you can proceed running vame.community() "

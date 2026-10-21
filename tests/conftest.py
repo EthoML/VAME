@@ -187,6 +187,13 @@ def setup_project_and_train_model(setup_project_and_create_train_aligned_dataset
 
 
 @fixture(scope="session")
+def setup_project_and_segment(setup_project_and_train_model):
+    config = setup_project_and_train_model["config_data"]
+    vame.segment_session(config, save_logs=True)
+    return setup_project_and_train_model
+
+
+@fixture(scope="session")
 def setup_project_and_evaluate_model(setup_project_and_train_model):
     config = setup_project_and_train_model["config_data"]
     vame.evaluate_model(config, save_logs=True)

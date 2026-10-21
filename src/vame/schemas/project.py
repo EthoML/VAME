@@ -221,14 +221,6 @@ class ProjectSchema(BaseModel):
         title="Number of iterations for HMM",
         default=100,
     )
-    individual_segmentation: bool = Field(
-        default=False,
-        title="Individual segmentation",
-    )
-    n_init_kmeans: int = Field(
-        default=15,
-        title="N init kmeans",
-    )
 
     # Video writer:
     length_of_motif_video: int = Field(
