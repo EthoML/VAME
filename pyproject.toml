@@ -2,7 +2,14 @@
 name = "vame-py"
 version = '0.15.0'
 description = "Variational Animal Motion Embedding."
-authors = [{ name = "K. Luxem & " }, { name = "P. Bauer" }]
+authors = [
+    { name = "K. Luxem" },
+    { name = "P. Bauer" },
+    { name = "S. R. Miller" },
+    { name = "K. Ly" },
+    { name = "B. Dichter" },
+    { name = "L. Tauffer" },
+]
 requires-python = ">=3.12"
 keywords = ["vame", "auto-encoder"]
 readme = { file = 'README.md', content-type = 'text/markdown' }
