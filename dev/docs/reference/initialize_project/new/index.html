@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.3.2">
 <title data-rh="true">initialize_project.new | VAME</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:image" content="https://ethoml.github.io/VAME/dev/img/vame_social_card.jpg"><meta data-rh="true" name="twitter:image" content="https://ethoml.github.io/VAME/dev/img/vame_social_card.jpg"><meta data-rh="true" property="og:url" content="https://ethoml.github.io/VAME/dev/docs/reference/initialize_project/new"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="initialize_project.new | VAME"><meta data-rh="true" name="description" content="logger\_config"><meta data-rh="true" property="og:description" content="logger\_config"><link data-rh="true" rel="canonical" href="https://ethoml.github.io/VAME/dev/docs/reference/initialize_project/new"><link data-rh="true" rel="alternate" href="https://ethoml.github.io/VAME/dev/docs/reference/initialize_project/new" hreflang="en"><link data-rh="true" rel="alternate" href="https://ethoml.github.io/VAME/dev/docs/reference/initialize_project/new" hreflang="x-default"><link rel="stylesheet" href="/VAME/dev/assets/css/styles.4c206fe6.css">
-<script src="/VAME/dev/assets/js/runtime~main.ac4a141d.js" defer="defer"></script>
+<script src="/VAME/dev/assets/js/runtime~main.4acdee78.js" defer="defer"></script>
 <script src="/VAME/dev/assets/js/main.ad2a6860.js" defer="defer"></script>
 </head>
 <body class="navigation-with-keyboard">
@@ -63,10 +63,11 @@ A VAME project is a directory with the following structure:</p>
 <li><strong>project_name</strong> (<code>str</code>): Project name.</li>
 <li><strong>videos</strong> (<code>List[str]</code>): List of videos paths to be used in the project. E.g. [&#x27;./sample_data/Session001.mp4&#x27;]</li>
 <li><strong>poses_estimations</strong> (<code>List[str]</code>): List of pose estimation files paths to be used in the project. E.g. [&#x27;./sample_data/pose estimation/Session001.csv&#x27;]</li>
-<li><strong>source_software</strong> (<code>Literal[&quot;DeepLabCut&quot;, &quot;SLEAP&quot;, &quot;LightningPose&quot;, &quot;NWB&quot;, &quot;auto&quot;], optional</code>): Source software used for pose estimation. Defaults to <code>&amp;quot;auto&amp;quot;</code>, which
+<li><strong>source_software</strong> (<code>Literal[&quot;DeepLabCut&quot;, &quot;SLEAP&quot;, &quot;LightningPose&quot;, &quot;NWB&quot;, &quot;auto&quot;, &quot;movement&quot;], optional</code>): Source software used for pose estimation. Defaults to <code>&amp;quot;auto&amp;quot;</code>, which
 lets movement infer the format from the file extension and contents.
 Pass an explicit value (<code>&amp;quot;DeepLabCut&amp;quot;</code>, <code>&amp;quot;SLEAP&amp;quot;</code>,
-<code>&amp;quot;LightningPose&amp;quot;</code>, <code>&amp;quot;NWB&amp;quot;</code>) to override auto-detection.</li>
+<code>&amp;quot;LightningPose&amp;quot;</code>, <code>&amp;quot;NWB&amp;quot;</code>) to override auto-detection.
+<code>&amp;quot;movement&amp;quot;</code> reads a netCDF file in the movement format.</li>
 <li><strong>working_directory</strong> (<code>str, optional</code>): Working directory. Defaults to &#x27;.&#x27;.</li>
 <li><strong>fps</strong> (<code>float, optional</code>): Sampling rate of the videos. If not passed, it will be estimated from the video file. Defaults to None.</li>
 <li><strong>copy_videos</strong> (<code>bool, optional</code>): If True, the videos will be copied to the project directory. If False, symbolic links will be created instead. Defaults to False.</li>
