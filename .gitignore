@@ -61,7 +61,8 @@ coverage.xml
 *.pot
 
 # Django stuff:
-*.log*.ckpt
+*.log
+*.ckpt
 snapshot-*
 
 # Byte-compiled / optimized / DLL files
