@@ -1,6 +1,8 @@
+import numpy as np
 import xarray as xr
 from pathlib import Path
 
+from vame.pipeline import VAMEPipeline
 from vame.io import export_to_nwb
 
 
@@ -45,3 +47,16 @@ def test_pipeline(setup_pipeline):
     for session in sessions:
         nwbfile_path = Path(project_path) / "results" / session / model_name / f"{session}.nwb"
         assert nwbfile_path.exists()
+
+
+def test_visualize_model_losses_uses_config_model_name(tmp_path):
+    """The loss plot reads the losses of the model named in the config"""
+    losses_dir = tmp_path / "model" / "model_losses"
+    losses_dir.mkdir(parents=True)
+    (tmp_path / "model" / "evaluate").mkdir()
+    for prefix in ("train", "test", "mse_train", "mse_test", "kmeans", "kl", "fut"):
+        np.save(losses_dir / f"{prefix}_losses_custom.npy", np.ones(3))
+    pipeline = VAMEPipeline.__new__(VAMEPipeline)
+    pipeline.config = {"project_path": str(tmp_path), "model_name": "custom"}
+    pipeline.visualize_model_losses(show_figure=False)
+    assert (tmp_path / "model" / "evaluate" / "mse_and_kl_loss_custom.png").exists()

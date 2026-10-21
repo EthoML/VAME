@@ -29,7 +29,7 @@ class VAMEPipeline:
         self,
         project_name: str,
         poses_estimations: List[str],
-        source_software: Literal["DeepLabCut", "SLEAP", "LightningPose", "NWB", "auto"] = "auto",
+        source_software: Literal["DeepLabCut", "SLEAP", "LightningPose", "NWB", "auto", "movement"] = "auto",
         working_directory: str = ".",
         videos: Optional[List[str]] = None,
         fps: Optional[float] = None,
@@ -52,7 +52,8 @@ class VAMEPipeline:
             Source software used for pose estimation. Defaults to ``"auto"``,
             which lets movement infer the format from the file. Pass an explicit
             value (``"DeepLabCut"``, ``"SLEAP"``, ``"LightningPose"``,
-            ``"NWB"``) to override.
+            ``"NWB"``) to override. ``"movement"`` reads a netCDF file in the
+            movement format.
         working_directory : str, optional
             Working directory, by default ".".
         fps : float, optional
@@ -395,7 +396,6 @@ class VAMEPipeline:
         """
         plot_loss(
             config=self.config,
-            model_name="VAME",
             save_to_file=save_to_file,
             show_figure=show_figure,
         )

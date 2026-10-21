@@ -64,11 +64,12 @@ def init_new_project(
         List of videos paths to be used in the project. E.g. ['./sample_data/Session001.mp4']
     poses_estimations : List[str]
         List of pose estimation files paths to be used in the project. E.g. ['./sample_data/pose estimation/Session001.csv']
-    source_software : Literal["DeepLabCut", "SLEAP", "LightningPose", "NWB", "auto"], optional
+    source_software : Literal["DeepLabCut", "SLEAP", "LightningPose", "NWB", "auto", "movement"], optional
         Source software used for pose estimation. Defaults to ``"auto"``, which
         lets movement infer the format from the file extension and contents.
         Pass an explicit value (``"DeepLabCut"``, ``"SLEAP"``,
         ``"LightningPose"``, ``"NWB"``) to override auto-detection.
+        ``"movement"`` reads a netCDF file in the movement format.
     working_directory : str, optional
         Working directory. Defaults to '.'.
     fps : float, optional
