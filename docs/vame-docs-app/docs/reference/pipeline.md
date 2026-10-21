@@ -21,7 +21,7 @@ VAME pipeline class.
 def __init__(project_name: str,
              poses_estimations: List[str],
              source_software: Literal["DeepLabCut", "SLEAP", "LightningPose",
-                                      "NWB", "auto"] = "auto",
+                                      "NWB", "auto", "movement"] = "auto",
              working_directory: str = ".",
              videos: Optional[List[str]] = None,
              fps: Optional[float] = None,
@@ -41,7 +41,8 @@ Initializes the VAME pipeline.
 * **source_software** (`str, optional`): Source software used for pose estimation. Defaults to ``&quot;auto&quot;``,
 which lets movement infer the format from the file. Pass an explicit
 value (``&quot;DeepLabCut&quot;``, ``&quot;SLEAP&quot;``, ``&quot;LightningPose&quot;``,
-``&quot;NWB&quot;``) to override.
+``&quot;NWB&quot;``) to override. ``&quot;movement&quot;`` reads a netCDF file in the
+movement format.
 * **working_directory** (`str, optional`): Working directory, by default &quot;.&quot;.
 * **fps** (`float, optional`): Sampling rate of the videos. If not passed, it will be estimated from the video file. By default None.
 * **copy_videos** (`bool, optional`): Copy videos, by default False.
