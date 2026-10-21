@@ -24,5 +24,6 @@ def export_to_nwb(config: dict,
                   subject_kwargs: Optional[list[dict]] = None)
 ```
 
-Export VAME project to NWB format.
+Export VAME project to NWB format, one file per session at
+results/&lt;session&gt;/&lt;model_name&gt;/&lt;session&gt;.nwb, with the results of all segmentation algorithms.
 

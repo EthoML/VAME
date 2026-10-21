@@ -361,7 +361,7 @@ from pynwb import read_nwb
 
 session = config_data["session_names"][0]
 model = config_data["model_name"]
-nwbfile_path = Path(config_data["project_path"]) / "results" / session / model / f"hmm-{config_data['n_clusters']}" / f"{session}.nwb"
+nwbfile_path = Path(config_data["project_path"]) / "results" / session / model / f"{session}.nwb"
 
 nwbfile = read_nwb(nwbfile_path)
 nwbfile
