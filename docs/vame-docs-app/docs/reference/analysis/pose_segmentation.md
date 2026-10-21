@@ -121,27 +121,6 @@ Apply the same segmentation to all animals.
 
 * `None`
 
-#### individual\_segmentation
-
-```python
-def individual_segmentation(config: dict, sessions: List[str],
-                            latent_vectors: List[np.ndarray],
-                            n_clusters: int) -> Tuple
-```
-
-Apply individual segmentation to each session.
-
-**Parameters**
-
-* **config** (`dict`): Configuration dictionary.
-* **sessions** (`List[str]`): List of session names.
-* **latent_vectors** (`List[np.ndarray]`): List of latent vector arrays.
-* **n_clusters** (`int`): Number of clusters.
-
-**Returns**
-
-* `Tuple`: Tuple of labels, cluster centers, and motif usages.
-
 #### segment\_session
 
 ```python
