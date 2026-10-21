@@ -39,35 +39,38 @@ def savgol_filtering(
         log_path = Path(config["project_path"]) / "logs" / "preprocessing.log"
         logger_config.add_file_handler(str(log_path))
 
-    logger.info("Applying Savitzky-Golay filter...")
-    project_path = config["project_path"]
-    sessions = config["session_names"]
+    try:
+        logger.info("Applying Savitzky-Golay filter...")
+        project_path = config["project_path"]
+        sessions = config["session_names"]
 
-    savgol_length = config["savgol_length"]
-    savgol_order = config["savgol_order"]
-    for i, session in enumerate(sessions):
-        logger.info(f"Session: {session}")
-        # Read raw session data
-        file_path = str(Path(project_path) / "data" / "processed" / f"{session}_processed.nc")
-        _, _, ds = read_pose_estimation_file(file_path=file_path)
+        savgol_length = config["savgol_length"]
+        savgol_order = config["savgol_order"]
+        for i, session in enumerate(sessions):
+            logger.info(f"Session: {session}")
+            # Read raw session data
+            file_path = str(Path(project_path) / "data" / "processed" / f"{session}_processed.nc")
+            _, _, ds = read_pose_estimation_file(file_path=file_path)
 
-        savgol_filter_dataset(
-            ds=ds,
-            savgol_length=savgol_length,
-            savgol_order=savgol_order,
-            read_from_variable=read_from_variable,
-            save_to_variable=save_to_variable,
-        )
+            savgol_filter_dataset(
+                ds=ds,
+                savgol_length=savgol_length,
+                savgol_order=savgol_order,
+                read_from_variable=read_from_variable,
+                save_to_variable=save_to_variable,
+            )
 
-        # Save the filtered dataset to file
-        filtered_file_path = str(Path(project_path) / "data" / "processed" / f"{session}_processed.nc")
-        # ds lazily reads the file we're about to overwrite.
-        ds.load()
-        ds.close()
-        ds.to_netcdf(
-            path=filtered_file_path,
-            engine="netcdf4",
-        )
+            # Save the filtered dataset to file
+            filtered_file_path = str(Path(project_path) / "data" / "processed" / f"{session}_processed.nc")
+            # ds lazily reads the file we're about to overwrite.
+            ds.load()
+            ds.close()
+            ds.to_netcdf(
+                path=filtered_file_path,
+                engine="netcdf4",
+            )
+    finally:
+        logger_config.remove_file_handler()
 
 
 def savgol_filter_dataset(

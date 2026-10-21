@@ -70,110 +70,115 @@ def preprocessing(
             "Set run_egocentric_alignment=True, or run_rescaling=False."
         )
 
+    step_logger_configs = (
+        logger_config,
+        cleaning.logger_config,
+        alignment.logger_config,
+        filtering.logger_config,
+        scaling.logger_config,
+    )
     if save_logs:
         log_path = Path(config["project_path"]) / "logs" / "preprocessing.log"
-        for step_logger_config in (
-            logger_config,
-            cleaning.logger_config,
-            alignment.logger_config,
-            filtering.logger_config,
-            scaling.logger_config,
-        ):
+        for step_logger_config in step_logger_configs:
             step_logger_config.add_file_handler(str(log_path))
 
-    steps = []
-    latest_output = "position"
+    try:
+        steps = []
+        latest_output = "position"
 
-    # Low-confidence cleaning
-    if run_lowconf_cleaning:
-        logger.info(f"Cleaning low confidence data points. Confidence threshold: {config['pose_confidence']}")
-        steps.append(
-            (
-                lowconf_clean_dataset,
-                {
-                    "pose_confidence": config["pose_confidence"],
-                    "read_from_variable": latest_output,
-                    "save_to_variable": "position_cleaned_lowconf",
-                },
+        # Low-confidence cleaning
+        if run_lowconf_cleaning:
+            logger.info(f"Cleaning low confidence data points. Confidence threshold: {config['pose_confidence']}")
+            steps.append(
+                (
+                    lowconf_clean_dataset,
+                    {
+                        "pose_confidence": config["pose_confidence"],
+                        "read_from_variable": latest_output,
+                        "save_to_variable": "position_cleaned_lowconf",
+                    },
+                )
             )
-        )
-        latest_output = "position_cleaned_lowconf"
+            latest_output = "position_cleaned_lowconf"
 
-    # Egocentric alignment
-    if run_egocentric_alignment:
-        logger.info(
-            "Egocentrically aligning and centering with references: "
-            f"{centered_reference_keypoint} and {orientation_reference_keypoint}"
-        )
-        steps.append(
-            (
-                egocentrically_align_dataset,
-                {
-                    "centered_reference_keypoint": centered_reference_keypoint,
-                    "orientation_reference_keypoint": orientation_reference_keypoint,
-                    "read_from_variable": latest_output,
-                    "save_to_variable": "position_egocentric_aligned",
-                },
+        # Egocentric alignment
+        if run_egocentric_alignment:
+            logger.info(
+                "Egocentrically aligning and centering with references: "
+                f"{centered_reference_keypoint} and {orientation_reference_keypoint}"
             )
-        )
-        latest_output = "position_egocentric_aligned"
-
-    # Outlier cleaning
-    if run_outlier_cleaning:
-        logger.info("Cleaning outliers using IQR method...")
-        steps.append(
-            (
-                outlier_clean_dataset,
-                {
-                    "robust": config["robust"],
-                    "iqr_factor": config["iqr_factor"],
-                    "read_from_variable": latest_output,
-                    "save_to_variable": "position_processed",
-                },
+            steps.append(
+                (
+                    egocentrically_align_dataset,
+                    {
+                        "centered_reference_keypoint": centered_reference_keypoint,
+                        "orientation_reference_keypoint": orientation_reference_keypoint,
+                        "read_from_variable": latest_output,
+                        "save_to_variable": "position_egocentric_aligned",
+                    },
+                )
             )
-        )
-        latest_output = "position_processed"
+            latest_output = "position_egocentric_aligned"
 
-    # Savgol filtering
-    if run_savgol_filtering:
-        logger.info("Applying Savitzky-Golay filter...")
-        steps.append(
-            (
-                savgol_filter_dataset,
-                {
-                    "savgol_length": config["savgol_length"],
-                    "savgol_order": config["savgol_order"],
-                    "read_from_variable": latest_output,
-                    "save_to_variable": "position_processed",
-                },
+        # Outlier cleaning
+        if run_outlier_cleaning:
+            logger.info("Cleaning outliers using IQR method...")
+            steps.append(
+                (
+                    outlier_clean_dataset,
+                    {
+                        "robust": config["robust"],
+                        "iqr_factor": config["iqr_factor"],
+                        "read_from_variable": latest_output,
+                        "save_to_variable": "position_processed",
+                    },
+                )
             )
-        )
-        latest_output = "position_processed"
+            latest_output = "position_processed"
 
-    # Rescaling
-    if run_rescaling:
-        logger.info("Rescaling...")
-        steps.append(
-            (
-                rescale_dataset,
-                {
-                    "read_from_variable": latest_output,
-                    "save_to_variable": "position_scaled",
-                },
+        # Savgol filtering
+        if run_savgol_filtering:
+            logger.info("Applying Savitzky-Golay filter...")
+            steps.append(
+                (
+                    savgol_filter_dataset,
+                    {
+                        "savgol_length": config["savgol_length"],
+                        "savgol_order": config["savgol_order"],
+                        "read_from_variable": latest_output,
+                        "save_to_variable": "position_processed",
+                    },
+                )
             )
-        )
-        latest_output = "position_scaled"
+            latest_output = "position_processed"
 
-    if steps:
-        processed_dir = Path(config["project_path"]) / "data" / "processed"
-        for session in config["session_names"]:
-            logger.info(f"Session: {session}")
-            preprocess_session(file_path=str(processed_dir / f"{session}_processed.nc"), steps=steps)
+        # Rescaling
+        if run_rescaling:
+            logger.info("Rescaling...")
+            steps.append(
+                (
+                    rescale_dataset,
+                    {
+                        "read_from_variable": latest_output,
+                        "save_to_variable": "position_scaled",
+                    },
+                )
+            )
+            latest_output = "position_scaled"
 
-    # create_trainset reads this by default
-    update_config(config=config, config_update={"preprocessed_variable": latest_output})
+        if steps:
+            processed_dir = Path(config["project_path"]) / "data" / "processed"
+            for session in config["session_names"]:
+                logger.info(f"Session: {session}")
+                preprocess_session(file_path=str(processed_dir / f"{session}_processed.nc"), steps=steps)
 
-    return latest_output
+        # create_trainset reads this by default
+        update_config(config=config, config_update={"preprocessed_variable": latest_output})
+
+        return latest_output
+    finally:
+        for step_logger_config in step_logger_configs:
+            step_logger_config.remove_file_handler()
 
 
 def preprocess_session(file_path: str, steps: List[Tuple[Callable, dict]]) -> None:

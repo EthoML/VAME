@@ -27,28 +27,31 @@ def preprocessing_visualization(
         log_path = Path(config["project_path"]) / "logs" / "preprocessing.log"
         logger_config.add_file_handler(str(log_path))
 
-    seed_everything(config.get("project_random_state", 42))
-    sessions = config["session_names"]
-    for session_index in range(len(sessions)):
-        logger.info(f"Visualizing session {session_index + 1}/{len(sessions)}: {sessions[session_index]}")
-        visualize_preprocessing_scatter(
-            config=config,
-            session_index=session_index,
-            save_to_file=save_to_file,
-            show_figure=show_figure,
-        )
-        visualize_preprocessing_timeseries(
-            config=config,
-            session_index=session_index,
-            save_to_file=save_to_file,
-            show_figure=show_figure,
-        )
-        visualize_preprocessing_cloud(
-            config=config,
-            session_index=session_index,
-            save_to_file=save_to_file,
-            show_figure=show_figure,
-        )
+    try:
+        seed_everything(config.get("project_random_state", 42))
+        sessions = config["session_names"]
+        for session_index in range(len(sessions)):
+            logger.info(f"Visualizing session {session_index + 1}/{len(sessions)}: {sessions[session_index]}")
+            visualize_preprocessing_scatter(
+                config=config,
+                session_index=session_index,
+                save_to_file=save_to_file,
+                show_figure=show_figure,
+            )
+            visualize_preprocessing_timeseries(
+                config=config,
+                session_index=session_index,
+                save_to_file=save_to_file,
+                show_figure=show_figure,
+            )
+            visualize_preprocessing_cloud(
+                config=config,
+                session_index=session_index,
+                save_to_file=save_to_file,
+                show_figure=show_figure,
+            )
+    finally:
+        logger_config.remove_file_handler()
 
 
 def visualize_preprocessing_scatter(

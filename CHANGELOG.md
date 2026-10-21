@@ -27,6 +27,7 @@
 - `preprocessing` raises when `run_rescaling=True` and `run_egocentric_alignment=False`, since rescaling needs the body scale computed during alignment.
 - Segmentation raises when a session has fewer frames than `time_window`.
 - `add_extra_features` and `validate_extra_features` check for the last preprocessing output (`preprocessed_variable`).
+- Preprocessing, its visualization and `generate_reports` close their log files when they finish.
 - `init_new_project` raises when two pose estimation files have the same file name.
 - Video symlinks resolve to absolute paths, so a relative video path no longer gives a broken link.
 - `export_to_nwb` raises a clear error for projects without fps.

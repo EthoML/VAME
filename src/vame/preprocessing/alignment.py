@@ -76,35 +76,38 @@ def egocentrically_align_and_center(
         log_path = Path(config["project_path"]) / "logs" / "preprocessing.log"
         logger_config.add_file_handler(str(log_path))
 
-    logger.info(
-        f"Egocentric alignment with references: {centered_reference_keypoint} and {orientation_reference_keypoint}"
-    )
-    project_path = config["project_path"]
-    sessions = config["session_names"]
-
-    for i, session in enumerate(sessions):
-        logger.info(f"Session: {session}")
-        # Read session data
-        file_path = str(Path(project_path) / "data" / "processed" / f"{session}_processed.nc")
-        _, _, ds = read_pose_estimation_file(file_path=file_path)
-
-        egocentrically_align_dataset(
-            ds=ds,
-            centered_reference_keypoint=centered_reference_keypoint,
-            orientation_reference_keypoint=orientation_reference_keypoint,
-            read_from_variable=read_from_variable,
-            save_to_variable=save_to_variable,
+    try:
+        logger.info(
+            f"Egocentric alignment with references: {centered_reference_keypoint} and {orientation_reference_keypoint}"
         )
+        project_path = config["project_path"]
+        sessions = config["session_names"]
 
-        # Save the aligned dataset to file
-        cleaned_file_path = str(Path(project_path) / "data" / "processed" / f"{session}_processed.nc")
-        # ds lazily reads the file we're about to overwrite.
-        ds.load()
-        ds.close()
-        ds.to_netcdf(
-            path=cleaned_file_path,
-            engine="netcdf4",
-        )
+        for i, session in enumerate(sessions):
+            logger.info(f"Session: {session}")
+            # Read session data
+            file_path = str(Path(project_path) / "data" / "processed" / f"{session}_processed.nc")
+            _, _, ds = read_pose_estimation_file(file_path=file_path)
+
+            egocentrically_align_dataset(
+                ds=ds,
+                centered_reference_keypoint=centered_reference_keypoint,
+                orientation_reference_keypoint=orientation_reference_keypoint,
+                read_from_variable=read_from_variable,
+                save_to_variable=save_to_variable,
+            )
+
+            # Save the aligned dataset to file
+            cleaned_file_path = str(Path(project_path) / "data" / "processed" / f"{session}_processed.nc")
+            # ds lazily reads the file we're about to overwrite.
+            ds.load()
+            ds.close()
+            ds.to_netcdf(
+                path=cleaned_file_path,
+                engine="netcdf4",
+            )
+    finally:
+        logger_config.remove_file_handler()
 
 
 def egocentrically_align_dataset(

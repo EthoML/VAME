@@ -7,6 +7,9 @@ import xarray as xr
 
 import vame
 from vame.io.load_poses import load_vame_dataset
+from vame.preprocessing import alignment, cleaning, scaling
+from vame.preprocessing import filter as filtering
+from vame.preprocessing.preprocessing import logger as preprocessing_logger
 from vame.preprocessing.alignment import egocentrically_align_and_center
 from vame.preprocessing.cleaning import lowconf_cleaning, outlier_cleaning
 from vame.preprocessing.filter import savgol_filtering
@@ -96,3 +99,17 @@ def test_rescale_dataset_without_individual_scale_raises():
     with pytest.raises(KeyError, match="individual_scale"):
         rescale_dataset(ds=ds, read_from_variable="position", save_to_variable="position_scaled")
     assert "position_scaled" not in ds
+
+
+def test_preprocessing_closes_log_files(tmp_path, pose_files):
+    """Preprocessing removes the file handlers it adds to its loggers"""
+    config = make_project(tmp_path, "logs", pose_files)
+    vame.preprocessing(
+        config=config,
+        centered_reference_keypoint=CENTER,
+        orientation_reference_keypoint=ORIENTATION,
+        save_logs=True,
+    )
+    log_path = str(Path(config["project_path"]) / "logs" / "preprocessing.log")
+    for logger in (preprocessing_logger, cleaning.logger, alignment.logger, filtering.logger, scaling.logger):
+        assert not any(getattr(h, "baseFilename", None) == log_path for h in logger.handlers), logger.name
