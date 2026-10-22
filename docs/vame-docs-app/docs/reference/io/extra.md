@@ -20,7 +20,8 @@ def add_extra_features(config: dict,
 Append pre-computed extra (non-pose) features to a session&#x27;s processed .nc.
 
 Each value in ``features`` must be a 1-D numpy array whose length matches
-the session&#x27;s ``position_processed`` time dimension. Features are written
+the session&#x27;s time dimension. The session must have the last preprocessing
+output, ``config[&quot;preprocessed_variable&quot;]``. Features are written
 as data variables with dims ``(&quot;time&quot;, &quot;individuals&quot;)`` and populated only
 at ``individuals[0]`` (multi-individual support deferred); other
 individuals are filled with NaN.
@@ -33,8 +34,8 @@ corrupt the existing file.
 
 * **config** (`dict`): Configuration dictionary.
 * **session** (`str`): Session name (must match an entry in ``config[&quot;session_names&quot;]``).
-* **features** (`dict[str, np.ndarray]`): Mapping of feature name to a 1-D numeric array of length
-``len(position_processed.time)``.
+* **features** (`dict[str, np.ndarray]`): Mapping of feature name to a 1-D numeric array with one value per
+time point of the session.
 * **register_in_config** (`bool, default True`): If True, append the feature names to ``config[&quot;extra_features&quot;]``
 (de-duplicated, order-preserved) and persist the config to disk.
 * **config_path** (`str, optional`): Explicit path to ``config.yaml``. If omitted, defaults to

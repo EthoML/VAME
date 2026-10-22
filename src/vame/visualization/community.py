@@ -169,7 +169,8 @@ def draw_tree(
 def visualize_hierarchical_tree(
     config: dict,
     segmentation_algorithm: Literal["hmm", "kmeans"] = "hmm",
-) -> None:
+    show_figure: bool = True,
+) -> plt.Figure:
     """
     Visualizes the hierarchical tree.
 
@@ -179,10 +180,13 @@ def visualize_hierarchical_tree(
         Configuration dictionary.
     segmentation_algorithm : Literal["hmm", "kmeans"]
         Segmentation algorithm. Defaults to "hmm".
+    show_figure : bool
+        Whether to show the figure. Defaults to True.
 
     Returns
     -------
-    None
+    plt.Figure
+        The figure with the tree image.
     """
     n_clusters = config["n_clusters"]
     fig_path = (
@@ -195,7 +199,9 @@ def visualize_hierarchical_tree(
     if not fig_path.exists():
         raise FileNotFoundError(f"Tree figure not found at {fig_path}.")
     img = plt.imread(fig_path)
-    plt.figure(figsize=(n_clusters, n_clusters))
+    fig = plt.figure(figsize=(n_clusters, n_clusters))
     plt.imshow(img)
     plt.axis("off")  # Hide axes
-    plt.show()
+    if show_figure:
+        plt.show()
+    return fig

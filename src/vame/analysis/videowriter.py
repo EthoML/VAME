@@ -3,7 +3,7 @@ from pathlib import Path
 import numpy as np
 import cv2 as cv
 import tqdm
-from typing import Union
+from typing import List, Optional, Union
 import imageio
 
 from vame.util.cli import get_sessions_from_user_input
@@ -19,6 +19,18 @@ from vame.video.video import get_session_video_path
 
 logger_config = VameLogger(__name__)
 logger = logger_config.logger
+
+
+def _select_sessions(config: dict, sessions: Optional[List[str]], action_message: str) -> List[str]:
+    """Sessions to write videos for: the given ones, else all or the user's choice per ``all_data``."""
+    if sessions is not None:
+        unknown = [s for s in sessions if s not in config["session_names"]]
+        if unknown:
+            raise ValueError(f"Unknown session(s): {unknown}. Project sessions: {config['session_names']}")
+        return sessions
+    if config["all_data"] in ["Yes", "yes", "True", "true", True]:
+        return config["session_names"]
+    return get_sessions_from_user_input(config=config, action_message=action_message)
 
 
 def create_cluster_videos(
@@ -153,6 +165,7 @@ def create_cluster_videos(
 @save_state(model=MotifVideosFunctionSchema)
 def motif_videos(
     config: dict,
+    sessions: Optional[List[str]] = None,
     save_logs: bool = True,
 ) -> None:
     """
@@ -173,9 +186,9 @@ def motif_videos(
     ----------
     config : dict
         Configuration parameters.
-    segmentation_algorithm : SegmentationAlgorithms
-        Which segmentation algorithm to use. Options are 'hmm' or 'kmeans'.
-        If None, it will be taken from the config file.
+    sessions : List[str], optional
+        Sessions to write videos for. Default is None, which uses all sessions when
+        ``all_data`` is "yes" in the config, and asks otherwise.
     save_logs : bool, optional
         Save logs to filesystem. Default is True.
 
@@ -198,14 +211,7 @@ def motif_videos(
         n_clusters = config["n_clusters"]
         segmentation_algorithms = config["segmentation_algorithms"]
 
-        # Get sessions
-        if config["all_data"] in ["Yes", "yes", "True", "true", True]:
-            sessions = config["session_names"]
-        else:
-            sessions = get_sessions_from_user_input(
-                config=config,
-                action_message="write motif videos",
-            )
+        sessions = _select_sessions(config, sessions, action_message="write motif videos")
 
         for session in sessions:
             for segmentation_algorithm in segmentation_algorithms:
@@ -243,6 +249,7 @@ def motif_videos(
 @save_state(model=CommunityVideosFunctionSchema)
 def community_videos(
     config: dict,
+    sessions: Optional[List[str]] = None,
     save_logs: bool = True,
 ) -> None:
     """
@@ -263,6 +270,9 @@ def community_videos(
     ----------
     config : dict
         Configuration parameters.
+    sessions : List[str], optional
+        Sessions to write videos for. Default is None, which uses all sessions when
+        ``all_data`` is "yes" in the config, and asks otherwise.
     save_logs : bool, optional
         Save logs to filesystem. Default is True.
 
@@ -285,14 +295,7 @@ def community_videos(
         n_clusters = config["n_clusters"]
         segmentation_algorithms = config["segmentation_algorithms"]
 
-        # Get sessions
-        if config["all_data"] in ["Yes", "yes", "True", "true", True]:
-            sessions = config["session_names"]
-        else:
-            sessions = get_sessions_from_user_input(
-                config=config,
-                action_message="write community videos",
-            )
+        sessions = _select_sessions(config, sessions, action_message="write community videos")
 
         for session in sessions:
             for segmentation_algorithm in segmentation_algorithms:

@@ -43,6 +43,29 @@ poses_estimations = dandiset_load(
 poses_estimations
 ```
 
+### Embargoed dandisets, the sandbox, and downloading
+
+Both functions take `dandi_instance` to read from another DANDI instance, such as `"dandi-sandbox"`. To read an embargoed dandiset, set the instance's API key as an environment variable before calling them: `DANDI_API_KEY` for `"dandi"`, `DANDI_SANDBOX_API_KEY` for `"dandi-sandbox"`.
+
+Streaming reads many small pieces of each file. When the files hold little besides pose data, `download=True` is usually faster: each file is downloaded to a temporary folder, read, and deleted.
+
+```python
+import os
+
+os.environ["DANDI_SANDBOX_API_KEY"] = "<your api key>"  # keep real keys out of notebooks you share
+
+parsed = dandiset_parse("<dandiset id>", "draft", dandi_instance="dandi-sandbox")
+poses_estimations = dandiset_load(
+    "<dandiset id>",
+    "draft",
+    files=parsed["valid_files"],
+    pose_estimation_series=keypoints,
+    out_dir="./dandi_nc",
+    dandi_instance="dandi-sandbox",
+    download=True,
+)
+```
+
 ## Instantiate the VAME pipeline
 
 From here it is a standard VAME project: the `.nc` files are the pose inputs with `source_software="movement"`, and there are no videos. Training hyperparameters go in `config_kwargs`.

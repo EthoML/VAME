@@ -5,7 +5,7 @@ sidebar_position: 2
 
 ## Export to NWB
 
-You can export the results of the VAME workflow to the [Neurodata Without Borders](https://neurodatawithoutborders.github.io/) (NWB) format, which is a standard format for storing and sharing data in the neuroscience community. VAME uses the [ndx-pose](https://github.com/rly/ndx-pose) and [ndx-vame](https://github.com/catalystneuro/ndx-vame) NWB extensions to store the pose estimation data and the VAME pipeline results, respectively. Each session in the project will be exported to a separate NWB file.
+You can export the results of the VAME workflow to the [Neurodata Without Borders](https://neurodatawithoutborders.github.io/) (NWB) format, which is a standard format for storing and sharing data in the neuroscience community. VAME uses the [ndx-pose](https://github.com/rly/ndx-pose) and [ndx-vame](https://github.com/catalystneuro/ndx-vame) NWB extensions to store the pose estimation data and the VAME pipeline results, respectively. Each session in the project is exported to its own NWB file, `results/<session>/<model_name>/<session>.nwb`, which holds the motifs and communities of every segmentation algorithm in the project.
 
 To export the results, first load the project configuration data and then call the `export_to_nwb` function:
 

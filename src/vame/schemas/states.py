@@ -1,4 +1,5 @@
 from functools import wraps
+import inspect
 from pydantic import BaseModel, Field
 from typing import Optional, Dict
 from pathlib import Path
@@ -111,7 +112,7 @@ class PreprocessingFunctionSchema(BaseStateSchema):
     )
     run_rescaling: bool = Field(
         title="Whether to run rescaling",
-        default=False,
+        default=True,
     )
     save_logs: bool = Field(
         title="Whether to save logs",
@@ -120,10 +121,6 @@ class PreprocessingFunctionSchema(BaseStateSchema):
 
 
 class PreprocessingVisualizationFunctionSchema(BaseStateSchema):
-    session_index: int = Field(
-        title="Index of the session to visualize",
-        default=0,
-    )
     save_to_file: bool = Field(
         title="Whether to save the figure to file",
         default=False,
@@ -229,18 +226,11 @@ def save_state(model: type[BaseStateSchema]):
         def wrapper(*args, **kwargs):
             # Create an instance of the Pydantic model using provided args and kwargs
             function_name = func.__name__
-            attribute_names = list(model.model_fields.keys())
-
-            kwargs_dict = {}
-            for attr in attribute_names:
-                if attr == "execution_state":
-                    kwargs_dict[attr] = "running"
-                    continue
-                kwargs_dict[attr] = kwargs.get(attr, model.model_fields[attr].default)
-
-            # Override with positional arguments
-            for i, arg in enumerate(args):
-                kwargs_dict[attribute_names[i]] = arg
+            # Record the values the function runs with, including its own defaults.
+            bound = inspect.signature(func).bind(*args, **kwargs)
+            bound.apply_defaults()
+            kwargs_dict = {k: v for k, v in bound.arguments.items() if k in model.model_fields}
+            kwargs_dict["execution_state"] = "running"
             # Validate function args and kwargs using the Pydantic model.
             kwargs_model = model(**kwargs_dict)
             _save_state(kwargs_model, function_name, state=StatesEnum.running)

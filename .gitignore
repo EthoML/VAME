@@ -61,7 +61,8 @@ coverage.xml
 *.pot
 
 # Django stuff:
-*.log*.ckpt
+*.log
+*.ckpt
 snapshot-*
 
 # Byte-compiled / optimized / DLL files
@@ -119,5 +120,5 @@ venv_docs/
 # Others
 **/pipeline_example/**
 **/iframe_figures/**
-**/luiz-tests.ipynb
 examples/projects/**
+todos/**

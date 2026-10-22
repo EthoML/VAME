@@ -25,7 +25,8 @@ def add_extra_features(
     Append pre-computed extra (non-pose) features to a session's processed .nc.
 
     Each value in ``features`` must be a 1-D numpy array whose length matches
-    the session's ``position_processed`` time dimension. Features are written
+    the session's time dimension. The session must have the last preprocessing
+    output, ``config["preprocessed_variable"]``. Features are written
     as data variables with dims ``("time", "individuals")`` and populated only
     at ``individuals[0]`` (multi-individual support deferred); other
     individuals are filled with NaN.
@@ -41,8 +42,8 @@ def add_extra_features(
     session : str
         Session name (must match an entry in ``config["session_names"]``).
     features : dict[str, np.ndarray]
-        Mapping of feature name to a 1-D numeric array of length
-        ``len(position_processed.time)``.
+        Mapping of feature name to a 1-D numeric array with one value per
+        time point of the session.
     register_in_config : bool, default True
         If True, append the feature names to ``config["extra_features"]``
         (de-duplicated, order-preserved) and persist the config to disk.
@@ -71,9 +72,10 @@ def add_extra_features(
 
     ds = load_vame_dataset(ds_path=nc_path)
 
-    if "position_processed" not in ds.data_vars:
+    preprocessed_variable = config.get("preprocessed_variable", "position_processed")
+    if preprocessed_variable not in ds.data_vars:
         raise ValueError(
-            f"Session '{session}' has no 'position_processed' variable — run preprocessing first."
+            f"Session '{session}' has no '{preprocessed_variable}' variable. Run preprocessing first."
         )
 
     expected_time = ds.sizes["time"]
@@ -90,7 +92,7 @@ def add_extra_features(
         if arr.shape[0] != expected_time:
             raise ValueError(
                 f"Feature '{name}' has length {arr.shape[0]}; "
-                f"expected {expected_time} (matching position_processed time)."
+                f"expected {expected_time} (the session's time length)."
             )
         if not np.issubdtype(arr.dtype, np.number):
             raise ValueError(f"Feature '{name}' has non-numeric dtype {arr.dtype}.")
