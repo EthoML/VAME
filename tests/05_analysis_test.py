@@ -145,10 +145,8 @@ def test_visualization_output_files(setup_project_and_segment):
     [
         ("sampling", "hmm"),
         ("reconstruction", "hmm"),
-        ("motifs", "hmm"),
         ("sampling", "kmeans"),
         ("reconstruction", "kmeans"),
-        ("motifs", "kmeans"),
         ("centers", "kmeans"),
     ],
 )

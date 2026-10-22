@@ -19,6 +19,7 @@
 - `vame.preprocessing` runs rescaling by default (`run_rescaling=True`). Pose coordinates are divided by each animal's `individual_scale`, so models train on body-size-normalized poses
 - `vame.preprocessing` saves its last output variable to the config as `preprocessed_variable`, and `create_trainset` reads from it by default.
 - Removed the old references to `individual_segmentation` and `n_init_kmeans` config options.
+- Removed `generative_model(mode="motifs")`, a legacy mode that plotted only the first motif and failed on motifs with fewer than 10 frames.
 - `export_to_nwb` writes one NWB file per session, `results/<session>/<model_name>/<session>.nwb`, holding the motifs and communities of every segmentation algorithm. Requires `ndx-vame>=0.3.2`.
 
 ### Fixes

@@ -17,60 +17,61 @@ logger_config = VameLogger(__name__)
 logger = logger_config.logger
 
 
-def random_generative_samples_motif(
-    config: dict,
-    model: torch.nn.Module,
-    latent_vector: np.ndarray,
-    labels: np.ndarray,
-    n_clusters: int,
-) -> plt.Figure:
-    """
-    Generate random samples for motifs.
-
-    Parameters
-    ----------
-    config : dict
-        Configuration dictionary.
-    model : torch.nn.Module
-        PyTorch model.
-    latent_vector : np.ndarray
-        Latent vectors.
-    labels : np.ndarray
-        Labels.
-    n_clusters : int
-        Number of clusters.
-
-    Returns
-    -------
-    plt.Figure
-        Figure of generated samples.
-    """
-    logger.info("Generate random generative samples for motifs...")
-    time_window = config["time_window"]
-    for j in range(n_clusters):
-        inds = np.where(labels == j)
-        motif_latents = latent_vector[inds[0], :]
-        gm = GaussianMixture(n_components=10).fit(motif_latents)
-
-        # draw sample from GMM
-        density_sample = gm.sample(10)
-
-        # generate image via model decoder
-        device = get_device()
-        tensor_sample = torch.from_numpy(density_sample[0]).float().to(device)
-
-        decoder_inputs = tensor_sample.unsqueeze(2).repeat(1, 1, time_window)
-        decoder_inputs = decoder_inputs.permute(0, 2, 1)
-
-        image_sample = model.decoder(decoder_inputs, tensor_sample)
-        recon_sample = image_sample.cpu().detach().numpy()
-
-        fig, axs = plt.subplots(2, 5)
-        for i in range(5):
-            axs[0, i].plot(recon_sample[i, ...])
-            axs[1, i].plot(recon_sample[i + 5, ...])
-        plt.suptitle("Generated samples for motif " + str(j))
-        return fig
+# Deprecated: legacy per-motif sampling, plotted only the first motif and failed on motifs with < 10 frames
+# def random_generative_samples_motif(
+#     config: dict,
+#     model: torch.nn.Module,
+#     latent_vector: np.ndarray,
+#     labels: np.ndarray,
+#     n_clusters: int,
+# ) -> plt.Figure:
+#     """
+#     Generate random samples for motifs.
+#
+#     Parameters
+#     ----------
+#     config : dict
+#         Configuration dictionary.
+#     model : torch.nn.Module
+#         PyTorch model.
+#     latent_vector : np.ndarray
+#         Latent vectors.
+#     labels : np.ndarray
+#         Labels.
+#     n_clusters : int
+#         Number of clusters.
+#
+#     Returns
+#     -------
+#     plt.Figure
+#         Figure of generated samples.
+#     """
+#     logger.info("Generate random generative samples for motifs...")
+#     time_window = config["time_window"]
+#     for j in range(n_clusters):
+#         inds = np.where(labels == j)
+#         motif_latents = latent_vector[inds[0], :]
+#         gm = GaussianMixture(n_components=10).fit(motif_latents)
+#
+#         # draw sample from GMM
+#         density_sample = gm.sample(10)
+#
+#         # generate image via model decoder
+#         device = get_device()
+#         tensor_sample = torch.from_numpy(density_sample[0]).float().to(device)
+#
+#         decoder_inputs = tensor_sample.unsqueeze(2).repeat(1, 1, time_window)
+#         decoder_inputs = decoder_inputs.permute(0, 2, 1)
+#
+#         image_sample = model.decoder(decoder_inputs, tensor_sample)
+#         recon_sample = image_sample.cpu().detach().numpy()
+#
+#         fig, axs = plt.subplots(2, 5)
+#         for i in range(5):
+#             axs[0, i].plot(recon_sample[i, ...])
+#             axs[1, i].plot(recon_sample[i + 5, ...])
+#         plt.suptitle("Generated samples for motif " + str(j))
+#         return fig
 
 
 def random_generative_samples(
@@ -311,27 +312,28 @@ def generative_model(
                     cluster_center,
                 )
 
-            if mode == "motifs":
-                latent_vector = np.load(
-                    os.path.join(
-                        path_to_file,
-                        "latent_vectors.npy",
-                    )
-                )
-                labels = np.load(
-                    os.path.join(
-                        path_to_file,
-                        segmentation_algorithm + "-" + str(n_clusters),
-                        str(n_clusters) + "_" + segmentation_algorithm + "_label_" + session + ".npy",
-                    )
-                )
-                return random_generative_samples_motif(
-                    config=config,
-                    model=model,
-                    latent_vector=latent_vector,
-                    labels=labels,
-                    n_clusters=n_clusters,
-                )
+            # Deprecated: legacy per-motif sampling, plotted only the first motif and failed on motifs with < 10 frames
+            # if mode == "motifs":
+            #     latent_vector = np.load(
+            #         os.path.join(
+            #             path_to_file,
+            #             "latent_vectors.npy",
+            #         )
+            #     )
+            #     labels = np.load(
+            #         os.path.join(
+            #             path_to_file,
+            #             segmentation_algorithm + "-" + str(n_clusters),
+            #             str(n_clusters) + "_" + segmentation_algorithm + "_label_" + session + ".npy",
+            #         )
+            #     )
+            #     return random_generative_samples_motif(
+            #         config=config,
+            #         model=model,
+            #         latent_vector=latent_vector,
+            #         labels=labels,
+            #         n_clusters=n_clusters,
+            #     )
     except Exception as e:
         logger.exception(str(e))
         raise
