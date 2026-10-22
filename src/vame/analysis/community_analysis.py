@@ -465,7 +465,7 @@ def community(
     config : dict
         Configuration parameters.
     cut_tree : int, optional
-        Cut line for tree. Defaults to None.
+        Cut line for tree. Defaults to 3.
     save_logs : bool, optional
         Whether to save logs. Defaults to True.
 
