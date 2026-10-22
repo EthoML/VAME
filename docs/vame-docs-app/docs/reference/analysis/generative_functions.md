@@ -7,29 +7,6 @@ title: analysis.generative_functions
 
 #### logger
 
-#### random\_generative\_samples\_motif
-
-```python
-def random_generative_samples_motif(config: dict, model: torch.nn.Module,
-                                    latent_vector: np.ndarray,
-                                    labels: np.ndarray,
-                                    n_clusters: int) -> plt.Figure
-```
-
-Generate random samples for motifs.
-
-**Parameters**
-
-* **config** (`dict`): Configuration dictionary.
-* **model** (`torch.nn.Module`): PyTorch model.
-* **latent_vector** (`np.ndarray`): Latent vectors.
-* **labels** (`np.ndarray`): Labels.
-* **n_clusters** (`int`): Number of clusters.
-
-**Returns**
-
-* `plt.Figure`: Figure of generated samples.
-
 #### random\_generative\_samples
 
 ```python
