@@ -41,23 +41,6 @@ def test_egocentric_alignment_file_is_created(setup_project_and_align_egocentric
     assert os.path.exists(file_path)
 
 
-# def test_nwb_data_egocentric_alignment_file_is_created(setup_nwb_data_project):
-#     """
-#     Test if the egocentric alignment function creates the expected file using NWB data.
-#     """
-#     config_path = setup_nwb_data_project["config_path"]
-#     vame.egocentric_alignment(
-#         config_path,
-#         pose_ref_index=setup_nwb_data_project["pose_ref_index"],
-#         save_logs=True,
-#     )
-#     project_path = setup_nwb_data_project["config_data"]["project_path"]
-#     file_name = setup_nwb_data_project["config_data"]["session_names"][0]
-#     file_path = os.path.join(
-#         project_path, "data", "processed", file_name, f"{file_name}-PE-seq.npy"
-#     )
-#     assert os.path.exists(file_path)
-
 
 def test_download_sample_data():
     """
@@ -66,7 +49,10 @@ def test_download_sample_data():
     from vame.util.sample_data import download_sample_data
 
     source_software = "DeepLabCut"
-    paths_dict = download_sample_data(source_software)
+    try:
+        paths_dict = download_sample_data(source_software)
+    except ConnectionError as e:
+        pytest.skip(str(e))
     assert "video" in paths_dict
     assert Path(paths_dict["video"]).exists()
     assert "poses" in paths_dict
