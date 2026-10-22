@@ -186,14 +186,14 @@ Runs the pose estimation segmentation into motifs.
 #### run\_community\_clustering
 
 ```python
-def run_community_clustering(cut_tree: int = 2) -> None
+def run_community_clustering(cut_tree: int = 3) -> None
 ```
 
 Runs the community clustering.
 
 **Parameters**
 
-* **cut_tree** (`int, optional`): Cut level for the hierarchical clustering, by default 2.
+* **cut_tree** (`int, optional`): Cut level for the hierarchical clustering, by default 3.
 
 **Returns**
 
