@@ -554,7 +554,8 @@ def same_segmentation(
         hmm_model.startprob_ = warmstart_model.startprob_
         hmm_model.transmat_ = warmstart_model.transmat_
         hmm_model.means_ = warmstart_model.means_
-        hmm_model.covars_ = warmstart_model.covars_
+        # Private attr: the public setter rejects the near-singular covars that hmmlearn's own M-step tolerates
+        hmm_model._covars_ = warmstart_model._covars_
         hmm_model.n_features = warmstart_model.n_features
         parallel_gaussian_hmm_fit(hmm_model, latent_vectors, n_jobs=hmm_n_jobs)
 
