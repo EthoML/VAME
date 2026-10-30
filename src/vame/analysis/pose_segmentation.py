@@ -544,47 +544,23 @@ def same_segmentation(
             )
             parallel_gaussian_hmm_fit(warmstart_model, strided_sessions, n_jobs=hmm_n_jobs)
 
-        # Stage 2: fine-tune at full resolution, seeded from stage 1's (freshly
-        # fit or pretrained) parameters. The pretrained path is never used as-is,
-        # this step always re-fits it on the current project's own data.
-        # Small/edge-case datasets can leave stage 1 with a degenerate covariance
-        # (fails hmmlearn's validation the moment it's assigned below) - fall back
-        # to a plain cold-started fit rather than crash the whole pipeline on it.
-        hmm_model = None
-        try:
-            logger.info(f"Warm-start stage 2: fine-tuning on full-resolution data (n_jobs={hmm_n_jobs})")
-            candidate_model = hmm.GaussianHMM(
-                n_components=n_clusters,
-                covariance_type="full",
-                n_iter=hmm_n_iter,
-                tol=hmm_tol,
-                random_state=random_state,
-                init_params="",  # skip auto-init, use the seeded params below
-                verbose=True,
-            )
-            candidate_model.startprob_ = warmstart_model.startprob_
-            candidate_model.transmat_ = warmstart_model.transmat_
-            candidate_model.means_ = warmstart_model.means_
-            candidate_model.covars_ = warmstart_model.covars_
-            candidate_model.n_features = warmstart_model.n_features
-            parallel_gaussian_hmm_fit(candidate_model, latent_vectors, n_jobs=hmm_n_jobs)
-            hmm_model = candidate_model
-        except ValueError as e:
-            logger.warning(
-                f"Warm-start seeding produced an unusable model ({e}); "
-                "falling back to a cold-started HMM fit on the full-resolution data instead."
-            )
-
-        if hmm_model is None:
-            hmm_model = hmm.GaussianHMM(
-                n_components=n_clusters,
-                covariance_type="full",
-                n_iter=hmm_n_iter,
-                tol=hmm_tol,
-                random_state=random_state,
-                verbose=True,
-            )
-            parallel_gaussian_hmm_fit(hmm_model, latent_vectors, n_jobs=hmm_n_jobs)
+        # Stage 2: fine-tune at full resolution, seeded from stage 1's parameters
+        logger.info(f"Warm-start stage 2: fine-tuning on full-resolution data (n_jobs={hmm_n_jobs})")
+        hmm_model = hmm.GaussianHMM(
+            n_components=n_clusters,
+            covariance_type="full",
+            n_iter=hmm_n_iter,
+            tol=hmm_tol,
+            random_state=random_state,
+            init_params="",  # skip auto-init, use the seeded params below
+            verbose=True,
+        )
+        hmm_model.startprob_ = warmstart_model.startprob_
+        hmm_model.transmat_ = warmstart_model.transmat_
+        hmm_model.means_ = warmstart_model.means_
+        hmm_model.covars_ = warmstart_model.covars_
+        hmm_model.n_features = warmstart_model.n_features
+        parallel_gaussian_hmm_fit(hmm_model, latent_vectors, n_jobs=hmm_n_jobs)
 
         labels = hmm_model.predict(latent_vector_cat)
 
