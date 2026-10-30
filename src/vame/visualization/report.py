@@ -86,120 +86,123 @@ def report(
         log_path = Path(config["project_path"]) / "logs" / "report.log"
         logger_config.add_file_handler(str(log_path))
 
-    project_path = Path(config["project_path"])
-    session_names = config["session_names"]
-    n_clusters = config["n_clusters"]
-    model_name = config["model_name"]
+    try:
+        project_path = Path(config["project_path"])
+        session_names = config["session_names"]
+        n_clusters = config["n_clusters"]
+        model_name = config["model_name"]
 
-    with open(project_path / "states" / "states.json") as f:
-        project_states = json.load(f)
+        with open(project_path / "states" / "states.json") as f:
+            project_states = json.load(f)
 
-    # Create a report folder for the project, if it does not exist
-    report_folder = project_path / "reports"
-    report_folder.mkdir(exist_ok=True)
+        # Create a report folder for the project, if it does not exist
+        report_folder = project_path / "reports"
+        report_folder.mkdir(exist_ok=True)
 
-    # Motifs and Communities
-    if project_states.get("segment_session", {}).get("execution_state", "") != "success":
-        raise Exception("Segmentation failed. Skipping motifs and communities report.")
-    if project_states.get("community", {}).get("execution_state", "") != "success":
-        raise Exception("Community detection failed. Skipping motifs and communities report.")
+        # Motifs and Communities
+        if project_states.get("segment_session", {}).get("execution_state", "") != "success":
+            raise Exception("Segmentation failed. Skipping motifs and communities report.")
+        if project_states.get("community", {}).get("execution_state", "") != "success":
+            raise Exception("Community detection failed. Skipping motifs and communities report.")
 
-    ml = np.load(
-        project_path
-        / "results"
-        / "community_cohort"
-        / f"{segmentation_algorithm}-{n_clusters}"
-        / f"cohort_{segmentation_algorithm}_label.npy",
-        allow_pickle=True,
-    )
-    motif_labels = dict()
-    u, c = np.unique(ml, return_counts=True)
-    for uu, cc in zip(u, c):
-        motif_labels[uu] = cc
-
-    cl = np.load(
-        project_path
-        / "results"
-        / "community_cohort"
-        / f"{segmentation_algorithm}-{n_clusters}"
-        / "cohort_community_label.npy",
-        allow_pickle=True,
-    )
-    community_labels = dict()
-    u, c = np.unique(cl, return_counts=True)
-    for uu, cc in zip(u, c):
-        community_labels[uu] = cc
-
-    community_bag = np.load(
-        project_path
-        / "results"
-        / "community_cohort"
-        / f"{segmentation_algorithm}-{n_clusters}"
-        / "cohort_community_bag.npy",
-        allow_pickle=True,
-    )
-
-    logger.info("Cohort communities:")
-    for ii, bag in enumerate(community_bag):
-        logger.info(f"Community {ii}: {community_labels[ii]} counts")
-        for jj in bag:
-            logger.info(f"    Motif {jj}: {motif_labels[jj]} counts")
-
-    # Report for the entire cohort
-    plot_community_motifs(
-        motif_labels=motif_labels,
-        community_labels=community_labels,
-        community_bag=community_bag,
-        title=f"Community and Motif Counts - Cohort - {model_name} - {segmentation_algorithm} - {n_clusters}",
-        show_figure=show_figure,
-        save_to_file=save_to_file,
-        save_path=str(
-            report_folder / f"community_motifs_cohort_{model_name}_{segmentation_algorithm}-{n_clusters}.png"
-        ),
-    )
-
-    # Per session
-    for session in session_names:
-        fml = np.load(
+        ml = np.load(
             project_path
             / "results"
-            / f"{session}"
-            / f"{model_name}"
+            / "community_cohort"
             / f"{segmentation_algorithm}-{n_clusters}"
-            / f"{n_clusters}_{segmentation_algorithm}_label_{session}.npy",
+            / f"cohort_{segmentation_algorithm}_label.npy",
             allow_pickle=True,
         )
-        file_motif_labels = dict()
-        u, c = np.unique(fml, return_counts=True)
+        motif_labels = dict()
+        u, c = np.unique(ml, return_counts=True)
         for uu, cc in zip(u, c):
-            file_motif_labels[uu] = cc
+            motif_labels[uu] = cc
 
-        fcl = np.load(
+        cl = np.load(
             project_path
             / "results"
-            / f"{session}"
-            / f"{model_name}"
+            / "community_cohort"
             / f"{segmentation_algorithm}-{n_clusters}"
-            / "community"
-            / f"cohort_community_label_{session}.npy",
+            / "cohort_community_label.npy",
             allow_pickle=True,
         )
-        file_community_labels = dict()
-        u, c = np.unique(fcl, return_counts=True)
+        community_labels = dict()
+        u, c = np.unique(cl, return_counts=True)
         for uu, cc in zip(u, c):
-            file_community_labels[uu] = cc
+            community_labels[uu] = cc
 
+        community_bag = np.load(
+            project_path
+            / "results"
+            / "community_cohort"
+            / f"{segmentation_algorithm}-{n_clusters}"
+            / "cohort_community_bag.npy",
+            allow_pickle=True,
+        )
+
+        logger.info("Cohort communities:")
+        for ii, bag in enumerate(community_bag):
+            logger.info(f"Community {ii}: {community_labels[ii]} counts")
+            for jj in bag:
+                logger.info(f"    Motif {jj}: {motif_labels[jj]} counts")
+
+        # Report for the entire cohort
         plot_community_motifs(
-            motif_labels=file_motif_labels,
-            community_labels=file_community_labels,
+            motif_labels=motif_labels,
+            community_labels=community_labels,
             community_bag=community_bag,
-            title=f"Community and Motif Counts - {session} - {model_name} - {segmentation_algorithm} - {n_clusters}",
+            title=f"Community and Motif Counts - Cohort - {model_name} - {segmentation_algorithm} - {n_clusters}",
             show_figure=show_figure,
             save_to_file=save_to_file,
             save_path=str(
-                report_folder / f"community_motifs_{session}_{model_name}_{segmentation_algorithm}-{n_clusters}.png"
+                report_folder / f"community_motifs_cohort_{model_name}_{segmentation_algorithm}-{n_clusters}.png"
             ),
         )
+
+        # Per session
+        for session in session_names:
+            fml = np.load(
+                project_path
+                / "results"
+                / f"{session}"
+                / f"{model_name}"
+                / f"{segmentation_algorithm}-{n_clusters}"
+                / f"{n_clusters}_{segmentation_algorithm}_label_{session}.npy",
+                allow_pickle=True,
+            )
+            file_motif_labels = dict()
+            u, c = np.unique(fml, return_counts=True)
+            for uu, cc in zip(u, c):
+                file_motif_labels[uu] = cc
+
+            fcl = np.load(
+                project_path
+                / "results"
+                / f"{session}"
+                / f"{model_name}"
+                / f"{segmentation_algorithm}-{n_clusters}"
+                / "community"
+                / f"cohort_community_label_{session}.npy",
+                allow_pickle=True,
+            )
+            file_community_labels = dict()
+            u, c = np.unique(fcl, return_counts=True)
+            for uu, cc in zip(u, c):
+                file_community_labels[uu] = cc
+
+            plot_community_motifs(
+                motif_labels=file_motif_labels,
+                community_labels=file_community_labels,
+                community_bag=community_bag,
+                title=f"Community and Motif Counts - {session} - {model_name} - {segmentation_algorithm} - {n_clusters}",
+                show_figure=show_figure,
+                save_to_file=save_to_file,
+                save_path=str(
+                    report_folder / f"community_motifs_{session}_{model_name}_{segmentation_algorithm}-{n_clusters}.png"
+                ),
+            )
+    finally:
+        logger_config.remove_file_handler()
 
 
 def plot_community_motifs(

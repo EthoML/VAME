@@ -5,7 +5,7 @@ sidebar_position: 1
 
 🌟 Welcome to EthoML/VAME (Variational Animal Motion Embedding), an open-source machine learning tool for behavioral segmentation and analyses.
 
-We are a group of behavioral enthusiasts, comprising the original VAME developers Kevin Luxem and Pavol Bauer, behavioral neuroscientists Stephanie R. Miller and Jorge J. Palop, and computer scientists and statisticians Alex Pico, Reuben Thomas, and Katie Ly). Our aim is to provide scalable, unbiased and sensitive approaches for assessing mouse behavior using computer vision and machine learning approaches.
+We are a group of behavioral enthusiasts, comprising the original VAME developers Kevin Luxem and Pavol Bauer; behavioral neuroscientists Stephanie R. Miller, Jorge J. Palop; statisticians Alex Pico, Reuben Thomas; and machine learning researchers Pranav Nambiar, Katie Ly, Shreya Bangera, Dakota Mallen, Zhihao Cheng. Our aim is to provide scalable, unbiased and sensitive approaches for assessing mouse behavior using computer vision and machine learning approaches.
 
 We are focused on the expanding the analytical capabilities of VAME segmentation by providing curated scripts for VAME implementation and tools for data processing, visualization, and statistical analyses.
 
@@ -14,7 +14,7 @@ We are focused on the expanding the analytical capabilities of VAME segmentation
 ![VAME](/img/behavior_structure_crop.gif)
 
 VAME is a framework to cluster behavioral signals obtained from pose-estimation tools. It is a [PyTorch](https://pytorch.org/)-based deep learning framework which leverages the power of recurrent neural networks (RNN) to model sequential data. In order to learn the underlying complex data distribution, we use the RNN in a variational autoencoder setting to extract the latent state of the animal in every step of the input time series.
-The workflow of VAME consists of 5 steps and we explain them in detail [here](https://github.com/LINCellularNeuroscience/VAME/wiki/1.-VAME-Workflow)
+The [step-by-step guide](/docs/getting_started/step_by_step) walks through each step of the VAME workflow.
 
 
 ## Authors and Code Contributors

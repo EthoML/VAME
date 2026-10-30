@@ -29,7 +29,7 @@ class VAMEPipeline:
         self,
         project_name: str,
         poses_estimations: List[str],
-        source_software: Literal["DeepLabCut", "SLEAP", "LightningPose", "NWB", "auto"] = "auto",
+        source_software: Literal["DeepLabCut", "SLEAP", "LightningPose", "NWB", "auto", "movement"] = "auto",
         working_directory: str = ".",
         videos: Optional[List[str]] = None,
         fps: Optional[float] = None,
@@ -52,7 +52,8 @@ class VAMEPipeline:
             Source software used for pose estimation. Defaults to ``"auto"``,
             which lets movement infer the format from the file. Pass an explicit
             value (``"DeepLabCut"``, ``"SLEAP"``, ``"LightningPose"``,
-            ``"NWB"``) to override.
+            ``"NWB"``) to override. ``"movement"`` reads a netCDF file in the
+            movement format.
         working_directory : str, optional
             Working directory, by default ".".
         fps : float, optional
@@ -154,7 +155,7 @@ class VAMEPipeline:
         run_egocentric_alignment: bool = True,
         run_outlier_cleaning: bool = True,
         run_savgol_filtering: bool = True,
-        run_rescaling: bool = False,
+        run_rescaling: bool = True,
     ) -> str:
         """
         Preprocesses the data.
@@ -174,7 +175,7 @@ class VAMEPipeline:
         run_savgol_filtering : bool, optional
             Whether to run Savitzky-Golay filtering, by default True.
         run_rescaling : bool, optional
-            Whether to run rescaling, by default False.
+            Whether to run rescaling, by default True. Requires run_egocentric_alignment.
 
         Returns
         -------
@@ -198,7 +199,9 @@ class VAMEPipeline:
         self,
         test_fraction: float = 0.1,
         split_mode: Literal["mode_1", "mode_2"] = "mode_2",
-        read_from_variable: str = "position_processed",
+        read_from_variable: Optional[str] = None,
+        keypoints_to_include: Optional[List[str]] = None,
+        keypoints_to_exclude: Optional[List[str]] = None,
     ) -> None:
         """
         Creates the training set.
@@ -209,6 +212,12 @@ class VAMEPipeline:
             Test fraction.
         split_mode : str, optional
             Split mode, by default "mode_2".
+        read_from_variable : str, optional
+            Variable to read the training data from, by default the output of the last preprocessing step.
+        keypoints_to_include : List[str], optional
+            Keypoints to use for training. Defaults to all keypoints.
+        keypoints_to_exclude : List[str], optional
+            Keypoints to leave out of training. Defaults to None.
 
         Returns
         -------
@@ -219,6 +228,8 @@ class VAMEPipeline:
             test_fraction=test_fraction,
             read_from_variable=read_from_variable,
             split_mode=split_mode,
+            keypoints_to_include=keypoints_to_include,
+            keypoints_to_exclude=keypoints_to_exclude,
             save_logs=self.save_logs,
         )
 
@@ -261,9 +272,14 @@ class VAMEPipeline:
             save_logs=self.save_logs,
         )
 
-    def run_community_clustering(self) -> None:
+    def run_community_clustering(self, cut_tree: int = 3) -> None:
         """
         Runs the community clustering.
+
+        Parameters
+        ----------
+        cut_tree : int, optional
+            Cut level for the hierarchical clustering, by default 3.
 
         Returns
         -------
@@ -271,7 +287,7 @@ class VAMEPipeline:
         """
         vame.community(
             config=self.config,
-            cut_tree=2,
+            cut_tree=cut_tree,
             save_logs=self.save_logs,
         )
 
@@ -380,7 +396,6 @@ class VAMEPipeline:
         """
         plot_loss(
             config=self.config,
-            model_name="VAME",
             save_to_file=save_to_file,
             show_figure=show_figure,
         )
@@ -423,6 +438,7 @@ class VAMEPipeline:
     def visualize_hierarchical_tree(
         self,
         segmentation_algorithm: Literal["hmm", "kmeans", "hmm_warmstart"],
+        show_figure: bool = True,
     ) -> None:
         """
         Visualizes the hierarchical tree.
@@ -431,6 +447,8 @@ class VAMEPipeline:
         ----------
         segmentation_algorithm : Literal["hmm", "kmeans", "hmm_warmstart"]
             Segmentation algorithm.
+        show_figure : bool
+            Whether to show the figure. Defaults to True.
 
         Returns
         -------
@@ -439,6 +457,7 @@ class VAMEPipeline:
         visualize_hierarchical_tree(
             config=self.config,
             segmentation_algorithm=segmentation_algorithm,
+            show_figure=show_figure,
         )
 
     def visualize_umap(
@@ -478,11 +497,6 @@ class VAMEPipeline:
         """
         Generates the project report.
 
-        Parameters
-        ----------
-        segmentation_algorithm : Literal["hmm", "kmeans", "hmm_warmstart"], optional
-            Segmentation algorithm, by default "hmm".
-
         Returns
         -------
         None
@@ -492,8 +506,9 @@ class VAMEPipeline:
     def run_pipeline(
         self,
         from_step: int = 0,
-        preprocessing_kwargs: dict = {},
-        trainingset_kwargs: dict = {},
+        preprocessing_kwargs: Optional[dict] = None,
+        trainingset_kwargs: Optional[dict] = None,
+        community_kwargs: Optional[dict] = None,
     ) -> None:
         """
         Runs the pipeline.
@@ -503,14 +518,21 @@ class VAMEPipeline:
         from_step : int, optional
             Start from step, by default 0.
         preprocessing_kwargs : dict, optional
-            Preprocessing keyword arguments, by default {}.
+            Preprocessing keyword arguments, by default None.
         trainingset_kwargs : dict, optional
-            Training set keyword arguments, by default {}.
+            Training set keyword arguments, by default None.
+        community_kwargs : dict, optional
+            Community clustering keyword arguments (e.g. ``cut_tree``), by default None.
 
         Returns
         -------
         None
         """
+        # Copy so the caller's dicts aren't mutated
+        preprocessing_kwargs = dict(preprocessing_kwargs or {})
+        trainingset_kwargs = dict(trainingset_kwargs or {})
+        community_kwargs = dict(community_kwargs or {})
+
         if from_step == 0:
             trainingset_kwargs["read_from_variable"] = self.preprocessing(**preprocessing_kwargs)
         if from_step <= 1:
@@ -522,7 +544,7 @@ class VAMEPipeline:
         if from_step <= 4:
             self.run_segmentation()
         if from_step <= 5:
-            self.run_community_clustering()
+            self.run_community_clustering(**community_kwargs)
 
 
 def unique_in_order(sequence):

@@ -77,6 +77,11 @@ class ProjectSchema(BaseModel):
         default=False,
         title="Egocentric data",
     )
+    preprocessed_variable: str = Field(
+        default="position_processed",
+        title="Preprocessed variable",
+        description="Output variable of the last preprocessing step. Set by vame.preprocessing.",
+    )
     pose_confidence: float = Field(
         default=0.99,
         title="Pose confidence",
@@ -245,14 +250,6 @@ class ProjectSchema(BaseModel):
         "never used as-is. Must be None/unset for stage 1 to fit from scratch (the default); "
         "must match the current project's n_clusters and zdims or it is rejected.",
         default=None,
-    )
-    individual_segmentation: bool = Field(
-        default=False,
-        title="Individual segmentation",
-    )
-    n_init_kmeans: int = Field(
-        default=15,
-        title="N init kmeans",
     )
 
     # Video writer:

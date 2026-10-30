@@ -10,6 +10,7 @@ import ndx_vame
 
 from vame.logging.logger import VameLogger
 from vame.io import load_vame_dataset
+from vame.util.auxiliary import get_version
 
 
 logger_config = VameLogger(__name__)
@@ -25,6 +26,9 @@ def get_base_nwbfile(
     """
     Create base NWBFile object.
     """
+    # Copy so the caller's dicts are left as they were
+    subject_kwargs = dict(subject_kwargs)
+    nwbfile_kwargs = dict(nwbfile_kwargs)
     subject_id = subject_kwargs.pop("subject_id", session_name)
     subject = pynwb.file.Subject(
         subject_id=subject_id,
@@ -35,6 +39,7 @@ def get_base_nwbfile(
         identifier=nwbfile_kwargs.pop("identifier", session_name),
         session_start_time=nwbfile_kwargs.pop("session_start_time", datetime.now(timezone.utc)),
         subject=subject,
+        **nwbfile_kwargs,
     )
     camera = nwbfile.create_device(
         name="camera",
@@ -103,7 +108,8 @@ def export_to_nwb(
     subject_kwargs: Optional[list[dict]] = None,
 ):
     """
-    Export VAME project to NWB format.
+    Export VAME project to NWB format, one file per session at
+    results/<session>/<model_name>/<session>.nwb, with the results of all segmentation algorithms.
     """
     session_names = config.get("session_names")
     if not session_names:
@@ -129,15 +135,15 @@ def export_to_nwb(
         if ds is None:
             raise ValueError(f"Dataset not found for session: {session_name}")
 
-        keypoints = ds.keypoints.values
-        vame_series_kwargs = {}
-        if getattr(ds, "fps", None):
-            vame_series_kwargs["rate"] = ds.fps
-            vame_series_kwargs["starting_time"] = vame_starting_sample_offset / ds.fps
-        else:
-            # If using timestamps, we need to crop the timestamps to match the model time window
-            timestamps = ds.sel(keypoints=keypoints[0]).time.values
-            vame_series_kwargs["timestamps"] = timestamps[vame_starting_sample_offset:-vame_starting_sample_offset]
+        if not getattr(ds, "fps", None):
+            raise ValueError(
+                f"Session {session_name} has no sampling rate, so its times are frame numbers. "
+                "Exporting to NWB needs times in seconds: create the project with fps= or with videos."
+            )
+        vame_series_kwargs = {
+            "rate": ds.fps,
+            "starting_time": vame_starting_sample_offset / ds.fps,
+        }
 
         # VAME content
         model_name = config.get("model_name")
@@ -158,85 +164,64 @@ def export_to_nwb(
             raise ValueError(f"Latent space data not found at: {latent_path}. Make sure to run vame.segment_session() first.")
         latent_data = np.load(latent_path)
 
+        nwbfile = get_base_nwbfile(
+            session_name=session_name,
+            ds=ds,
+            nwbfile_kwargs=nwbmeta,
+            subject_kwargs=sub,
+        )
+        behavior_pm = nwbfile.processing["behavior"]
+        latent_space_series = ndx_vame.LatentSpaceSeries(
+            name="LatentSpaceSeries",
+            description="VAME latent space vectors, one per sliding window.",
+            data=latent_data,
+            **vame_series_kwargs,
+        )
+
+        motif_series_list = []
+        community_series_list = []
         for seg in segmentation_algorithms:
-            # Base NWB file
-            nwbfile = get_base_nwbfile(
-                session_name=session_name,
-                ds=ds,
-                nwbfile_kwargs=nwbmeta,
-                subject_kwargs=sub,
-            )
-            behavior_pm = nwbfile.processing["behavior"]
-            pose_estimation = behavior_pm["PoseEstimation"]
-
-            # Latent space data
-            latent_space_series = ndx_vame.LatentSpaceSeries(
-                name="LatentSpaceSeries",
-                data=latent_data,
-                **vame_series_kwargs,
-            )
-
-            # Motif data
-            motifs_path = (
-                Path(config["project_path"]) /
-                "results" /
-                session_name /
-                model_name /
-                f"{seg}-{n_clusters}" /
-                f"{n_clusters}_{seg}_label_{session_name}.npy"
-            ).resolve()
+            seg_path = Path(config["project_path"]) / "results" / session_name / model_name / f"{seg}-{n_clusters}"
+            motifs_path = (seg_path / f"{n_clusters}_{seg}_label_{session_name}.npy").resolve()
             if not motifs_path.exists():
                 raise ValueError(f"Motif data not found at: {motifs_path}. Make sure to run vame.segment_session() first.")
-            motif_labels = np.load(motifs_path)
             motif_series = ndx_vame.MotifSeries(
-                name="MotifSeries",
-                data=motif_labels,
+                name=f"MotifSeries{seg.capitalize()}",
+                description=f"VAME motifs from {seg} with {n_clusters} clusters.",
+                data=np.load(motifs_path),
                 algorithm=seg,
                 latent_space_series=latent_space_series,
                 **vame_series_kwargs,
             )
+            motif_series_list.append(motif_series)
 
-            # Community data
-            community_path = (
-                Path(config["project_path"]) /
-                "results" /
-                session_name /
-                model_name /
-                f"{seg}-{n_clusters}" /
-                "community" /
-                f"cohort_community_label_{session_name}.npy"
-            ).resolve()
+            community_path = (seg_path / "community" / f"cohort_community_label_{session_name}.npy").resolve()
             if not community_path.exists():
                 raise ValueError(f"Community data not found at: {community_path}. Make sure to run vame.community() first.")
-            data_communities = np.load(community_path)
-            community_series = ndx_vame.CommunitySeries(
-                name="CommunitySeries",
-                data=data_communities,
-                motif_series=motif_series,
-                algorithm="hierarchical_clustering",
-                **vame_series_kwargs,
+            community_series_list.append(
+                ndx_vame.CommunitySeries(
+                    name=f"CommunitySeries{seg.capitalize()}",
+                    description=f"VAME communities from the {seg} motifs.",
+                    data=np.load(community_path),
+                    motif_series=motif_series,
+                    algorithm="hierarchical_clustering",
+                    **vame_series_kwargs,
+                )
             )
 
-            vame_project = ndx_vame.VAMEProject(
-                name="VAMEProject",
-                pose_estimation=pose_estimation,
-                latent_space_series=latent_space_series,
-                motif_series=motif_series,
-                community_series=community_series,
-                vame_config=json.dumps(config),
-            )
+        vame_project = ndx_vame.VAMEProject(
+            name="VAMEProject",
+            pose_estimation=behavior_pm["PoseEstimation"],
+            latent_space_series=latent_space_series,
+            motif_series=motif_series_list,
+            community_series=community_series_list,
+            vame_config=json.dumps(config),
+            time_window_samples=model_time_window,
+            vame_version=get_version(),
+        )
+        behavior_pm.add(vame_project)
 
-            behavior_pm.add(vame_project)
-
-            # Save NWB file
-            nwbfile_path = (
-                Path(config["project_path"]) /
-                "results" /
-                session_name /
-                model_name /
-                f"{seg}-{n_clusters}" /
-                f"{session_name}.nwb"
-            ).resolve()
-            with pynwb.NWBHDF5IO(str(nwbfile_path), "w") as io:
-                io.write(nwbfile)
-            logger.info(f"{session_name} saved to NWB file at: {nwbfile_path}.")
+        nwbfile_path = (Path(config["project_path"]) / "results" / session_name / model_name / f"{session_name}.nwb").resolve()
+        with pynwb.NWBHDF5IO(str(nwbfile_path), "w") as io:
+            io.write(nwbfile)
+        logger.info(f"{session_name} saved to NWB file at: {nwbfile_path}.")

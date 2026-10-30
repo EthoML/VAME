@@ -1,6 +1,5 @@
 from typing import Optional, Literal
 import os
-import umap
 import numpy as np
 import xarray as xr
 from pathlib import Path
@@ -81,6 +80,8 @@ def umap_embedding(
 
     # Run UMAP
     logger.info("Running UMAP calculation...")
+    import umap  # imported here because it takes seconds to load (numba compilation)
+
     reducer = umap.UMAP(
         n_components=2,
         min_dist=config["min_dist"],

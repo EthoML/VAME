@@ -6,12 +6,17 @@ sidebar_position: 1
 
 ## Installation
 
-To get started we recommend using [Anaconda](https://www.anaconda.com/distribution/) or [Virtual Environment](https://docs.python.org/3/library/venv.html) with Python 3.11 or higher.
+To get started we recommend using [Anaconda](https://www.anaconda.com/distribution/) or [Virtual Environment](https://docs.python.org/3/library/venv.html) with Python 3.12 or higher.
 
 
 ### Install with pip (Recommended)
-```python
+```bash
 pip install vame-py
+```
+
+To [read pose data from DANDI](/docs/how_to/read_from_dandi), install the `dandi` extra:
+```bash
+pip install "vame-py[dandi]"
 ```
 
 
@@ -52,4 +57,4 @@ Kingma & Welling: [Auto-Encoding Variational Bayes](https://arxiv.org/abs/1312.6
 Pereira & Silveira: [Learning Representations from Healthcare Time Series Data for Unsupervised Anomaly Detection](https://www.joao-pereira.pt/publications/accepted_version_BigComp19.pdf)
 
 ## License: GPLv3
-See the [LICENSE file](https://github.com/LINCellularNeuroscience/VAME/blob/master/LICENSE) for the full statement.
+See the [LICENSE file](https://github.com/EthoML/VAME/blob/main/LICENSE) for the full statement.

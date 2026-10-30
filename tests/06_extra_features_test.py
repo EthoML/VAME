@@ -2,6 +2,7 @@ from pathlib import Path
 
 import numpy as np
 import pytest
+import xarray as xr
 
 import vame
 from vame.io.load_poses import load_vame_dataset
@@ -142,3 +143,17 @@ def test_validate_extra_features_reports_missing_var(extras_project):
     msg = str(exc.value)
     assert "nonexistent_var" in msg
     assert session in msg
+
+
+def test_extra_features_without_position_processed(tmp_path):
+    """Extra features check the last preprocessing output, not position_processed"""
+    (tmp_path / "data" / "processed").mkdir(parents=True)
+    ds = xr.Dataset({"position_scaled": (("time", "space", "keypoints", "individuals"), np.ones((5, 2, 2, 1)))})
+    ds.to_netcdf(_processed_nc_path({"project_path": str(tmp_path)}, "s1"), engine="netcdf4")
+    config = {
+        "project_path": str(tmp_path),
+        "session_names": ["s1"],
+        "preprocessed_variable": "position_scaled",
+    }
+    vame.io.add_extra_features(config=config, session="s1", features={"speed": np.arange(5.0)}, register_in_config=False)
+    vame.validate_extra_features(config=config, extra_features=["speed"])

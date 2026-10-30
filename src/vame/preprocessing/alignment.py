@@ -1,4 +1,5 @@
 import numpy as np
+import xarray as xr
 from pathlib import Path
 
 from vame.logging.logger import VameLogger
@@ -75,105 +76,145 @@ def egocentrically_align_and_center(
         log_path = Path(config["project_path"]) / "logs" / "preprocessing.log"
         logger_config.add_file_handler(str(log_path))
 
-    logger.info(
-        f"Egocentric alignment with references: {centered_reference_keypoint} and {orientation_reference_keypoint}"
-    )
-    project_path = config["project_path"]
-    sessions = config["session_names"]
+    try:
+        logger.info(
+            f"Egocentric alignment with references: {centered_reference_keypoint} and {orientation_reference_keypoint}"
+        )
+        project_path = config["project_path"]
+        sessions = config["session_names"]
 
-    for i, session in enumerate(sessions):
-        logger.info(f"Session: {session}")
-        # Read session data
-        file_path = str(Path(project_path) / "data" / "processed" / f"{session}_processed.nc")
-        _, _, ds = read_pose_estimation_file(file_path=file_path)
+        for i, session in enumerate(sessions):
+            logger.info(f"Session: {session}")
+            # Read session data
+            file_path = str(Path(project_path) / "data" / "processed" / f"{session}_processed.nc")
+            _, _, ds = read_pose_estimation_file(file_path=file_path)
 
-        # Extract keypoint indices
-        keypoints = ds.coords["keypoints"].values
-        if centered_reference_keypoint not in keypoints:
-            raise ValueError(
-                f"Centered reference keypoint {centered_reference_keypoint} not found in dataset.",
-                f"Available keypoints: {keypoints}",
+            egocentrically_align_dataset(
+                ds=ds,
+                centered_reference_keypoint=centered_reference_keypoint,
+                orientation_reference_keypoint=orientation_reference_keypoint,
+                read_from_variable=read_from_variable,
+                save_to_variable=save_to_variable,
             )
-        if orientation_reference_keypoint not in keypoints:
-            raise ValueError(
-                f"Orientation reference keypoint {orientation_reference_keypoint} not found in dataset.",
-                f"Available keypoints: {keypoints}",
+
+            # Save the aligned dataset to file
+            cleaned_file_path = str(Path(project_path) / "data" / "processed" / f"{session}_processed.nc")
+            # ds lazily reads the file we're about to overwrite.
+            ds.load()
+            ds.close()
+            ds.to_netcdf(
+                path=cleaned_file_path,
+                engine="netcdf4",
             )
-        idx1 = np.where(keypoints == centered_reference_keypoint)[0][0]
-        idx2 = np.where(keypoints == orientation_reference_keypoint)[0][0]
+    finally:
+        logger_config.remove_file_handler()
 
-        # Extract processed positions values, with shape: (time, space, keypoints, individuals)
-        position_processed = np.copy(ds[read_from_variable].values)
-        position_aligned = np.empty_like(position_processed)
 
-        # Calculate individual scales (before alignment)
-        individual_scales = np.zeros(position_processed.shape[3])
-        for individual in range(position_processed.shape[3]):
-            # Calculate distances between reference keypoints
-            distances = calculate_geometric_distance(
-                position_processed[:, :, :, individual],
-                idx1,
-                idx2,
-            )
-            # Calculate median distance, excluding NaNs
-            individual_scales[individual] = np.nanmedian(distances)
+def egocentrically_align_dataset(
+    ds: xr.Dataset,
+    centered_reference_keypoint: str,
+    orientation_reference_keypoint: str,
+    read_from_variable: str,
+    save_to_variable: str,
+) -> None:
+    """
+    Center and rotate one session's dataset on two reference keypoints, in place.
+    Also stores the per-individual body scale as ``individual_scale``.
 
-        # Store individual scales in the dataset
-        ds["individual_scale"] = (["individuals"], individual_scales)
+    Parameters
+    ----------
+    ds : xr.Dataset
+        Session dataset.
+    centered_reference_keypoint : str
+        Name of the keypoint to use as centered reference.
+    orientation_reference_keypoint : str
+        Name of the keypoint to use as orientation reference.
+    read_from_variable : str
+        Variable to read from the dataset.
+    save_to_variable : str
+        Variable to save the aligned data to.
 
-        # Loop over individuals
-        for individual in range(position_processed.shape[3]):
-            # Shape: (time, space, keypoints)
-            individual_positions = position_processed[:, :, :, individual]
-            centralized_positions = np.empty_like(individual_positions)
+    Returns
+    -------
+    None
+    """
+    # Extract keypoint indices
+    keypoints = ds.coords["keypoints"].values
+    if centered_reference_keypoint not in keypoints:
+        raise ValueError(
+            f"Centered reference keypoint {centered_reference_keypoint} not found in dataset.",
+            f"Available keypoints: {keypoints}",
+        )
+    if orientation_reference_keypoint not in keypoints:
+        raise ValueError(
+            f"Orientation reference keypoint {orientation_reference_keypoint} not found in dataset.",
+            f"Available keypoints: {keypoints}",
+        )
+    idx1 = np.where(keypoints == centered_reference_keypoint)[0][0]
+    idx2 = np.where(keypoints == orientation_reference_keypoint)[0][0]
 
-            # Centralize all positions around the first keypoint
-            for kp in range(individual_positions.shape[2]):
-                for space in range(individual_positions.shape[1]):
-                    centralized_positions[:, space, kp] = (
-                        individual_positions[:, space, kp] - individual_positions[:, space, idx1]
-                    )
+    # Extract processed positions values, with shape: (time, space, keypoints, individuals)
+    position_processed = np.copy(ds[read_from_variable].values)
+    position_aligned = np.empty_like(position_processed)
 
-            # Calculate vectors between keypoints
-            # Transpose to get (time, 2) shape for x,y coordinates
-            vector = centralized_positions[:, :, idx2]  # Vector from keypoint1 to keypoint2
-            angles = np.arctan2(vector[:, 0], vector[:, 1])  # Angles in radians
+    # Calculate individual scales (before alignment)
+    individual_scales = np.zeros(position_processed.shape[3])
+    for individual in range(position_processed.shape[3]):
+        # Calculate distances between reference keypoints
+        distances = calculate_geometric_distance(
+            position_processed[:, :, :, individual],
+            idx1,
+            idx2,
+        )
+        # Calculate median distance, excluding NaNs
+        individual_scales[individual] = np.nanmedian(distances)
 
-            # Apply rotation to align the second keypoint along the y-axis
-            for t in range(centralized_positions.shape[0]):
-                rotation_matrix = np.array(
-                    [
-                        [np.cos(angles[t]), -np.sin(angles[t])],
-                        [np.sin(angles[t]), np.cos(angles[t])],
-                    ]
+    # Store individual scales in the dataset
+    ds["individual_scale"] = (["individuals"], individual_scales)
+
+    # Loop over individuals
+    for individual in range(position_processed.shape[3]):
+        # Shape: (time, space, keypoints)
+        individual_positions = position_processed[:, :, :, individual]
+        centralized_positions = np.empty_like(individual_positions)
+
+        # Centralize all positions around the first keypoint
+        for kp in range(individual_positions.shape[2]):
+            for space in range(individual_positions.shape[1]):
+                centralized_positions[:, space, kp] = (
+                    individual_positions[:, space, kp] - individual_positions[:, space, idx1]
                 )
-                # Transpose to get (keypoints, space) for matrix multiplication
-                frame_positions = centralized_positions[t].T
-                rotated_positions = (rotation_matrix @ frame_positions.T).T
 
-                # Check and ensure the y-value of orientation_reference_keypoint is negative
-                if rotated_positions[idx2, 1] > 0:
-                    rotated_positions[:, :] *= -1  # Flip all coordinates
+        # Calculate vectors between keypoints
+        # Transpose to get (time, 2) shape for x,y coordinates
+        vector = centralized_positions[:, :, idx2]  # Vector from keypoint1 to keypoint2
+        angles = np.arctan2(vector[:, 0], vector[:, 1])  # Angles in radians
 
-                # Transpose back to (space, keypoints)
-                position_aligned[t, :, :, individual] = rotated_positions.T
+        # Apply rotation to align the second keypoint along the y-axis
+        for t in range(centralized_positions.shape[0]):
+            rotation_matrix = np.array(
+                [
+                    [np.cos(angles[t]), -np.sin(angles[t])],
+                    [np.sin(angles[t]), np.cos(angles[t])],
+                ]
+            )
+            # Transpose to get (keypoints, space) for matrix multiplication
+            frame_positions = centralized_positions[t].T
+            rotated_positions = (rotation_matrix @ frame_positions.T).T
 
-        # Update the dataset with the cleaned position values
-        ds[save_to_variable] = (ds[read_from_variable].dims, position_aligned)
-        ds.attrs.update(
-            {
-                "processed_alignment": "True",
-                "centered_reference_keypoint": centered_reference_keypoint,
-                "orientation_reference_keypoint": orientation_reference_keypoint,
-            }
-        )
+            # Check and ensure the y-value of orientation_reference_keypoint is negative
+            if rotated_positions[idx2, 1] > 0:
+                rotated_positions[:, :] *= -1  # Flip all coordinates
 
-        # Save the aligned dataset to file
-        cleaned_file_path = str(Path(project_path) / "data" / "processed" / f"{session}_processed.nc")
-        # ds lazily reads the file we're about to overwrite.
-        ds.load()
-        ds.close()
-        ds.to_netcdf(
-            path=cleaned_file_path,
-            engine="netcdf4",
-        )
+            # Transpose back to (space, keypoints)
+            position_aligned[t, :, :, individual] = rotated_positions.T
+
+    # Update the dataset with the cleaned position values
+    ds[save_to_variable] = (ds[read_from_variable].dims, position_aligned)
+    ds.attrs.update(
+        {
+            "processed_alignment": "True",
+            "centered_reference_keypoint": centered_reference_keypoint,
+            "orientation_reference_keypoint": orientation_reference_keypoint,
+        }
+    )

@@ -136,8 +136,6 @@ def create_config_template() -> Tuple[dict, ruamel.yaml.YAML]:
     segmentation_algorithms:
     hmm_trained:
     hmm_n_iter:
-    individual_segmentation:
-    n_init_kmeans:
     \n
 # Video writer:
     length_of_motif_video:

@@ -55,3 +55,28 @@ and then applying rotation to align with the line connecting the two keypoints.
 
 * `None`
 
+#### egocentrically\_align\_dataset
+
+```python
+def egocentrically_align_dataset(ds: xr.Dataset,
+                                 centered_reference_keypoint: str,
+                                 orientation_reference_keypoint: str,
+                                 read_from_variable: str,
+                                 save_to_variable: str) -> None
+```
+
+Center and rotate one session&#x27;s dataset on two reference keypoints, in place.
+Also stores the per-individual body scale as ``individual_scale``.
+
+**Parameters**
+
+* **ds** (`xr.Dataset`): Session dataset.
+* **centered_reference_keypoint** (`str`): Name of the keypoint to use as centered reference.
+* **orientation_reference_keypoint** (`str`): Name of the keypoint to use as orientation reference.
+* **read_from_variable** (`str`): Variable to read from the dataset.
+* **save_to_variable** (`str`): Variable to save the aligned data to.
+
+**Returns**
+
+* `None`
+

@@ -2,6 +2,7 @@ import vame
 from pathlib import Path
 import os
 import pytest
+from vame.util.auxiliary import read_states
 
 
 @pytest.mark.parametrize(
@@ -91,3 +92,13 @@ def test_evaluate_model_images_exists(setup_project_and_evaluate_model):
 
     assert reconstruction_image_path.exists()
     assert loss_image_path.exists()
+
+
+def test_evaluate_model_failure_raises_and_records_failed(tmp_path):
+    """A failing evaluation raises and is recorded as failed in states.json"""
+    (tmp_path / "states").mkdir()
+    (tmp_path / "states" / "states.json").write_text("{}")
+    config = {"project_path": str(tmp_path)}
+    with pytest.raises(KeyError):
+        vame.evaluate_model(config, save_logs=False)
+    assert read_states(config)["evaluate_model"]["execution_state"] == "failed"
