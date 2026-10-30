@@ -492,22 +492,18 @@ def same_segmentation(
 
         n_features_dim = latent_vector_cat.shape[1]
         pretrained_path = config.get("hmm_warmstart_pretrained_path")
-        warmstart_model = None
 
         if pretrained_path:
             logger.info(f"Warm-start stage 1: loading pretrained model from {pretrained_path}")
             with open(pretrained_path, "rb") as file:
-                candidate = pickle.load(file)
-            if candidate.n_components != n_clusters or candidate.n_features != n_features_dim:
-                logger.warning(
-                    f"Pretrained model at {pretrained_path} has n_components={candidate.n_components}, "
-                    f"n_features={candidate.n_features}, but this project needs n_clusters={n_clusters}, "
-                    f"zdims={n_features_dim}. Ignoring it and fitting stage 1 from scratch instead."
+                warmstart_model = pickle.load(file)
+            if warmstart_model.n_components != n_clusters or warmstart_model.n_features != n_features_dim:
+                raise ValueError(
+                    f"Pretrained model at {pretrained_path} has n_components={warmstart_model.n_components}, "
+                    f"n_features={warmstart_model.n_features}, but this project needs n_clusters={n_clusters}, "
+                    f"zdims={n_features_dim}."
                 )
-            else:
-                warmstart_model = candidate
-
-        if warmstart_model is None:
+        else:
             # A full-covariance Gaussian needs roughly n_features samples per state
             # just to be non-singular. Guard against strides that would leave too
             # little data for stage 1 on small/pilot datasets (falls back to no
