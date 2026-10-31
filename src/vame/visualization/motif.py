@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 
 def visualize_motif_thresholding(
     config: dict,
-    segmentation_algorithm: Literal["hmm", "kmeans"] = "hmm",
+    segmentation_algorithm: Literal["hmm", "kmeans", "hmm_warmstart"] = "hmm",
     n_clusters: int | None = None,
     threshold: float = 1.0,
     show_figure: bool = True,
@@ -18,7 +18,7 @@ def visualize_motif_thresholding(
 
     Parameters
     ----------
-    segmentation_algorithm : Literal["hmm", "kmeans"], optional
+    segmentation_algorithm : Literal["hmm", "kmeans", "hmm_warmstart"], optional
         Segmentation algorithm, by default "hmm".
     n_clusters : Optional[int], optional
         Number of clusters, by default None. If None, it uses the value from config["n_clusters"].

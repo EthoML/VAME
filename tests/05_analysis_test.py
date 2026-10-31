@@ -46,6 +46,19 @@ def test_pose_segmentation_files_exists(setup_project_and_train_model, tmp_path,
     assert read_states(config)["segment_session"]["execution_state"] == "success"
 
 
+def test_pose_segmentation_hmm_warmstart_files_exists(setup_project_and_train_model, tmp_path):
+    config = _copy_trained_project(setup_project_and_train_model, tmp_path, segmentation_algorithms=["hmm_warmstart"])
+    with patch("builtins.input", return_value="yes"):
+        vame.segment_session(config=config, overwrite_segmentation=True, save_logs=True)
+    file = config["session_names"][0]
+    n_clusters = config["n_clusters"]
+    save_base_path = Path(config["project_path"]) / "results" / file / config["model_name"] / f"hmm_warmstart-{n_clusters}"
+
+    assert (save_base_path / f"motif_usage_{file}.npy").exists()
+    assert (save_base_path / f"{n_clusters}_hmm_warmstart_label_{file}.npy").exists()
+    assert (Path(config["project_path"]) / "results" / "hmm_warmstart_trained.pkl").exists()
+
+
 def test_pose_segmentation_pretrained_hmm(setup_project_and_train_model, tmp_path):
     """hmm_trained=True reuses the saved HMM and gives the same labels"""
     config = _copy_trained_project(setup_project_and_train_model, tmp_path, segmentation_algorithms=["hmm"])
