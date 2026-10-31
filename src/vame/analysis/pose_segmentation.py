@@ -448,6 +448,8 @@ def same_segmentation(
     motif_usages = []  # List of arrays containing each session's motif usages
 
     latent_vector_cat = np.concatenate(latent_vectors, axis=0)
+    # Session lengths, so the HMM does not treat joins between sessions as transitions
+    session_lengths = [len(v) for v in latent_vectors]
     if segmentation_algorithm == "kmeans":
         logger.info("Using kmeans as segmentation algorithm!")
         kmeans = KMeans(
@@ -471,8 +473,8 @@ def same_segmentation(
                 random_state=random_state,
                 verbose=True,
             )
-            hmm_model.fit(latent_vector_cat)
-            labels = hmm_model.predict(latent_vector_cat)
+            hmm_model.fit(latent_vector_cat, lengths=session_lengths)
+            labels = hmm_model.predict(latent_vector_cat, lengths=session_lengths)
             model_path = Path(config["project_path"]) / "results" / "hmm_trained.pkl"
             with open(model_path, "wb") as file:
                 pickle.dump(hmm_model, file)
@@ -481,7 +483,7 @@ def same_segmentation(
             model_path = Path(config["project_path"]) / "results" / "hmm_trained.pkl"
             with open(model_path, "rb") as file:
                 hmm_model = pickle.load(file)
-            labels = hmm_model.predict(latent_vector_cat)
+            labels = hmm_model.predict(latent_vector_cat, lengths=session_lengths)
 
     elif segmentation_algorithm == "hmm_warmstart":
         logger.info("Using a warm-started HMM as segmentation algorithm!")
@@ -559,7 +561,7 @@ def same_segmentation(
         hmm_model.n_features = warmstart_model.n_features
         parallel_gaussian_hmm_fit(hmm_model, latent_vectors, n_jobs=hmm_n_jobs)
 
-        labels = hmm_model.predict(latent_vector_cat)
+        labels = hmm_model.predict(latent_vector_cat, lengths=session_lengths)
 
         # Saved under its own filename so it can be reused as a future project's
         # hmm_warmstart_pretrained_path. Unlike "hmm"'s hmm_trained flag, this is
