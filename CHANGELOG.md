@@ -10,10 +10,11 @@
 - `dandiset_parse` and `dandiset_load` take `dandi_instance` (default `"dandi"`) to read from other DANDI instances such as `"dandi-sandbox"`, and authenticate when the instance's API key is set (`DANDI_API_KEY`, `DANDI_SANDBOX_API_KEY`), so embargoed dandisets can be read
 - `dandiset_load(..., download=True)` downloads each NWB file to a temporary folder and reads it locally instead of streaming it, which is faster for files that hold little besides pose data
 - `motif_videos` and `community_videos` take `sessions` to write videos only for specific sessions
+- New segmentation algorithm `hmm_warmstart`. ([PR #235](https://github.com/EthoML/VAME/pull/235))
 
 ### Changes
 
-- Dependencies: `dandi>=0.81.0` and `remfile>=0.1.14` for the `dandi` extra, `ndx-pose`, `imageio` and `imageio-ffmpeg` unpinned, `xarray` added.
+- Dependencies: `dandi>=0.81.0` and `remfile>=0.1.14` for the `dandi` extra, `ndx-pose`, `imageio` and `imageio-ffmpeg` unpinned, `xarray` added, `hmmlearn` pinned to `0.3.3` because `hmm_warmstart` uses its private API.
 - `vame.preprocessing` reads and writes each session's file once, instead of once per step. Results are unchanged and preprocessing is 4-5x faster. New per-dataset functions: `lowconf_clean_dataset`, `egocentrically_align_dataset`, `outlier_clean_dataset`, `savgol_filter_dataset`, `rescale_dataset`
 - `umap` is imported only when a UMAP embedding is computed (`visualize_umap`, `gif`)
 - `vame.preprocessing` runs rescaling by default (`run_rescaling=True`). Pose coordinates are divided by each animal's `individual_scale`, so models train on body-size-normalized poses
