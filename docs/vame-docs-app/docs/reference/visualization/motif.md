@@ -8,7 +8,7 @@ title: visualization.motif
 ```python
 def visualize_motif_thresholding(
     config: dict,
-    segmentation_algorithm: Literal["hmm", "kmeans"] = "hmm",
+    segmentation_algorithm: Literal["hmm", "kmeans", "hmm_warmstart"] = "hmm",
     n_clusters: int | None = None,
     threshold: float = 1.0,
     show_figure: bool = True,
@@ -20,7 +20,7 @@ Visualizes the motif usage with thresholding.
 
 **Parameters**
 
-* **segmentation_algorithm** (`Literal["hmm", "kmeans"], optional`): Segmentation algorithm, by default &quot;hmm&quot;.
+* **segmentation_algorithm** (`Literal["hmm", "kmeans", "hmm_warmstart"], optional`): Segmentation algorithm, by default &quot;hmm&quot;.
 * **n_clusters** (`Optional[int], optional`): Number of clusters, by default None. If None, it uses the value from config[&quot;n_clusters&quot;].
 * **threshold** (`float, optional`): Threshold, by default 1.0.
 * **show_figure** (`bool, optional`): Whether to show the figure, by default True.
