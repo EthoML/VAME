@@ -110,7 +110,8 @@ Sort communities and motifs by their left-to-right position in the tree visualiz
 def create_cohort_community_bag(
         config: dict, motif_labels: List[np.ndarray],
         trans_mat_full: np.ndarray, cut_tree: int | None, n_clusters: int,
-        segmentation_algorithm: Literal["hmm", "kmeans"]) -> list
+        segmentation_algorithm: Literal["hmm", "kmeans",
+                                        "hmm_warmstart"]) -> list
 ```
 
 Create cohort community bag for given motif labels, transition matrix,

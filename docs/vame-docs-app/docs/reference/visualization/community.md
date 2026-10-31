@@ -62,7 +62,7 @@ Draw a tree.
 ```python
 def visualize_hierarchical_tree(config: dict,
                                 segmentation_algorithm: Literal[
-                                    "hmm", "kmeans"] = "hmm",
+                                    "hmm", "kmeans", "hmm_warmstart"] = "hmm",
                                 show_figure: bool = True) -> plt.Figure
 ```
 
@@ -71,7 +71,7 @@ Visualizes the hierarchical tree.
 **Parameters**
 
 * **config** (`dict`): Configuration dictionary.
-* **segmentation_algorithm** (`Literal["hmm", "kmeans"]`): Segmentation algorithm. Defaults to &quot;hmm&quot;.
+* **segmentation_algorithm** (`Literal["hmm", "kmeans", "hmm_warmstart"]`): Segmentation algorithm. Defaults to &quot;hmm&quot;.
 * **show_figure** (`bool`): Whether to show the figure. Defaults to True.
 
 **Returns**

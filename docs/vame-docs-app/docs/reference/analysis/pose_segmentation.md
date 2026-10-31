@@ -93,11 +93,60 @@ Saves pose segmentation data for given session.
 * **cluster_centers: np.ndarray**: Array of the session&#x27;s kmeans cluster centers location in the latent space.
 * **motif_usage: np.ndarray**: Array of the session&#x27;s motif usage counts.
 * **n_clusters** (`int`): Number of clusters.
-* **segmentation_algorithm: str**: Type of segmentation method, either &#x27;kmeans or &#x27;hmm&#x27;.
+* **segmentation_algorithm: str**: Type of segmentation method: &#x27;kmeans&#x27;, &#x27;hmm&#x27;, or &#x27;hmm_warmstart&#x27;.
 
 **Returns**
 
 * `None`
+
+#### \_session\_estep
+
+```python
+def _session_estep(model: "hmm.GaussianHMM",
+                   session_data: np.ndarray) -> Tuple[dict, float]
+```
+
+The expensive, session-independent half of one Baum-Welch iteration:
+forward-backward + sufficient-statistics accumulation for a single
+session, against the model&#x27;s current parameters. Designed to be run in
+parallel across sessions via joblib - safe to do so because sufficient
+statistics are purely additive across independent sequences (this is the
+same assumption hmmlearn&#x27;s own sequential per-sequence loop relies on).
+
+#### \_merge\_stats
+
+```python
+def _merge_stats(stats_list: List[dict]) -> dict
+```
+
+Sum per-session sufficient statistics into one combined stats dict.
+Values are either plain int (nobs) or np.ndarray; `+` handles both and
+always returns a new object, so no explicit .copy() is needed.
+
+#### parallel\_gaussian\_hmm\_fit
+
+```python
+def parallel_gaussian_hmm_fit(model: "hmm.GaussianHMM",
+                              session_arrays: List[np.ndarray],
+                              n_jobs: int = 1) -> "hmm.GaussianHMM"
+```
+
+Equivalent to model.fit(np.concatenate(session_arrays), lengths=[...]),
+with the E-step (forward-backward per session) parallelized across
+processes instead of hmmlearn&#x27;s own single-threaded per-sequence loop.
+Mirrors hmmlearn.base.BaseHMM.fit() exactly (same _init/_check/monitor_
+calls) - only how the E-step&#x27;s stats/logprob get computed differs.
+
+**Parameters**
+
+* **model** (`hmm.GaussianHMM`): A configured (not yet fit) GaussianHMM instance.
+* **session_arrays** (`List[np.ndarray]`): Per-session latent vector arrays.
+* **n_jobs** (`int, optional`): Passed to joblib.Parallel. 1 = sequential (no process overhead),
+-1 = use all available cores. Defaults to 1.
+
+**Returns**
+
+* `hmm.GaussianHMM`: The same model instance, fit in place.
 
 #### same\_segmentation
 
@@ -137,10 +186,14 @@ Creates files at:
 - project_name/
     - results/
         - hmm_trained.pkl
+        - hmm_warmstart_trained.pkl
         - session/
             - model_name/
                 - latent_vectors.npy
                 - hmm-n_clusters/
+                    - motif_usage_session.npy
+                    - n_cluster_label_session.npy
+                - hmm_warmstart-n_clusters/
                     - motif_usage_session.npy
                     - n_cluster_label_session.npy
                 - kmeans-n_clusters/
