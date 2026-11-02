@@ -6,6 +6,7 @@ on:
       - main
     paths:
       - '.github/workflows/testing.yaml'
+      - 'pyproject.toml'
       - 'src/**'
       - 'tests/**'
   pull_request:
@@ -14,8 +15,11 @@ on:
       - dev
     paths:
       - '.github/workflows/testing.yaml'
+      - 'pyproject.toml'
       - 'src/**'
       - 'tests/**'
+  # Called by publish_main.yaml before publishing
+  workflow_call:
 
 jobs:
   run:
