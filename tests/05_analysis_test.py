@@ -120,15 +120,15 @@ def test_cohort_community_files_exists(setup_project_and_segment):
         assert cohort_community_bag_path.exists()
 
 
-def test_community_videos_mp4_files_exists(setup_project_and_segment):
+def test_community_videos_mp4_files_exists(setup_project_and_community):
     vame.community_videos(
-        config=setup_project_and_segment["config_data"],
+        config=setup_project_and_community["config_data"],
         save_logs=True,
     )
-    file = setup_project_and_segment["config_data"]["session_names"][0]
-    model_name = setup_project_and_segment["config_data"]["model_name"]
-    n_clusters = setup_project_and_segment["config_data"]["n_clusters"]
-    project_path = setup_project_and_segment["config_data"]["project_path"]
+    file = setup_project_and_community["config_data"]["session_names"][0]
+    model_name = setup_project_and_community["config_data"]["model_name"]
+    n_clusters = setup_project_and_community["config_data"]["n_clusters"]
+    project_path = setup_project_and_community["config_data"]["project_path"]
     segmentation_algorithms = ["hmm", "kmeans"]
     for seg in segmentation_algorithms:
         save_base_path = (
@@ -177,9 +177,9 @@ def test_generative_model_figures(
     assert isinstance(generative_figure, Figure)
 
 
-def test_report(setup_project_and_segment):
-    generate_reports(config=setup_project_and_segment["config_data"], show_figure=False)
-    reports_path = Path(setup_project_and_segment["config_data"]["project_path"]) / "reports"
+def test_report(setup_project_and_community):
+    generate_reports(config=setup_project_and_community["config_data"], show_figure=False)
+    reports_path = Path(setup_project_and_community["config_data"]["project_path"]) / "reports"
     assert len(list(reports_path.glob("*.png"))) > 0
 
 
