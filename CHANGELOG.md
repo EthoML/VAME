@@ -2,8 +2,9 @@
 
 ### Upgrading from 0.14
 
+- Re-run segmentation and every step after it. From 0.7.0 to 0.14.4, segmentation encoded poses without the normalization used in training, so motif labels from those versions are off. Trained models do not need retraining
+- When re-running in an existing project, use `vame.segment_session(config, overwrite_embeddings=True, overwrite_segmentation=True)`, set `hmm_trained: false` in `config.yaml`, and delete `results/umap_embedding.nc`. Otherwise the old latent vectors, HMM and UMAP embedding are reused
 - `vame.preprocessing` now rescales poses by default, so new models train on body-size-normalized poses. Pass `run_rescaling=False` to keep the previous behavior
-- Regenerate segmentation results computed with earlier versions: `vame.segment_session(config, overwrite_embeddings=True, overwrite_segmentation=True)`. Trained models do not need retraining
 
 ### Features
 
@@ -14,12 +15,13 @@
 
 ### Changes
 
-- Dependencies: `dandi>=0.81.0` and `remfile>=0.1.14` for the `dandi` extra, `ndx-pose`, `imageio` and `imageio-ffmpeg` unpinned, `xarray` added, `hmmlearn` pinned to `0.3.3` because `hmm_warmstart` uses its private API.
+- Dependencies: `dandi>=0.81.0` and `remfile>=0.1.14` for the `dandi` extra, `ndx-pose`, `imageio` and `imageio-ffmpeg` unpinned, `xarray`, `pooch` and `requests` added, `hmmlearn` pinned to `0.3.3`.
 - `vame.preprocessing` reads and writes each session's file once, instead of once per step. Results are unchanged and preprocessing is 4-5x faster. New per-dataset functions: `lowconf_clean_dataset`, `egocentrically_align_dataset`, `outlier_clean_dataset`, `savgol_filter_dataset`, `rescale_dataset`
 - `umap` is imported only when a UMAP embedding is computed (`visualize_umap`, `gif`)
 - `vame.preprocessing` runs rescaling by default (`run_rescaling=True`). Pose coordinates are divided by each animal's `individual_scale`, so models train on body-size-normalized poses
 - `vame.preprocessing` saves its last output variable to the config as `preprocessed_variable`, and `create_trainset` reads from it by default.
 - Removed the old references to `individual_segmentation` and `n_init_kmeans` config options.
+- `segment_session` no longer takes `optimized`.
 - Removed `generative_model(mode="motifs")`, a legacy mode that plotted only the first motif and failed on motifs with fewer than 10 frames.
 - `export_to_nwb` writes one NWB file per session, `results/<session>/<model_name>/<session>.nwb`, holding the motifs and communities of every segmentation algorithm. Requires `ndx-vame>=0.3.2`.
 
@@ -35,14 +37,14 @@
 - `export_to_nwb` raises a clear error for projects without fps.
 - `export_to_nwb` no longer modifies `nwbfile_kwargs` and `subject_kwargs`, and passes every `nwbfile_kwargs` key to the NWB file.
 - Fixes `states.json` to record the function's own defaults values.
-- Segmentation normalizes its input with the training statistics (`data/train/seq_mean.npy`, `seq_std.npy`) before encoding. Trained models are not affected. Regenerate results with `vame.segment_session(config, overwrite_embeddings=True, overwrite_segmentation=True)`
+- Segmentation normalizes its input with the training statistics (`data/train/seq_mean.npy`, `seq_std.npy`) before encoding. Trained models are not affected. See Upgrading from 0.14
 - `create_trainset` computes the normalization statistics and overwrites them on every run, and records them in `metadata.json` under `normalization`. Before, the training dataloader wrote them only if the files did not exist, so re-creating the training set with other keypoints, features or sessions reused stale values
 - Segmentation logs a warning when a session's normalized input is far from the training distribution
-- Optimized embedding builds sliding windows as (time, features) with a vectorized view, replacing the slow fallback loop that every session hit. Fixes transposed encoder input when the number of features equaled `time_window`
+- `embed_latent_vectors` builds sliding windows as (time, features) with a vectorized view, replacing the slow fallback loop that every session hit. Fixes transposed encoder input when the number of features equaled `time_window`
 - Segmentation embeds the same variable the model was trained on, read from `data/train/metadata.json`. Before, it always read `position_processed`, so models trained on `position_scaled` (e.g. through `Pipeline.run_pipeline` with rescaling) were segmented on unscaled data
-- `embed_latent_vectors` and `embed_latent_vectors_optimized` create the session results folder before saving, so they also work when called outside `segment_session`
+- `embed_latent_vectors` creates the session results folder before saving, so it also works when called outside `segment_session`
 - The `hmm` segmentation fits and decodes each session separately. Before, it treated all sessions as one recording, so each session's first frames were decoded from the previous session's last state, and the start probabilities were learned from the first frame only.
-- `download_sample_data` downloads from movement's sample-data repository on SWC GIN (gin.swc.ucl.ac.uk) with `pooch`, instead of through `movement.sample_data`, which up to movement 0.17.0 uses G-Node GIN (gin.g-node.org) and is often unreachable. `pooch` is now a direct dependency
+- `download_sample_data` downloads from movement's sample-data repository on SWC GIN (gin.swc.ucl.ac.uk) with `pooch`, instead of through `movement.sample_data`, which up to movement 0.17.0 uses G-Node GIN (gin.g-node.org) and is often unreachable
 
 
 # v0.14.4
