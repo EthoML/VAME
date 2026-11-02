@@ -99,7 +99,7 @@ Based on two reference keypoints, the data will be aligned to an egocentric coor
 By consequence, the `x` and `y` coordinates of the `centered_reference_keypoint` and the `x` coordinate of the `orientation_reference_keypoint` will be set to an array of zeros, and further removed from the dataset.
 
 #### Outlier cleaning
-Outliers will be removed based on the interquartile range (IQR). Each coordinate series is z-scored, and points with `|z| > iqr_factor * IQR(z)` will be cleared and interpolated.
+Outliers will be removed based on the interquartile range (IQR) method. This means that data points that are below `Q1 - iqr_factor * IQR` or above `Q3 + iqr_factor * IQR` will be cleared and interpolated.
 
 #### Savitzky-Golay filtering
 The data will be further smoothed using a Savitzky-Golay filter.
@@ -107,17 +107,7 @@ The data will be further smoothed using a Savitzky-Golay filter.
 #### Rescaling
 Each animal's positions are divided by its body size, measured as the median distance between the two reference keypoints before alignment. This puts animals of different sizes on the same scale, so the model learns body-size-normalized poses. Rescaling runs by default; pass `run_rescaling=False` to skip it.
 
-Each step reads the output of the previous step that ran and writes a new variable to the session's file in `data/processed/`. The original poses stay in `position`.
-
-| Step | Option | Writes |
-|---|---|---|
-| Low-confidence cleaning | `run_lowconf_cleaning` | `position_cleaned_lowconf` |
-| Egocentric alignment | `run_egocentric_alignment` | `position_egocentric_aligned` |
-| Outlier cleaning | `run_outlier_cleaning` | `position_processed` |
-| Savitzky-Golay filtering | `run_savgol_filtering` | `position_processed`, replacing the outlier cleaning output |
-| Rescaling | `run_rescaling` | `position_scaled` |
-
-All options default to `True`. `vame.preprocessing` saves the name of the last variable written to the config as `preprocessed_variable`, and `create_trainset` reads from it by default.
+`vame.preprocessing` saves the name of its last output (`position_scaled` with rescaling, `position_processed` without) to the config as `preprocessed_variable`, and the training set is created from it.
 
 ```python
 vame.preprocessing(
