@@ -33,7 +33,7 @@ The [step-by-step guide](https://ethoml.github.io/VAME/docs/getting_started/step
 
 ## Installation
 
-VAME requires Python 3.12 or higher.
+VAME requires Python 3.12 or higher. It runs on Linux, Windows and macOS on Apple Silicon. Intel Macs are not supported, because PyTorch no longer publishes builds for them.
 
 ```bash
 pip install vame-py
