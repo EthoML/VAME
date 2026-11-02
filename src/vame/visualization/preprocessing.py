@@ -8,7 +8,6 @@ from vame.io.load_poses import read_pose_estimation_file
 from vame.schemas.states import save_state, PreprocessingVisualizationFunctionSchema
 from vame.logging.logger import VameLogger
 
-
 logger_config = VameLogger(__name__)
 logger = logger_config.logger
 

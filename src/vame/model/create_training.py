@@ -12,7 +12,6 @@ from vame.preprocessing.extra import validate_extra_features
 from vame.preprocessing.to_model import format_xarray_for_rnn
 from vame.model.dataloader import save_normalization
 
-
 logger_config = VameLogger(__name__)
 logger = logger_config.logger
 
@@ -135,19 +134,21 @@ def traindata_aligned(
             "method": "sequential_split",
             "split_index": test_size,
             "total_length": all_data_array.shape[1],
-            "session_boundaries": []
+            "session_boundaries": [],
         }
 
         # Calculate session boundaries in concatenated array
         cumulative_length = 0
         for i, session_array in enumerate(all_data_list):
             session_length = session_array.shape[1]
-            split_details["session_boundaries"].append({
-                "session": sessions[i],
-                "start": cumulative_length,
-                "end": cumulative_length + session_length,
-                "length": session_length
-            })
+            split_details["session_boundaries"].append(
+                {
+                    "session": sessions[i],
+                    "start": cumulative_length,
+                    "end": cumulative_length + session_length,
+                    "length": session_length,
+                }
+            )
             cumulative_length += session_length
 
         logger.info(f"Mode 1 split - Initial {test_fraction:.1%} of combined data used for testing")
@@ -181,12 +182,14 @@ def traindata_aligned(
             if train_chunk_2.shape[1] > 0:
                 train_chunks_info.append({"start": test_end, "end": session_length})
 
-            session_splits.append({
-                "session": session_name,
-                "session_length": session_length,
-                "test_chunk": {"start": test_start, "end": test_end},
-                "train_chunks": train_chunks_info
-            })
+            session_splits.append(
+                {
+                    "session": session_name,
+                    "session_length": session_length,
+                    "test_chunk": {"start": test_start, "end": test_end},
+                    "train_chunks": train_chunks_info,
+                }
+            )
 
             # Add to respective lists
             test_chunks.append(test_chunk)
@@ -201,10 +204,7 @@ def traindata_aligned(
         data_test = np.concatenate(test_chunks, axis=1)
         data_train = np.concatenate(train_chunks, axis=1)
 
-        split_details = {
-            "method": "random_continuous_chunks",
-            "session_splits": session_splits
-        }
+        split_details = {"method": "random_continuous_chunks", "session_splits": session_splits}
 
     # Create train directory if it doesn't exist
     train_dir = Path(project_path) / "data" / "train"
@@ -230,19 +230,15 @@ def traindata_aligned(
             "split_mode": split_mode,
             "test_fraction": test_fraction,
             "sessions_used": sessions,
-            "split_details": split_details
+            "split_details": split_details,
         },
         "data_info": {
             "train": {
                 "shape": data_train.shape,
                 "total_samples": data_train.shape[1],
-                "features": data_train.shape[0]
+                "features": data_train.shape[0],
             },
-            "test": {
-                "shape": data_test.shape,
-                "total_samples": data_test.shape[1],
-                "features": data_test.shape[0]
-            }
+            "test": {"shape": data_test.shape, "total_samples": data_test.shape[1], "features": data_test.shape[0]},
         },
         "creation_timestamp": datetime.datetime.now().isoformat(),
         "vame_version": config["vame_version"],

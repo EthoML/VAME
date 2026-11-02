@@ -79,12 +79,9 @@ def format_xarray_for_rnn(
             filtered_array.append(column_data)
 
             # Track feature mapping for metadata
-            feature_mapping.append({
-                "index": feature_index,
-                "keypoint": kp,
-                "coordinate": sp,
-                "feature_name": f"{kp}_{sp}"
-            })
+            feature_mapping.append(
+                {"index": feature_index, "keypoint": kp, "coordinate": sp, "feature_name": f"{kp}_{sp}"}
+            )
             feature_index += 1
 
     # Append pre-computed extra (non-pose) features. Each contributes one row,
@@ -93,8 +90,7 @@ def format_xarray_for_rnn(
     for name in extra_names:
         if name not in ds.data_vars:
             raise ValueError(
-                f"Extra feature '{name}' not found in dataset; "
-                f"available data variables: {list(ds.data_vars)}"
+                f"Extra feature '{name}' not found in dataset; " f"available data variables: {list(ds.data_vars)}"
             )
         da = ds[name]
         if "individuals" in da.dims:
@@ -103,11 +99,13 @@ def format_xarray_for_rnn(
             series = da.values
         series = np.asarray(series).reshape(-1)
         filtered_array.append(series)
-        feature_mapping.append({
-            "index": feature_index,
-            "extra_feature": name,
-            "feature_name": name,
-        })
+        feature_mapping.append(
+            {
+                "index": feature_index,
+                "extra_feature": name,
+                "feature_name": name,
+            }
+        )
         feature_index += 1
 
     filtered_array = np.array(filtered_array)
@@ -125,7 +123,7 @@ def format_xarray_for_rnn(
             "extra_features": extra_names,
             "total_features": len(feature_mapping),
             "data_shape": filtered_array.shape,
-        }
+        },
     }
 
     return filtered_array, metadata

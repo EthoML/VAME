@@ -6,7 +6,6 @@ import matplotlib.pyplot as plt
 from vame.schemas.states import GenerateReportsFunctionSchema, save_state
 from vame.logging.logger import VameLogger
 
-
 logger_config = VameLogger(__name__)
 logger = logger_config.logger
 
@@ -198,7 +197,8 @@ def report(
                 show_figure=show_figure,
                 save_to_file=save_to_file,
                 save_path=str(
-                    report_folder / f"community_motifs_{session}_{model_name}_{segmentation_algorithm}-{n_clusters}.png"
+                    report_folder
+                    / f"community_motifs_{session}_{model_name}_{segmentation_algorithm}-{n_clusters}.png"
                 ),
             )
     finally:

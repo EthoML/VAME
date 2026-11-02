@@ -16,7 +16,6 @@ from vame.logging.logger import VameLogger, TqdmToLogger
 from vame.schemas.project import SegmentationAlgorithms
 from vame.video.video import get_session_video_path
 
-
 logger_config = VameLogger(__name__)
 logger = logger_config.logger
 

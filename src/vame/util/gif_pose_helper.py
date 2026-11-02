@@ -12,7 +12,6 @@ from vame.util.data_manipulation import (
     background,
 )
 
-
 logger_config = VameLogger(__name__)
 logger = logger_config.logger
 

@@ -8,7 +8,6 @@ from requests.exceptions import RequestException
 
 from vame.logging.logger import VameLogger
 
-
 logger_config = VameLogger(__name__)
 logger = logger_config.logger
 

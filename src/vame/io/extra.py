@@ -9,7 +9,6 @@ from vame.io.load_poses import load_vame_dataset
 from vame.logging.logger import VameLogger
 from vame.util.auxiliary import write_config
 
-
 logger_config = VameLogger(__name__)
 logger = logger_config.logger
 
@@ -74,9 +73,7 @@ def add_extra_features(
 
     preprocessed_variable = config.get("preprocessed_variable", "position_processed")
     if preprocessed_variable not in ds.data_vars:
-        raise ValueError(
-            f"Session '{session}' has no '{preprocessed_variable}' variable. Run preprocessing first."
-        )
+        raise ValueError(f"Session '{session}' has no '{preprocessed_variable}' variable. Run preprocessing first.")
 
     expected_time = ds.sizes["time"]
     n_individuals = ds.sizes.get("individuals", 1)
@@ -104,9 +101,7 @@ def add_extra_features(
     tmp_path = nc_path.with_suffix(".nc.tmp")
     ds.to_netcdf(path=tmp_path, engine="netcdf4")
     os.replace(tmp_path, nc_path)
-    logger.info(
-        f"Added {len(features)} extra feature(s) to {session}: {list(features.keys())}"
-    )
+    logger.info(f"Added {len(features)} extra feature(s) to {session}: {list(features.keys())}")
 
     if register_in_config:
         existing = list(config.get("extra_features") or [])

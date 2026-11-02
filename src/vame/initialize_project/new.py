@@ -13,7 +13,6 @@ from vame.video.video import VIDEO_SUFFIXES, get_video_frame_rate, is_video_file
 from vame.io.load_poses import load_pose_estimation
 from movement.io.load import infer_source_software
 
-
 logger_config = VameLogger(__name__)
 logger = logger_config.logger
 
@@ -140,7 +139,9 @@ def init_new_project(
 
         filetype = poses_estimations[0].split(".")[-1]
         if filetype not in ("csv", "nwb", "slp", "h5", "nc"):
-            raise ValueError(f"Unsupported pose estimation file type: {filetype}. Must be one of: csv, nwb, slp, h5, nc")
+            raise ValueError(
+                f"Unsupported pose estimation file type: {filetype}. Must be one of: csv, nwb, slp, h5, nc"
+            )
         pose_estimation_filetype = cast(Literal["csv", "nwb", "slp", "h5", "nc"], filetype)
 
         # Creates directories under project/results/
@@ -183,8 +184,7 @@ def init_new_project(
                     "one video per pose estimation file, in the same order."
                 )
             destinations = [
-                data_raw_path / f"{session_names[idx]}{Path(vp).suffix}"
-                for idx, vp in enumerate(videos_paths)
+                data_raw_path / f"{session_names[idx]}{Path(vp).suffix}" for idx, vp in enumerate(videos_paths)
             ]
             for src, dst in zip(videos_paths, destinations):
                 if copy_videos:
@@ -294,7 +294,7 @@ def init_new_project(
     except BaseException as e:
         # Roll back the partially-created project so a failed run leaves nothing
         # behind. shutil.rmtree unlinks any video *symlinks* without following
-        # them, so the user's source videos are never deleted. 
+        # them, so the user's source videos are never deleted.
         if cleanup_on_error:
             logger.error(f"Project creation failed ({e!r}); removing partial project at {project_path}")
             shutil.rmtree(project_path, ignore_errors=True)

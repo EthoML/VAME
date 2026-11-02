@@ -41,7 +41,6 @@ def test_egocentric_alignment_file_is_created(setup_project_and_align_egocentric
     assert os.path.exists(file_path)
 
 
-
 def test_download_sample_data():
     """
     Test if the download_sample_data function returns a dictionary with the expected keys.

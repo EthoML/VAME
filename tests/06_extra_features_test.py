@@ -155,5 +155,7 @@ def test_extra_features_without_position_processed(tmp_path):
         "session_names": ["s1"],
         "preprocessed_variable": "position_scaled",
     }
-    vame.io.add_extra_features(config=config, session="s1", features={"speed": np.arange(5.0)}, register_in_config=False)
+    vame.io.add_extra_features(
+        config=config, session="s1", features={"speed": np.arange(5.0)}, register_in_config=False
+    )
     vame.validate_extra_features(config=config, extra_features=["speed"])

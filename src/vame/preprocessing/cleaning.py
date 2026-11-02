@@ -6,7 +6,6 @@ import xarray as xr
 from vame.logging.logger import VameLogger
 from vame.io.load_poses import read_pose_estimation_file
 
-
 logger_config = VameLogger(__name__)
 logger = logger_config.logger
 
@@ -242,9 +241,7 @@ def outlier_clean_dataset(
                     iqr_val = iqr(z_series)
                     outlier_mask = np.abs(z_series) > iqr_factor * iqr_val
                     series[outlier_mask] = np.nan
-                    perc_interp_points[space, keypoint, individual] = (
-                        100 * np.sum(outlier_mask) / len(outlier_mask)
-                    )
+                    perc_interp_points[space, keypoint, individual] = 100 * np.sum(outlier_mask) / len(outlier_mask)
 
                     # Interpolate NaN values of the original series
                     if not outlier_mask.all():

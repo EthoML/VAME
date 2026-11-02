@@ -141,7 +141,8 @@ def test_dandiset_parse_n_items():
 
 def test_dandiset_load(two_files, tmp_path):
     nc_paths = dandiset_load(
-        DANDISET, VERSION,
+        DANDISET,
+        VERSION,
         files=two_files,
         pose_estimation_series=KEYPOINTS,
         out_dir=str(tmp_path),
@@ -158,13 +159,15 @@ def test_dandiset_load(two_files, tmp_path):
 @pytest.mark.skip(reason="Downloads a full 17 GB NWB file")
 def test_dandiset_load_download(two_files, tmp_path):
     streamed = dandiset_load(
-        DANDISET, VERSION,
+        DANDISET,
+        VERSION,
         files=two_files[:1],
         pose_estimation_series=KEYPOINTS,
         out_dir=str(tmp_path / "streamed"),
     )
     downloaded = dandiset_load(
-        DANDISET, VERSION,
+        DANDISET,
+        VERSION,
         files=two_files[:1],
         pose_estimation_series=KEYPOINTS,
         out_dir=str(tmp_path / "downloaded"),

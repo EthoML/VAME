@@ -38,7 +38,9 @@ def test_pipeline(setup_pipeline):
         show_figure=False,
         save_to_file=True,
     )
-    save_fig_path_3 = Path(project_path) / "reports" / "figures" / f"motif_thresholding_hmm_{pipeline.config['n_clusters']}.png"
+    save_fig_path_3 = (
+        Path(project_path) / "reports" / "figures" / f"motif_thresholding_hmm_{pipeline.config['n_clusters']}.png"
+    )
     assert save_fig_path_3.exists()
 
     # Test export to nwb

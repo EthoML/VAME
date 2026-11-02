@@ -6,7 +6,6 @@ from pathlib import Path
 from vame.logging.logger import VameLogger
 from vame.io.load_poses import read_pose_estimation_file
 
-
 logger_config = VameLogger(__name__)
 logger = logger_config.logger
 

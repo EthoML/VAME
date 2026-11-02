@@ -13,7 +13,6 @@ from vame.util.cli import get_sessions_from_user_input
 from vame.logging.logger import VameLogger
 from vame.schemas.project import SegmentationAlgorithms
 
-
 logger_config = VameLogger(__name__)
 logger = logger_config.logger
 

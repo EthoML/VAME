@@ -17,7 +17,6 @@ from vame.visualization import (
 )
 from vame.logging.logger import VameLogger
 
-
 logger_config = VameLogger(__name__)
 logger = logger_config.logger
 

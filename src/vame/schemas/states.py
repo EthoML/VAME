@@ -53,8 +53,7 @@ class CreateTrainsetFunctionSchema(BaseStateSchema):
     )
 
 
-class TrainModelFunctionSchema(BaseStateSchema):
-    ...
+class TrainModelFunctionSchema(BaseStateSchema): ...
 
 
 class EvaluateModelFunctionSchema(BaseStateSchema):
@@ -64,12 +63,10 @@ class EvaluateModelFunctionSchema(BaseStateSchema):
     )
 
 
-class SegmentSessionFunctionSchema(BaseStateSchema):
-    ...
+class SegmentSessionFunctionSchema(BaseStateSchema): ...
 
 
-class MotifVideosFunctionSchema(BaseStateSchema):
-    ...
+class MotifVideosFunctionSchema(BaseStateSchema): ...
 
 
 class CommunityFunctionSchema(BaseStateSchema):
@@ -79,12 +76,10 @@ class CommunityFunctionSchema(BaseStateSchema):
     )
 
 
-class CommunityVideosFunctionSchema(BaseStateSchema):
-    ...
+class CommunityVideosFunctionSchema(BaseStateSchema): ...
 
 
-class GenerateReportsFunctionSchema(BaseStateSchema):
-    ...
+class GenerateReportsFunctionSchema(BaseStateSchema): ...
 
 
 class PreprocessingFunctionSchema(BaseStateSchema):

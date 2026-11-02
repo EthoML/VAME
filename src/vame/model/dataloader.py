@@ -31,9 +31,7 @@ def load_normalization(train_dir: str | Path) -> tuple[float, float]:
     mean_path = Path(train_dir) / "seq_mean.npy"
     std_path = Path(train_dir) / "seq_std.npy"
     if not mean_path.exists() or not std_path.exists():
-        raise FileNotFoundError(
-            f"Normalization statistics not found in {train_dir}. Run vame.create_trainset first."
-        )
+        raise FileNotFoundError(f"Normalization statistics not found in {train_dir}. Run vame.create_trainset first.")
     return float(np.load(mean_path)), float(np.load(std_path))
 
 

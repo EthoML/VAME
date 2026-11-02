@@ -11,7 +11,6 @@ from enum import Enum
 from vame.logging.logger import VameLogger
 from vame.schemas.states import save_state, UpdateConfigFunctionSchema
 
-
 logger_config = VameLogger(__name__)
 logger = logger_config.logger
 

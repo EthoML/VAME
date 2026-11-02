@@ -17,7 +17,6 @@ from vame.schemas.project import SegmentationAlgorithms
 from vame.logging.logger import VameLogger
 from vame.analysis.pose_segmentation import get_motif_usage
 
-
 logger_config = VameLogger(__name__)
 logger = logger_config.logger
 

@@ -21,7 +21,6 @@ from vame.preprocessing.extra import validate_extra_features
 from vame.preprocessing.to_model import format_xarray_for_rnn
 from vame.model.dataloader import load_normalization
 
-
 logger_config = VameLogger(__name__)
 logger = logger_config.logger
 
@@ -174,9 +173,7 @@ def embed_latent_vectors(
         n_batches = (n_windows + batch_size - 1) // batch_size
 
         with torch.no_grad():
-            for batch_idx in tqdm.tqdm(range(n_batches),
-                                     desc=f"Processing {session}",
-                                     file=tqdm_stream):
+            for batch_idx in tqdm.tqdm(range(n_batches), desc=f"Processing {session}", file=tqdm_stream):
                 # Calculate batch boundaries
                 start_idx = batch_idx * batch_size
                 end_idx = min(start_idx + batch_size, n_windows)
@@ -206,8 +203,10 @@ def embed_latent_vectors(
 
                         # Process windows one by one for this batch
                         for i in range(current_batch_size):
-                            single_window = batch_windows[i:i+1]
-                            single_tensor = torch.from_numpy(np.ascontiguousarray(single_window, dtype=np.float32)).to(device)
+                            single_window = batch_windows[i : i + 1]
+                            single_tensor = torch.from_numpy(np.ascontiguousarray(single_window, dtype=np.float32)).to(
+                                device
+                            )
 
                             h_n = model.encoder(single_tensor)
                             mu, _, _ = model.lmbda(h_n)
@@ -408,8 +407,7 @@ def parallel_gaussian_hmm_fit(
 
             if (model.transmat_.sum(axis=1) == 0).any():
                 logger.warning(
-                    "Some rows of transmat_ have zero sum because no "
-                    "transition from the state was ever observed."
+                    "Some rows of transmat_ have zero sum because no " "transition from the state was ever observed."
                 )
     return model
 
@@ -733,7 +731,9 @@ def segment_session(
                 "to get the full picture of the spatiotemporal dynamic. To get an idea of the behavior captured by VAME, "
                 "run vame.motif_videos(). This will leave you with short snippets of certain movements."
             )
-            logger.info("To visualize the average motif usage across sessions, run vame.visualization.plot_motif_thresholding.")
+            logger.info(
+                "To visualize the average motif usage across sessions, run vame.visualization.plot_motif_thresholding."
+            )
 
     except Exception as e:
         logger.exception(f"An error occurred during pose segmentation: {e}")

@@ -12,7 +12,6 @@ from vame.logging.logger import VameLogger
 from vame.io import load_vame_dataset
 from vame.util.auxiliary import get_version
 
-
 logger_config = VameLogger(__name__)
 logger = logger_config.logger
 
@@ -55,7 +54,7 @@ def get_base_nwbfile(
     pose_estimation_series_kwargs = {}
     if getattr(ds, "fps", None):
         pose_estimation_series_kwargs["rate"] = ds.fps
-        pose_estimation_series_kwargs["starting_time"] = 0.
+        pose_estimation_series_kwargs["starting_time"] = 0.0
     else:
         pose_estimation_series_kwargs["timestamps"] = ds.sel(keypoints=keypoints[0]).time.values
     pose_estimation_series_kwargs["reference_frame"] = "(0,0,0) corresponds to ..."
@@ -154,14 +153,12 @@ def export_to_nwb(
 
         # Latent space data
         latent_path = (
-            Path(config["project_path"]) /
-            "results" /
-            session_name /
-            model_name /
-            "latent_vectors.npy"
+            Path(config["project_path"]) / "results" / session_name / model_name / "latent_vectors.npy"
         ).resolve()
         if not latent_path.exists():
-            raise ValueError(f"Latent space data not found at: {latent_path}. Make sure to run vame.segment_session() first.")
+            raise ValueError(
+                f"Latent space data not found at: {latent_path}. Make sure to run vame.segment_session() first."
+            )
         latent_data = np.load(latent_path)
 
         nwbfile = get_base_nwbfile(
@@ -184,7 +181,9 @@ def export_to_nwb(
             seg_path = Path(config["project_path"]) / "results" / session_name / model_name / f"{seg}-{n_clusters}"
             motifs_path = (seg_path / f"{n_clusters}_{seg}_label_{session_name}.npy").resolve()
             if not motifs_path.exists():
-                raise ValueError(f"Motif data not found at: {motifs_path}. Make sure to run vame.segment_session() first.")
+                raise ValueError(
+                    f"Motif data not found at: {motifs_path}. Make sure to run vame.segment_session() first."
+                )
             motif_series = ndx_vame.MotifSeries(
                 name=f"MotifSeries{seg.capitalize()}",
                 description=f"VAME motifs from {seg} with {n_clusters} clusters.",
@@ -197,7 +196,9 @@ def export_to_nwb(
 
             community_path = (seg_path / "community" / f"cohort_community_label_{session_name}.npy").resolve()
             if not community_path.exists():
-                raise ValueError(f"Community data not found at: {community_path}. Make sure to run vame.community() first.")
+                raise ValueError(
+                    f"Community data not found at: {community_path}. Make sure to run vame.community() first."
+                )
             community_series_list.append(
                 ndx_vame.CommunitySeries(
                     name=f"CommunitySeries{seg.capitalize()}",
@@ -221,7 +222,9 @@ def export_to_nwb(
         )
         behavior_pm.add(vame_project)
 
-        nwbfile_path = (Path(config["project_path"]) / "results" / session_name / model_name / f"{session_name}.nwb").resolve()
+        nwbfile_path = (
+            Path(config["project_path"]) / "results" / session_name / model_name / f"{session_name}.nwb"
+        ).resolve()
         with pynwb.NWBHDF5IO(str(nwbfile_path), "w") as io:
             io.write(nwbfile)
         logger.info(f"{session_name} saved to NWB file at: {nwbfile_path}.")

@@ -52,7 +52,9 @@ def test_pose_segmentation_hmm_warmstart_files_exists(setup_project_and_train_mo
         vame.segment_session(config=config, overwrite_segmentation=True, save_logs=True)
     file = config["session_names"][0]
     n_clusters = config["n_clusters"]
-    save_base_path = Path(config["project_path"]) / "results" / file / config["model_name"] / f"hmm_warmstart-{n_clusters}"
+    save_base_path = (
+        Path(config["project_path"]) / "results" / file / config["model_name"] / f"hmm_warmstart-{n_clusters}"
+    )
 
     assert (save_base_path / f"motif_usage_{file}.npy").exists()
     assert (save_base_path / f"{n_clusters}_hmm_warmstart_label_{file}.npy").exists()
@@ -65,8 +67,12 @@ def test_pose_segmentation_pretrained_hmm(setup_project_and_train_model, tmp_pat
     session = config["session_names"][0]
     n_clusters = config["n_clusters"]
     label_path = (
-        Path(config["project_path"]) / "results" / session / config["model_name"]
-        / f"hmm-{n_clusters}" / f"{n_clusters}_hmm_label_{session}.npy"
+        Path(config["project_path"])
+        / "results"
+        / session
+        / config["model_name"]
+        / f"hmm-{n_clusters}"
+        / f"{n_clusters}_hmm_label_{session}.npy"
     )
     hmm_path = Path(config["project_path"]) / "results" / "hmm_trained.pkl"
     hmm_path.unlink(missing_ok=True)

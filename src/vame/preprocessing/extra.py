@@ -6,7 +6,6 @@ import numpy as np
 from vame.io.load_poses import load_vame_dataset
 from vame.logging.logger import VameLogger
 
-
 logger_config = VameLogger(__name__)
 logger = logger_config.logger
 
@@ -98,8 +97,7 @@ def validate_extra_features(
 
             if da.sizes["time"] != expected_time:
                 problems.append(
-                    f"[{session}] '{name}' has time length {da.sizes['time']}; "
-                    f"expected {expected_time}"
+                    f"[{session}] '{name}' has time length {da.sizes['time']}; " f"expected {expected_time}"
                 )
                 continue
 
@@ -122,6 +120,5 @@ def validate_extra_features(
         raise ValueError(msg)
 
     logger.info(
-        f"validate_extra_features: {len(extra_features)} feature(s) verified across "
-        f"{len(sessions)} session(s)."
+        f"validate_extra_features: {len(extra_features)} feature(s) verified across " f"{len(sessions)} session(s)."
     )

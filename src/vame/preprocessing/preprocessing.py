@@ -13,7 +13,6 @@ from vame.preprocessing.scaling import rescale_dataset
 from vame.schemas.states import save_state, PreprocessingFunctionSchema
 from vame.util.auxiliary import update_config
 
-
 logger_config = VameLogger(__name__)
 logger = logger_config.logger
 
@@ -205,4 +204,3 @@ def preprocess_session(file_path: str, steps: List[Tuple[Callable, dict]]) -> No
     tmp_path = f"{file_path}.tmp"
     ds.to_netcdf(path=tmp_path, engine="netcdf4")
     os.replace(tmp_path, file_path)
-
