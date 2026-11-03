@@ -461,7 +461,8 @@ def same_segmentation(
             init="k-means++",
             n_clusters=n_clusters,
             random_state=random_state,
-            n_init=config.get("kmeans_n_init", 20),
+            # Configs upgraded from 0.14 get kmeans_n_init: null when rewritten
+            n_init=config.get("kmeans_n_init") or 20,
         ).fit(fit_data)
         cluster_centers = kmeans.cluster_centers_
         # 1D, vector of all labels for the entire cohort
