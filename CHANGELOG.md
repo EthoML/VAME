@@ -12,6 +12,7 @@
 - `dandiset_load(..., download=True)` downloads each NWB file to a temporary folder and reads it locally instead of streaming it, which is faster for files that hold little besides pose data
 - `motif_videos` and `community_videos` take `sessions` to write videos only for specific sessions
 - New segmentation algorithm `hmm_warmstart`. ([PR #235](https://github.com/EthoML/VAME/pull/235))
+- Config fields `kmeans_n_init` (default 20) and `kmeans_fit_samples` (default `None`, all frames) to speed up k-means segmentation on large datasets. ([Issue #234](https://github.com/EthoML/VAME/issues/234))
 
 ### Changes
 

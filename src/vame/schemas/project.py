@@ -222,6 +222,15 @@ class ProjectSchema(BaseModel):
         title="Number of iterations for HMM",
         default=100,
     )
+    kmeans_n_init: int = Field(
+        title="Number of times k-means is run with different centroid seeds. The best run is kept.",
+        default=20,
+    )
+    kmeans_fit_samples: Optional[int] = Field(
+        title="Number of randomly sampled frames k-means is fit on. Every frame is then labeled. "
+        "None fits on all frames.",
+        default=None,
+    )
     hmm_warmstart_stride: int = Field(
         title="Frame stride used to pre-fit the warm-start HMM before polishing at full resolution. "
         "Default tuned on one diagnostic dataset (stride 5 beat 3 and 6 on both speed and stability); "

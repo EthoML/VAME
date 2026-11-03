@@ -74,6 +74,8 @@ Some fields are kept so older projects still load, but are not read by the curre
 | `segmentation_algorithms` | `List[str]` | `["hmm", "kmeans"]` | Algorithms used to segment the latent space into motifs. |
 | `hmm_trained` | `bool` | `False` | When true, segmentation loads the HMM saved in `results/hmm_trained.pkl` instead of fitting a new one. |
 | `hmm_n_iter` | `int` | `100` | Maximum number of iterations when fitting the HMM. |
+| `kmeans_n_init` | `int` | `20` | Number of times k-means is run with different centroid seeds. The run with the lowest inertia is kept. Lower values make k-means faster on large datasets. |
+| `kmeans_fit_samples` | `Optional[int]` | `None` | Number of frames, sampled at random with `project_random_state`, that k-means is fit on. Every frame is then assigned to its nearest cluster center. `None` fits on all frames. |
 
 ### Video writer
 

@@ -450,12 +450,19 @@ def same_segmentation(
     session_lengths = [len(v) for v in latent_vectors]
     if segmentation_algorithm == "kmeans":
         logger.info("Using kmeans as segmentation algorithm!")
+        fit_data = latent_vector_cat
+        fit_samples = config.get("kmeans_fit_samples")
+        if fit_samples is not None and fit_samples < len(latent_vector_cat):
+            # Fit on a random subset of frames, then label every frame with predict
+            rng = np.random.default_rng(random_state)
+            fit_data = latent_vector_cat[rng.choice(len(latent_vector_cat), size=fit_samples, replace=False)]
+            logger.info(f"Fitting kmeans on {fit_samples} of {len(latent_vector_cat)} frames")
         kmeans = KMeans(
             init="k-means++",
             n_clusters=n_clusters,
             random_state=random_state,
-            n_init=20,
-        ).fit(latent_vector_cat)
+            n_init=config.get("kmeans_n_init", 20),
+        ).fit(fit_data)
         cluster_centers = kmeans.cluster_centers_
         # 1D, vector of all labels for the entire cohort
         labels = kmeans.predict(latent_vector_cat)
