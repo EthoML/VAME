@@ -6,7 +6,6 @@ from vame.logging.logger import VameLogger
 from vame.model.rnn_model import RNN_VAE
 from vame.util.auxiliary import get_device
 
-
 logger_config = VameLogger(__name__)
 logger = logger_config.logger
 

@@ -6,7 +6,6 @@ import numpy as np
 from vame.io.load_poses import load_vame_dataset
 from vame.logging.logger import VameLogger
 
-
 logger_config = VameLogger(__name__)
 logger = logger_config.logger
 
@@ -23,7 +22,7 @@ def validate_extra_features(
       - The processed ``.nc`` file exists.
       - The data variable is present.
       - Its dims are ``(time,)`` or ``(time, individuals)``.
-      - Its ``time`` length matches the session's ``position_processed`` time length.
+      - Its ``time`` length matches the session's time length.
       - Its dtype is numeric (float or int).
       - The first-individual slice contains no NaN or Inf values.
 
@@ -63,6 +62,7 @@ def validate_extra_features(
         sessions = config["session_names"]
 
     project_path = Path(config["project_path"])
+    preprocessed_variable = config.get("preprocessed_variable", "position_processed")
     problems: List[str] = []
 
     for session in sessions:
@@ -77,8 +77,8 @@ def validate_extra_features(
             problems.append(f"[{session}] failed to read {nc_path}: {e}")
             continue
 
-        if "position_processed" not in ds.data_vars:
-            problems.append(f"[{session}] missing 'position_processed' — run preprocessing first")
+        if preprocessed_variable not in ds.data_vars:
+            problems.append(f"[{session}] missing '{preprocessed_variable}'. Run preprocessing first")
             continue
         expected_time = ds.sizes["time"]
 
@@ -97,8 +97,7 @@ def validate_extra_features(
 
             if da.sizes["time"] != expected_time:
                 problems.append(
-                    f"[{session}] '{name}' has time length {da.sizes['time']}; "
-                    f"expected {expected_time} (position_processed)"
+                    f"[{session}] '{name}' has time length {da.sizes['time']}; " f"expected {expected_time}"
                 )
                 continue
 
@@ -121,6 +120,5 @@ def validate_extra_features(
         raise ValueError(msg)
 
     logger.info(
-        f"validate_extra_features: {len(extra_features)} feature(s) verified across "
-        f"{len(sessions)} session(s)."
+        f"validate_extra_features: {len(extra_features)} feature(s) verified across " f"{len(sessions)} session(s)."
     )

@@ -6,7 +6,6 @@ import os
 
 from vame.logging.logger import VameLogger
 
-
 logger_config = VameLogger(__name__)
 logger = logger_config.logger
 
@@ -69,7 +68,9 @@ def get_session_video_path(
     # Matched on the exact stem rather than a glob, so session names containing
     # glob metacharacters (and prefixes like Session1 vs Session10) stay distinct.
     candidates = sorted(
-        p for p in (data_raw_path.iterdir() if data_raw_path.is_dir() else []) if p.stem == session and is_video_file(p)
+        p
+        for p in (data_raw_path.iterdir() if data_raw_path.is_dir() else [])
+        if p.stem == session and is_video_file(p)
     )
 
     if not candidates:
@@ -162,7 +163,7 @@ def add_videos_to_project(
         else:
             try:
                 logger.info(f"Creating symbolic link from {src} to {dst}")
-                os.symlink(os.fspath(src), os.fspath(dst))
+                os.symlink(os.fspath(Path(src).resolve()), os.fspath(dst))
             except OSError as e:
                 raise OSError(
                     f"Failed to create a symbolic link from {src} to {dst}. "

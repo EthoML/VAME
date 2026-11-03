@@ -1,3 +1,7 @@
+import matplotlib
+
+matplotlib.use("Agg")
+
 from pytest import fixture, raises
 from pathlib import Path
 import shutil
@@ -180,6 +184,20 @@ def setup_project_and_train_model(setup_project_and_create_train_aligned_dataset
     config = setup_project_and_create_train_aligned_dataset["config_data"]
     vame.train_model(config, save_logs=True)
     return setup_project_and_create_train_aligned_dataset
+
+
+@fixture(scope="session")
+def setup_project_and_segment(setup_project_and_train_model):
+    config = setup_project_and_train_model["config_data"]
+    vame.segment_session(config, save_logs=True)
+    return setup_project_and_train_model
+
+
+@fixture(scope="session")
+def setup_project_and_community(setup_project_and_segment):
+    config = setup_project_and_segment["config_data"]
+    vame.community(config, cut_tree=2, save_logs=True)
+    return setup_project_and_segment
 
 
 @fixture(scope="session")

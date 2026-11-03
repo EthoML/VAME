@@ -5,7 +5,6 @@ import xarray as xr
 import numpy as np
 import pandas as pd
 
-
 # movement 0.17 renamed xarray dims/coords to singular (keypoints->keypoint,
 # individuals->individual). VAME standardizes internally on the plural names used
 # by every existing project and all downstream code, so we rename singular back to
@@ -15,11 +14,7 @@ _MOVEMENT_DIM_ALIASES = {"keypoint": "keypoints", "individual": "individuals"}
 
 def _normalize_movement_dims(ds: xr.Dataset) -> xr.Dataset:
     """Rename movement's singular dim/coord names back to VAME's plural ones."""
-    renames = {
-        old: new
-        for old, new in _MOVEMENT_DIM_ALIASES.items()
-        if old in ds.dims or old in ds.coords
-    }
+    renames = {old: new for old, new in _MOVEMENT_DIM_ALIASES.items() if old in ds.dims or old in ds.coords}
     return ds.rename(renames) if renames else ds
 
 
@@ -44,18 +39,14 @@ def _validate_movement_schema(ds: xr.Dataset) -> None:
         if not np.issubdtype(position.dtype, np.number):
             problems.append(f"'position' has non-numeric dtype {position.dtype}")
         if position.dims != expected_position_dims:
-            problems.append(
-                f"'position' has dims {position.dims}; expected {expected_position_dims}"
-            )
+            problems.append(f"'position' has dims {position.dims}; expected {expected_position_dims}")
 
     if "confidence" in ds.data_vars:
         confidence = ds["confidence"]
         if not np.issubdtype(confidence.dtype, np.number):
             problems.append(f"'confidence' has non-numeric dtype {confidence.dtype}")
         if confidence.dims != expected_confidence_dims:
-            problems.append(
-                f"'confidence' has dims {confidence.dims}; expected {expected_confidence_dims}"
-            )
+            problems.append(f"'confidence' has dims {confidence.dims}; expected {expected_confidence_dims}")
 
     if "time" not in ds.coords:
         problems.append("missing required coord 'time'")
@@ -84,9 +75,7 @@ def _validate_movement_schema(ds: xr.Dataset) -> None:
             p_size = ds["position"].sizes.get(dim)
             c_size = ds["confidence"].sizes.get(dim)
             if p_size is not None and c_size is not None and p_size != c_size:
-                problems.append(
-                    f"size mismatch on '{dim}': position={p_size}, confidence={c_size}"
-                )
+                problems.append(f"size mismatch on '{dim}': position={p_size}, confidence={c_size}")
 
     for name, da in ds.data_vars.items():
         if name in ("position", "confidence"):
@@ -168,7 +157,12 @@ def load_pose_estimation(
             "processing_module_key": processing_module_key,
             "pose_estimation_key": pose_estimation_key,
         }
-    ds = load_dataset(file=file_path, source_software=source_software, fps=fps, **nwb_kwargs,)
+    ds = load_dataset(
+        file=file_path,
+        source_software=source_software,
+        fps=fps,
+        **nwb_kwargs,
+    )
     ds = _normalize_movement_dims(ds)
     # movement's NWB loader stores attrs as Path objects, which xarray's
     # netCDF writer rejects. Coerce to str so downstream ds.to_netcdf works.

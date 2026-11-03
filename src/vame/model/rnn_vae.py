@@ -17,7 +17,6 @@ from vame.schemas.states import TrainModelFunctionSchema, save_state
 from vame.logging.logger import VameLogger, TqdmToLogger
 from vame.util.auxiliary import get_device
 
-
 logger_config = VameLogger(__name__)
 logger = logger_config.logger
 tqdm_to_logger = TqdmToLogger(logger)
@@ -348,15 +347,15 @@ def train(
         # TensorBoard logging every N batches
         if writer and idx % TENSORBOARD_LOG_FREQUENCY == 0:
             step = global_step + idx
-            writer.add_scalar('batch/train_loss', loss.item(), step)
-            writer.add_scalar('batch/mse_loss', rec_loss.item(), step)
-            writer.add_scalar('batch/kl_loss', kl_loss.item(), step)
-            writer.add_scalar('batch/kmeans_loss', kmeans_loss.item(), step)
-            writer.add_scalar('batch/kl_weight', kl_weight, step)
-            writer.add_scalar('batch/learning_rate', optimizer.param_groups[0]['lr'], step)
+            writer.add_scalar("batch/train_loss", loss.item(), step)
+            writer.add_scalar("batch/mse_loss", rec_loss.item(), step)
+            writer.add_scalar("batch/kl_loss", kl_loss.item(), step)
+            writer.add_scalar("batch/kmeans_loss", kmeans_loss.item(), step)
+            writer.add_scalar("batch/kl_weight", kl_weight, step)
+            writer.add_scalar("batch/learning_rate", optimizer.param_groups[0]["lr"], step)
 
             if future_decoder:
-                writer.add_scalar('batch/future_loss', fut_rec_loss.item(), step)
+                writer.add_scalar("batch/future_loss", fut_rec_loss.item(), step)
 
         # torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm = 5)
 
@@ -513,10 +512,10 @@ def test(
 
     # TensorBoard logging for test metrics
     if writer:
-        writer.add_scalar('epoch/test_loss', test_loss_avg, epoch)
-        writer.add_scalar('epoch/test_mse', mse_avg, epoch)
-        writer.add_scalar('epoch/test_kl', BETA * kl_weight * kl_avg, epoch)
-        writer.add_scalar('epoch/test_kmeans', kl_weight * kmeans_avg, epoch)
+        writer.add_scalar("epoch/test_loss", test_loss_avg, epoch)
+        writer.add_scalar("epoch/test_mse", mse_avg, epoch)
+        writer.add_scalar("epoch/test_kl", BETA * kl_weight * kl_avg, epoch)
+        writer.add_scalar("epoch/test_kmeans", kl_weight * kmeans_avg, epoch)
 
     logger.info(
         "Test loss: {:.3f}, MSE-Loss: {:.3f}, KL-Loss: {:.3f}, Kmeans-Loss: {:.3f}".format(
@@ -651,16 +650,14 @@ def train_model(
 
         # TensorBoard setup
         if TENSORBOARD_ENABLED:
-            tb_log_dir = os.path.join(
-                config["project_path"],
-                "logs",
-                "tensorboard",
-                f"{model_name}"
-            )
+            tb_log_dir = os.path.join(config["project_path"], "logs", "tensorboard", f"{model_name}")
             os.makedirs(tb_log_dir, exist_ok=True)
             writer = SummaryWriter(tb_log_dir)
             logger.info(f"TensorBoard logging enabled. Log directory: {tb_log_dir}")
-            logger.info("To view logs, run: tensorboard --logdir=%s --port=6006" % os.path.join(config["project_path"], "logs", "tensorboard"))
+            logger.info(
+                "To view logs, run: tensorboard --logdir=%s --port=6006"
+                % os.path.join(config["project_path"], "logs", "tensorboard")
+            )
 
         device = get_device()
 
@@ -881,22 +878,22 @@ def train_model(
 
             # TensorBoard epoch-level logging
             if writer:
-                writer.add_scalar('epoch/train_loss', train_loss, epoch)
-                writer.add_scalar('epoch/train_mse', mse_loss, epoch)
-                writer.add_scalar('epoch/train_kl', kl_loss, epoch)
-                writer.add_scalar('epoch/train_kmeans', km_loss, epoch)
-                writer.add_scalar('epoch/kl_weight', weight, epoch)
-                writer.add_scalar('epoch/learning_rate', optimizer.param_groups[0]['lr'], epoch)
+                writer.add_scalar("epoch/train_loss", train_loss, epoch)
+                writer.add_scalar("epoch/train_mse", mse_loss, epoch)
+                writer.add_scalar("epoch/train_kl", kl_loss, epoch)
+                writer.add_scalar("epoch/train_kmeans", km_loss, epoch)
+                writer.add_scalar("epoch/kl_weight", weight, epoch)
+                writer.add_scalar("epoch/learning_rate", optimizer.param_groups[0]["lr"], epoch)
 
                 if FUTURE_DECODER:
-                    writer.add_scalar('epoch/train_future', fut_loss, epoch)
+                    writer.add_scalar("epoch/train_future", fut_loss, epoch)
 
                 # Log parameter histograms (optional)
                 if TENSORBOARD_LOG_HISTOGRAMS:
                     for name, param in model.named_parameters():
                         if param.grad is not None:
-                            writer.add_histogram(f'parameters/{name}', param, epoch)
-                            writer.add_histogram(f'gradients/{name}', param.grad, epoch)
+                            writer.add_histogram(f"parameters/{name}", param, epoch)
+                            writer.add_histogram(f"gradients/{name}", param.grad, epoch)
 
             # logging losses
             train_losses.append(train_loss)
@@ -1032,9 +1029,7 @@ def train_model(
             # raise KeyboardInterrupt so @save_state records "aborted".
             if stop_sentinel.exists():
                 project_name = config["project_name"]
-                logger.info(
-                    "Stop requested — saving current model and aborting at epoch %d." % epoch
-                )
+                logger.info("Stop requested — saving current model and aborting at epoch %d." % epoch)
 
                 def _atomic_save(state_dict, dest):
                     tmp = dest + ".tmp"

@@ -11,7 +11,6 @@ from vame.model.dataloader import SEQUENCE_DATASET
 from vame.logging.logger import VameLogger
 from vame.util.auxiliary import get_device
 
-
 logger_config = VameLogger(__name__)
 logger = logger_config.logger
 
@@ -294,9 +293,9 @@ def evaluate_model(
         logger.info(f"Evaluation finished successfully! You can find the results in: '{project_path}/model/evaluate/'")
         logger.info("""Next steps:
             - vame.segment_session() to identify behavioral motifs.
-            - re-run the model for further fine tuning. Check again with vame.evaluate_model()"""
-        )
+            - re-run the model for further fine tuning. Check again with vame.evaluate_model()""")
     except Exception as e:
         logger.exception(f"An error occurred during model evaluation: {e}")
+        raise
     finally:
         logger_config.remove_file_handler()

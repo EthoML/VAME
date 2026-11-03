@@ -1,6 +1,5 @@
 from typing import Optional, Literal
 import os
-import umap
 import numpy as np
 import xarray as xr
 from pathlib import Path
@@ -11,7 +10,6 @@ from matplotlib.figure import Figure
 import plotly.graph_objects as go
 
 from vame.logging.logger import VameLogger
-
 
 logger_config = VameLogger(__name__)
 logger = logger_config.logger
@@ -45,13 +43,7 @@ def umap_embedding(
     all_session_names = []
     for session in config["session_names"]:
         # Gather all latent vectors
-        latent_vectors_path = (
-            Path(config["project_path"])
-            / "results"
-            / session
-            / model_name
-            / "latent_vectors.npy"
-        )
+        latent_vectors_path = Path(config["project_path"]) / "results" / session / model_name / "latent_vectors.npy"
         if not latent_vectors_path.exists():
             raise ValueError(
                 f"Latent space data not found at: {latent_vectors_path}. "
@@ -81,6 +73,8 @@ def umap_embedding(
 
     # Run UMAP
     logger.info("Running UMAP calculation...")
+    import umap  # imported here because it takes seconds to load (numba compilation)
+
     reducer = umap.UMAP(
         n_components=2,
         min_dist=config["min_dist"],
@@ -89,15 +83,11 @@ def umap_embedding(
     )
     umap_embeddings = reducer.fit_transform(all_latent_vectors_selected)
 
-    # Gather motifs and communities aligned with selected points for UMAP
-    all_motifs = {
-        "hmm": np.array([]),
-        "kmeans": np.array([]),
-    }
-    all_communities = {
-        "hmm": np.array([]),
-        "kmeans": np.array([]),
-    }
+    # Gather motifs and communities aligned with selected points for UMAP.
+    # Built dynamically from segmentation_algorithms (not hardcoded to
+    # "hmm"/"kmeans") so any registered algorithm, e.g. "hmm_warmstart", works.
+    all_motifs = {seg: np.array([]) for seg in segmentation_algorithms}
+    all_communities = {seg: np.array([]) for seg in segmentation_algorithms}
     for session in config["session_names"]:
         for seg in segmentation_algorithms:
             # Gather all motifs
@@ -132,9 +122,7 @@ def umap_embedding(
             )
             if community_path.exists():
                 c = np.load(community_path)
-                all_communities[seg] = np.concatenate(
-                    (all_communities[seg], c), axis=0
-                )
+                all_communities[seg] = np.concatenate((all_communities[seg], c), axis=0)
             else:
                 logger.warning(
                     f"Community labels not found for session {session}, "
@@ -148,21 +136,11 @@ def umap_embedding(
         "session_names": ("points", all_session_names_selected.astype(str)),
     }
 
-    if len(all_motifs["hmm"]) > 0:
-        motifs_selected_hmm = all_motifs["hmm"][indices]
-        data_vars["motifs_hmm"] = ("points", motifs_selected_hmm)
-
-    if len(all_motifs["kmeans"]) > 0:
-        motifs_selected_kmeans = all_motifs["kmeans"][indices]
-        data_vars["motifs_kmeans"] = ("points", motifs_selected_kmeans)
-
-    if len(all_communities["hmm"]) > 0:
-        communities_selected_hmm = all_communities["hmm"][indices]
-        data_vars["communities_hmm"] = ("points", communities_selected_hmm)
-
-    if len(all_communities["kmeans"]) > 0:
-        communities_selected_kmeans = all_communities["kmeans"][indices]
-        data_vars["communities_kmeans"] = ("points", communities_selected_kmeans)
+    for seg in segmentation_algorithms:
+        if len(all_motifs[seg]) > 0:
+            data_vars[f"motifs_{seg}"] = ("points", all_motifs[seg][indices])
+        if len(all_communities[seg]) > 0:
+            data_vars[f"communities_{seg}"] = ("points", all_communities[seg][indices])
 
     # Build an xarray.Dataset
     ds = xr.Dataset(
@@ -265,9 +243,7 @@ def umap_vis_matplotlib(
             # Create legend with discrete colors
             handles = []
             for label_val in sorted(unique_labels):
-                color = colormaps['hsv'](
-                    label_val / max(unique_labels) if max(unique_labels) > 0 else 0
-                )
+                color = colormaps["hsv"](label_val / max(unique_labels) if max(unique_labels) > 0 else 0)
                 handles.append(
                     Line2D(
                         [0],
@@ -397,18 +373,13 @@ def umap_vis_plotly(
 
         hsv_colors = pc.sample_colorscale(
             "HSV",
-            [
-                i / (len(unique_motifs) - 1) if len(unique_motifs) > 1 else 0.5
-                for i in range(len(unique_motifs))
-            ],
+            [i / (len(unique_motifs) - 1) if len(unique_motifs) > 1 else 0.5 for i in range(len(unique_motifs))],
         )
 
         for i, motif_id in enumerate(unique_motifs):
             mask = motif_vals == motif_id
             # Prepare customdata for this motif
-            customdata_motif = [
-                customdata_none[j] for j in range(len(mask)) if mask[j]
-            ]
+            customdata_motif = [customdata_none[j] for j in range(len(mask)) if mask[j]]
             trace_motif = go.Scattergl(
                 x=x_vals[mask],
                 y=y_vals[mask],
@@ -445,9 +416,7 @@ def umap_vis_plotly(
         for i, comm_id in enumerate(unique_communities):
             mask = comm_vals == comm_id
             # Prepare customdata for this community
-            customdata_comm = [
-                customdata_none[j] for j in range(len(mask)) if mask[j]
-            ]
+            customdata_comm = [customdata_none[j] for j in range(len(mask)) if mask[j]]
             trace_comm = go.Scattergl(
                 x=x_vals[mask],
                 y=y_vals[mask],
@@ -475,18 +444,13 @@ def umap_vis_plotly(
 
         hsv_colors_sess = pc.sample_colorscale(
             "HSV",
-            [
-                i / (len(unique_sessions) - 1) if len(unique_sessions) > 1 else 0.5
-                for i in range(len(unique_sessions))
-            ],
+            [i / (len(unique_sessions) - 1) if len(unique_sessions) > 1 else 0.5 for i in range(len(unique_sessions))],
         )
 
         for i, session_id in enumerate(unique_sessions):
             mask = session_vals == session_id
             # Prepare customdata for this session
-            customdata_sess = [
-                customdata_none[j] for j in range(len(mask)) if mask[j]
-            ]
+            customdata_sess = [customdata_none[j] for j in range(len(mask)) if mask[j]]
             trace_sess = go.Scattergl(
                 x=x_vals[mask],
                 y=y_vals[mask],
@@ -550,9 +514,7 @@ def umap_vis_plotly(
             dict(label="Session", method="restyle", args=["visible", mask_sess]),
         )
 
-    updatemenus = [
-        dict(active=0, buttons=buttons, x=0.98, y=1.0, xanchor="left", yanchor="bottom")
-    ]
+    updatemenus = [dict(active=0, buttons=buttons, x=0.98, y=1.0, xanchor="left", yanchor="bottom")]
     layout = go.Layout(
         title=dict(text=title, font=dict(size=18)),
         xaxis=dict(
@@ -678,9 +640,7 @@ def visualize_umap(
         base_path = Path(config["project_path"]) / "results"
         umap_embeddings_path = base_path / "umap_embedding.nc"
         if umap_embeddings_path.exists():
-            logger.info(
-                f"UMAP embedding already exists at {umap_embeddings_path}. Loading..."
-            )
+            logger.info(f"UMAP embedding already exists at {umap_embeddings_path}. Loading...")
             umap_ds = xr.open_dataset(umap_embeddings_path)
         else:
             logger.info("Computing UMAP embeddings for all sessions combined...")
@@ -690,36 +650,22 @@ def visualize_umap(
         embeddings = umap_ds.umap_embeddings.values
         session_names = umap_ds.session_names.values
 
-        if "motifs_hmm" in umap_ds and len(umap_ds.motifs_hmm.values) > 0:
-            motifs_hmm = umap_ds.motifs_hmm.values
-        else:
-            motifs_hmm = None
-
-        if "motifs_kmeans" in umap_ds and len(umap_ds.motifs_kmeans.values) > 0:
-            motifs_kmeans = umap_ds.motifs_kmeans.values
-        else:
-            motifs_kmeans = None
-
-        if "communities_hmm" in umap_ds and len(umap_ds.communities_hmm.values) > 0:
-            communities_hmm = umap_ds.communities_hmm.values
-        else:
-            communities_hmm = None
-
-        if "communities_kmeans" in umap_ds and len(umap_ds.communities_kmeans.values) > 0:
-            communities_kmeans = umap_ds.communities_kmeans.values
-        else:
-            communities_kmeans = None
-
-        # Create label dictionaries organized by segmentation algorithm
+        # Create label dictionaries organized by segmentation algorithm.
+        # Built dynamically from segmentation_algorithms (not hardcoded to
+        # "hmm"/"kmeans") so any registered algorithm works, e.g. "hmm_warmstart".
         motif_labels = {}
         community_labels = {}
         for seg in segmentation_algorithms:
-            if seg == "hmm":
-                motif_labels[f"{seg}-{n_clusters}"] = motifs_hmm
-                community_labels[f"{seg}-{n_clusters}"] = communities_hmm
-            elif seg == "kmeans":
-                motif_labels[f"{seg}-{n_clusters}"] = motifs_kmeans
-                community_labels[f"{seg}-{n_clusters}"] = communities_kmeans
+            motif_key = f"motifs_{seg}"
+            community_key = f"communities_{seg}"
+            motif_labels[f"{seg}-{n_clusters}"] = (
+                umap_ds[motif_key].values if motif_key in umap_ds and len(umap_ds[motif_key].values) > 0 else None
+            )
+            community_labels[f"{seg}-{n_clusters}"] = (
+                umap_ds[community_key].values
+                if community_key in umap_ds and len(umap_ds[community_key].values) > 0
+                else None
+            )
 
         # Define label types
         labels_names = ["none", "motif", "community"]
@@ -731,47 +677,28 @@ def visualize_umap(
                     output_figure_file_name = f"umap_{model_name}_{seg}-{n_clusters}.png"
                     labels = None
                 elif label == "motif":
-                    output_figure_file_name = (
-                        f"umap_{model_name}_{seg}-{n_clusters}_motif.png"
-                    )
+                    output_figure_file_name = f"umap_{model_name}_{seg}-{n_clusters}_motif.png"
                     labels = motif_labels[f"{seg}-{n_clusters}"]
                 elif label == "community":
-                    output_figure_file_name = (
-                        f"umap_{model_name}_{seg}-{n_clusters}_community.png"
-                    )
+                    output_figure_file_name = f"umap_{model_name}_{seg}-{n_clusters}_community.png"
                     labels = community_labels[f"{seg}-{n_clusters}"]
 
                 # Skip if labels are None or empty for motif/community plots
-                if label in ["motif", "community"] and (
-                    labels is None or len(labels) == 0
-                ):
-                    logger.warning(
-                        f"Skipping {label} visualization for {seg}-{n_clusters} - "
-                        "no labels available"
-                    )
+                if label in ["motif", "community"] and (labels is None or len(labels) == 0):
+                    logger.warning(f"Skipping {label} visualization for {seg}-{n_clusters} - " "no labels available")
                     continue
 
                 # Generate title
                 if label == "none":
-                    title = (
-                        f"UMAP Visualization - Model: {model_name} | {seg}-{n_clusters}"
-                    )
+                    title = f"UMAP Visualization - Model: {model_name} | {seg}-{n_clusters}"
                 elif label == "motif":
-                    title = (
-                        f"UMAP Visualization - Model: {model_name} | "
-                        f"{seg}-{n_clusters} | Motif Labels"
-                    )
+                    title = f"UMAP Visualization - Model: {model_name} | " f"{seg}-{n_clusters} | Motif Labels"
                 elif label == "community":
-                    title = (
-                        f"UMAP Visualization - Model: {model_name} | "
-                        f"{seg}-{n_clusters} | Community Labels"
-                    )
+                    title = f"UMAP Visualization - Model: {model_name} | " f"{seg}-{n_clusters} | Community Labels"
 
                 fig = umap_vis_matplotlib(
                     embed=embeddings,
-                    num_points=len(
-                        embeddings
-                    ),  # Use all points since we already selected them
+                    num_points=len(embeddings),  # Use all points since we already selected them
                     labels=labels,
                     title=title,
                     show_legend=True,
@@ -797,30 +724,20 @@ def visualize_umap(
             if (motif_labels_seg is None or len(motif_labels_seg) == 0) and (
                 community_labels_seg is None or len(community_labels_seg) == 0
             ):
-                logger.warning(
-                    f"Skipping interactive visualization for {seg}-{n_clusters} - "
-                    "no labels available"
-                )
+                logger.warning(f"Skipping interactive visualization for {seg}-{n_clusters} - " "no labels available")
                 continue
 
             interactive_fig = umap_vis_plotly(
                 embed=embeddings,
                 labels_motif=motif_labels_seg,
                 labels_community=community_labels_seg,
-                session_names=(
-                    session_names.tolist() if session_names is not None else None
-                ),
-                num_points=len(
-                    embeddings
-                ),  # Use all points since we already selected them
+                session_names=(session_names.tolist() if session_names is not None else None),
+                num_points=len(embeddings),  # Use all points since we already selected them
                 title=f"UMAP Visualization - Model: {model_name} | {seg}-{n_clusters}",
             )
             config_plotly = {"displaylogo": False, "scrollZoom": True}
             if save_to_file:
-                html_path = (
-                    save_path_base
-                    / f"umap_{model_name}_{seg}-{n_clusters}_interactive.html"
-                )
+                html_path = save_path_base / f"umap_{model_name}_{seg}-{n_clusters}_interactive.html"
                 interactive_fig.write_html(str(html_path), config=config_plotly)
                 logger.info(f"Interactive UMAP figure saved to {html_path}")
             if show_figure in ["plotly", "all"]:

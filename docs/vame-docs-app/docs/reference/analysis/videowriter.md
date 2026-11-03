@@ -7,6 +7,15 @@ title: analysis.videowriter
 
 #### logger
 
+#### \_select\_sessions
+
+```python
+def _select_sessions(config: dict, sessions: Optional[List[str]],
+                     action_message: str) -> List[str]
+```
+
+Sessions to write videos for: the given ones, else all or the user&#x27;s choice per ``all_data``.
+
 #### create\_cluster\_videos
 
 ```python
@@ -44,7 +53,9 @@ re-encoded montages rather than copies of the source.
 
 ```python
 @save_state(model=MotifVideosFunctionSchema)
-def motif_videos(config: dict, save_logs: bool = True) -> None
+def motif_videos(config: dict,
+                 sessions: Optional[List[str]] = None,
+                 save_logs: bool = True) -> None
 ```
 
 Generate motif videos and save them to filesystem.
@@ -63,8 +74,8 @@ Files are saved at:
 **Parameters**
 
 * **config** (`dict`): Configuration parameters.
-* **segmentation_algorithm** (`SegmentationAlgorithms`): Which segmentation algorithm to use. Options are &#x27;hmm&#x27; or &#x27;kmeans&#x27;.
-If None, it will be taken from the config file.
+* **sessions** (`List[str], optional`): Sessions to write videos for. Default is None, which uses all sessions when
+``all_data`` is &quot;yes&quot; in the config, and asks otherwise.
 * **save_logs** (`bool, optional`): Save logs to filesystem. Default is True.
 
 **Returns**
@@ -75,7 +86,9 @@ If None, it will be taken from the config file.
 
 ```python
 @save_state(model=CommunityVideosFunctionSchema)
-def community_videos(config: dict, save_logs: bool = True) -> None
+def community_videos(config: dict,
+                     sessions: Optional[List[str]] = None,
+                     save_logs: bool = True) -> None
 ```
 
 Generate community videos and save them to filesystem on project community_videos folder.
@@ -94,6 +107,8 @@ Files are saved at:
 **Parameters**
 
 * **config** (`dict`): Configuration parameters.
+* **sessions** (`List[str], optional`): Sessions to write videos for. Default is None, which uses all sessions when
+``all_data`` is &quot;yes&quot; in the config, and asks otherwise.
 * **save_logs** (`bool, optional`): Save logs to filesystem. Default is True.
 
 **Returns**

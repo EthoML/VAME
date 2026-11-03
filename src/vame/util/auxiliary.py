@@ -11,7 +11,6 @@ from enum import Enum
 from vame.logging.logger import VameLogger
 from vame.schemas.states import save_state, UpdateConfigFunctionSchema
 
-
 logger_config = VameLogger(__name__)
 logger = logger_config.logger
 
@@ -136,8 +135,8 @@ def create_config_template() -> Tuple[dict, ruamel.yaml.YAML]:
     segmentation_algorithms:
     hmm_trained:
     hmm_n_iter:
-    individual_segmentation:
-    n_init_kmeans:
+    kmeans_n_init:
+    kmeans_fit_samples:
     \n
 # Video writer:
     length_of_motif_video:

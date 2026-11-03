@@ -13,7 +13,6 @@ from vame.video.video import VIDEO_SUFFIXES, get_video_frame_rate, is_video_file
 from vame.io.load_poses import load_pose_estimation
 from movement.io.load import infer_source_software
 
-
 logger_config = VameLogger(__name__)
 logger = logger_config.logger
 
@@ -64,11 +63,12 @@ def init_new_project(
         List of videos paths to be used in the project. E.g. ['./sample_data/Session001.mp4']
     poses_estimations : List[str]
         List of pose estimation files paths to be used in the project. E.g. ['./sample_data/pose estimation/Session001.csv']
-    source_software : Literal["DeepLabCut", "SLEAP", "LightningPose", "NWB", "auto"], optional
+    source_software : Literal["DeepLabCut", "SLEAP", "LightningPose", "NWB", "auto", "movement"], optional
         Source software used for pose estimation. Defaults to ``"auto"``, which
         lets movement infer the format from the file extension and contents.
         Pass an explicit value (``"DeepLabCut"``, ``"SLEAP"``,
         ``"LightningPose"``, ``"NWB"``) to override auto-detection.
+        ``"movement"`` reads a netCDF file in the movement format.
     working_directory : str, optional
         Working directory. Defaults to '.'.
     fps : float, optional
@@ -98,8 +98,23 @@ def init_new_project(
     project_path = Path(working_directory).resolve() / project_name
     if project_path.exists():
         logger.info('Project "{}" already exists!'.format(project_path))
+        if config_kwargs:
+            logger.warning(
+                "config_kwargs are ignored for an existing project. "
+                "Use vame.update_config, or a new project_name, to change the configuration."
+            )
         projconfigfile = os.path.join(str(project_path), "config.yaml")
         return projconfigfile, read_config(projconfigfile)
+
+    # Session names
+    pes_paths = [Path(vp).resolve() for vp in poses_estimations]
+    session_names = [s.stem for s in pes_paths]
+    duplicates = sorted({s for s in session_names if session_names.count(s) > 1})
+    if duplicates:
+        raise ValueError(
+            "Pose estimation files must have unique file names, since each name becomes a session name. "
+            f"Duplicated: {duplicates}. Rename the files, for example to include the animal and day."
+        )
 
     data_path = project_path / "data"
     data_raw_path = data_path / "raw"
@@ -124,14 +139,10 @@ def init_new_project(
 
         filetype = poses_estimations[0].split(".")[-1]
         if filetype not in ("csv", "nwb", "slp", "h5", "nc"):
-            raise ValueError(f"Unsupported pose estimation file type: {filetype}. Must be one of: csv, nwb, slp, h5, nc")
+            raise ValueError(
+                f"Unsupported pose estimation file type: {filetype}. Must be one of: csv, nwb, slp, h5, nc"
+            )
         pose_estimation_filetype = cast(Literal["csv", "nwb", "slp", "h5", "nc"], filetype)
-
-        # Session names
-        pes_paths = [Path(vp).resolve() for vp in poses_estimations]
-        session_names = []
-        for s in pes_paths:
-            session_names.append(s.stem)
 
         # Creates directories under project/results/
         dirs_results = [results_path / Path(i.stem) for i in pes_paths]
@@ -173,8 +184,7 @@ def init_new_project(
                     "one video per pose estimation file, in the same order."
                 )
             destinations = [
-                data_raw_path / f"{session_names[idx]}{Path(vp).suffix}"
-                for idx, vp in enumerate(videos_paths)
+                data_raw_path / f"{session_names[idx]}{Path(vp).suffix}" for idx, vp in enumerate(videos_paths)
             ]
             for src, dst in zip(videos_paths, destinations):
                 if copy_videos:
@@ -183,7 +193,7 @@ def init_new_project(
                 else:
                     try:
                         logger.info(f"Creating symbolic link from {src} to {dst}")
-                        os.symlink(os.fspath(src), os.fspath(dst))
+                        os.symlink(os.fspath(Path(src).resolve()), os.fspath(dst))
                     except OSError as e:
                         raise OSError(
                             f"Failed to create a symbolic link from {src} to {dst}. "
@@ -284,7 +294,7 @@ def init_new_project(
     except BaseException as e:
         # Roll back the partially-created project so a failed run leaves nothing
         # behind. shutil.rmtree unlinks any video *symlinks* without following
-        # them, so the user's source videos are never deleted. 
+        # them, so the user's source videos are never deleted.
         if cleanup_on_error:
             logger.error(f"Project creation failed ({e!r}); removing partial project at {project_path}")
             shutil.rmtree(project_path, ignore_errors=True)

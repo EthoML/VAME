@@ -10,7 +10,7 @@ from vame.schemas.states import CreateTrainsetFunctionSchema, save_state
 from vame.io.load_poses import read_pose_estimation_file
 from vame.preprocessing.extra import validate_extra_features
 from vame.preprocessing.to_model import format_xarray_for_rnn
-
+from vame.model.dataloader import save_normalization
 
 logger_config = VameLogger(__name__)
 logger = logger_config.logger
@@ -20,7 +20,7 @@ def traindata_aligned(
     config: dict,
     sessions: List[str] | None = None,
     test_fraction: float = 0.1,
-    read_from_variable: str = "position_processed",
+    read_from_variable: str | None = None,
     split_mode: Literal["mode_1", "mode_2"] = "mode_2",
     keypoints_to_include: List[str] | None = None,
     keypoints_to_exclude: List[str] | None = None,
@@ -38,7 +38,8 @@ def traindata_aligned(
     test_fraction : float, optional
         Fraction of data to use as test data. Defaults to 0.1.
     read_from_variable : str, optional
-        Variable name to read from the processed data. Defaults to "position_processed".
+        Variable name to read from the processed data. Defaults to the config's
+        "preprocessed_variable", the output of the last preprocessing step.
     split_mode : Literal["mode_1", "mode_2"], optional
         Mode for splitting data into train/test sets:
         - mode_1: Original mode that takes the initial test_fraction portion of the combined data
@@ -52,6 +53,9 @@ def traindata_aligned(
     None
     """
     project_path = config["project_path"]
+    if read_from_variable is None:
+        read_from_variable = config.get("preprocessed_variable", "position_processed")
+    logger.info(f"Reading training data from variable: {read_from_variable}")
     if sessions is None:
         sessions = config["session_names"]
     if test_fraction is None:
@@ -130,19 +134,21 @@ def traindata_aligned(
             "method": "sequential_split",
             "split_index": test_size,
             "total_length": all_data_array.shape[1],
-            "session_boundaries": []
+            "session_boundaries": [],
         }
 
         # Calculate session boundaries in concatenated array
         cumulative_length = 0
         for i, session_array in enumerate(all_data_list):
             session_length = session_array.shape[1]
-            split_details["session_boundaries"].append({
-                "session": sessions[i],
-                "start": cumulative_length,
-                "end": cumulative_length + session_length,
-                "length": session_length
-            })
+            split_details["session_boundaries"].append(
+                {
+                    "session": sessions[i],
+                    "start": cumulative_length,
+                    "end": cumulative_length + session_length,
+                    "length": session_length,
+                }
+            )
             cumulative_length += session_length
 
         logger.info(f"Mode 1 split - Initial {test_fraction:.1%} of combined data used for testing")
@@ -176,12 +182,14 @@ def traindata_aligned(
             if train_chunk_2.shape[1] > 0:
                 train_chunks_info.append({"start": test_end, "end": session_length})
 
-            session_splits.append({
-                "session": session_name,
-                "session_length": session_length,
-                "test_chunk": {"start": test_start, "end": test_end},
-                "train_chunks": train_chunks_info
-            })
+            session_splits.append(
+                {
+                    "session": session_name,
+                    "session_length": session_length,
+                    "test_chunk": {"start": test_start, "end": test_end},
+                    "train_chunks": train_chunks_info,
+                }
+            )
 
             # Add to respective lists
             test_chunks.append(test_chunk)
@@ -196,10 +204,7 @@ def traindata_aligned(
         data_test = np.concatenate(test_chunks, axis=1)
         data_train = np.concatenate(train_chunks, axis=1)
 
-        split_details = {
-            "method": "random_continuous_chunks",
-            "session_splits": session_splits
-        }
+        split_details = {"method": "random_continuous_chunks", "session_splits": session_splits}
 
     # Create train directory if it doesn't exist
     train_dir = Path(project_path) / "data" / "train"
@@ -212,27 +217,28 @@ def traindata_aligned(
     test_data_path = train_dir / "test_seq.npy"
     np.save(str(test_data_path), data_test)
 
+    # Model input normalization, shared by training and inference
+    normalization = save_normalization(train_dir, data_train)
+    logger.info(f"Normalization: mean {normalization['mean']:.4f}, std {normalization['std']:.4f}")
+
     # Create and save single metadata file for provenance tracking
     metadata = {
         "feature_mapping": session_metadata["feature_mapping"],
         "parameters": session_metadata["parameters"],
+        "normalization": normalization,
         "split_information": {
             "split_mode": split_mode,
             "test_fraction": test_fraction,
             "sessions_used": sessions,
-            "split_details": split_details
+            "split_details": split_details,
         },
         "data_info": {
             "train": {
                 "shape": data_train.shape,
                 "total_samples": data_train.shape[1],
-                "features": data_train.shape[0]
+                "features": data_train.shape[0],
             },
-            "test": {
-                "shape": data_test.shape,
-                "total_samples": data_test.shape[1],
-                "features": data_test.shape[0]
-            }
+            "test": {"shape": data_test.shape, "total_samples": data_test.shape[1], "features": data_test.shape[0]},
         },
         "creation_timestamp": datetime.datetime.now().isoformat(),
         "vame_version": config["vame_version"],
@@ -261,7 +267,7 @@ def traindata_aligned(
 def create_trainset(
     config: dict,
     test_fraction: float = 0.1,
-    read_from_variable: str = "position_processed",
+    read_from_variable: str | None = None,
     split_mode: Literal["mode_1", "mode_2"] = "mode_2",
     keypoints_to_include: List[str] | None = None,
     keypoints_to_exclude: List[str] | None = None,
@@ -276,6 +282,8 @@ def create_trainset(
             - train/
                 - test_seq.npy
                 - train_seq.npy
+                - seq_mean.npy
+                - seq_std.npy
                 - metadata.json
 
     The produced test_seq.npy contains the combined data in the shape of (num_features, num_video_frames * test_fraction).
@@ -290,7 +298,8 @@ def create_trainset(
     test_fraction : float, optional
         Fraction of data to use as test data. Defaults to 0.1.
     read_from_variable : str, optional
-        Variable name to read from the processed data. Defaults to "position_processed".
+        Variable name to read from the processed data. Defaults to the config's
+        "preprocessed_variable", the output of the last preprocessing step.
     split_mode : Literal["mode_1", "mode_2"], optional
         Mode for splitting data into train/test sets:
         - mode_1: Original mode that takes the initial test_fraction portion of the combined data

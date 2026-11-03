@@ -121,13 +121,7 @@ def plot_pose_estimation_inspection_matplotlib(
         weights = np.full(total_samples, 100.0 / total_samples)
 
         ax.hist(
-            confidence_array,
-            bins=50,
-            weights=weights,
-            color="#8d93b5",
-            edgecolor="black",
-            linewidth=0.5,
-            alpha=0.7
+            confidence_array, bins=50, weights=weights, color="#8d93b5", edgecolor="black", linewidth=0.5, alpha=0.7
         )
 
         # Add reference line
@@ -136,22 +130,18 @@ def plot_pose_estimation_inspection_matplotlib(
             color="black",
             linestyle="--",
             linewidth=1.5,
-            label=f"Reference = {confidence_reference:.2f}"
+            label=f"Reference = {confidence_reference:.2f}",
         )
 
         # Set title with keypoint name and percentage
-        ax.set_title(
-            f"{keypoint}\n{percentage_below:.1f}% below reference",
-            fontsize=12,
-            pad=10
-        )
+        ax.set_title(f"{keypoint}\n{percentage_below:.1f}% below reference", fontsize=12, pad=10)
 
         # Set labels and formatting
         ax.set_xlabel("Confidence", fontsize=10)
         ax.set_ylabel("Percentage (%)", fontsize=10)
         ax.set_xlim(0, 1)
         ax.set_xticks([0, 0.2, 0.4, 0.6, 0.8, 1.0])
-        ax.grid(True, alpha=0.3, axis='y')
+        ax.grid(True, alpha=0.3, axis="y")
         ax.legend(fontsize=8)
 
     # Hide unused subplots

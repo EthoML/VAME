@@ -1,6 +1,5 @@
 import os
 import tqdm
-import umap
 import numpy as np
 from pathlib import Path
 import matplotlib
@@ -13,7 +12,6 @@ from vame.util.gif_pose_helper import get_animal_frames
 from vame.util.cli import get_sessions_from_user_input
 from vame.logging.logger import VameLogger
 from vame.schemas.project import SegmentationAlgorithms
-
 
 logger_config = VameLogger(__name__)
 logger = logger_config.logger
@@ -200,6 +198,8 @@ def gif(
                 num_points = embed.shape[0]
         except Exception:
             logger.info(f"Compute embedding for session {session}")
+            import umap  # imported here because it takes seconds to load (numba compilation)
+
             reducer = umap.UMAP(
                 n_components=2,
                 min_dist=config["min_dist"],

@@ -38,19 +38,69 @@ Concise one-line error string. pynwb/hdmf errors (e.g. ConstructError) embed
 the whole file&#x27;s builder tree, so we keep the type plus a bounded message
 (head + tail, since the real cause is usually at the end).
 
+#### \_get\_client
+
+```python
+def _get_client(dandi_instance: str = "dandi")
+```
+
+Client for a DANDI instance (e.g. ``&quot;dandi&quot;`` or ``&quot;dandi-sandbox&quot;``).
+
+It authenticates when the instance&#x27;s API key environment variable is set
+(``DANDI_API_KEY`` for ``&quot;dandi&quot;``, ``DANDI_SANDBOX_API_KEY`` for ``&quot;dandi-sandbox&quot;``),
+which is required to read embargoed dandisets.
+
+#### \_resolve\_assets
+
+```python
+def _resolve_assets(client,
+                    dandiset: str,
+                    version: str,
+                    files: Optional[List[str]] = None,
+                    limit: Optional[int] = None) -> Dict
+```
+
+Map asset path -&gt; asset for the ``.nwb`` assets of a dandiset.
+
+If ``files`` is given, only those asset paths are resolved. If ``limit`` is
+given, stop after collecting that many ``.nwb`` assets.
+
+#### \_stream\_url
+
+```python
+def _stream_url(client, asset) -> str
+```
+
+S3 URL to stream an asset from.
+
 #### \_resolve\_asset\_urls
 
 ```python
 def _resolve_asset_urls(dandiset: str,
                         version: str,
                         files: Optional[List[str]] = None,
-                        limit: Optional[int] = None) -> Dict[str, str]
+                        limit: Optional[int] = None,
+                        dandi_instance: str = "dandi") -> Dict[str, str]
 ```
 
 Map asset path -&gt; stream URL for the ``.nwb`` assets of a dandiset.
 
 If ``files`` is given, only those asset paths are resolved. If ``limit`` is
 given, stop after collecting that many ``.nwb`` assets.
+
+#### \_open\_asset
+
+```python
+def _open_asset(
+    client,
+    asset,
+    download_dir: Optional[Path] = None
+) -> Tuple[pynwb.NWBFile, pynwb.NWBHDF5IO]
+```
+
+Open an NWB asset by streaming it, or by downloading it into ``download_dir`` when given.
+
+Returns ``(nwbfile, io)``; close ``io`` when done.
 
 #### \_find\_pose\_estimations
 
@@ -85,7 +135,8 @@ is a post-filter, not a fetch-filter. The NWB file must still be open.
 ```python
 def dandiset_parse(dandiset: str,
                    version: str,
-                   n_items: Optional[int] = None) -> dict
+                   n_items: Optional[int] = None,
+                   dandi_instance: str = "dandi") -> dict
 ```
 
 Scan a dandiset for NWB files containing ndx-pose PoseEstimation data.
@@ -99,6 +150,9 @@ Each ``.nwb`` asset is streamed open (metadata only) and inspected for
 * **version** (`str`): Published version (e.g. ``&quot;0.240530.1923&quot;``) or ``&quot;draft&quot;``.
 * **n_items** (`int, optional`): If given, scan only the first ``n_items`` NWB assets (handy for quick
 checks/tests). Default ``None`` scans the entire dandiset.
+* **dandi_instance** (`str, optional`): DANDI instance hosting the dandiset, e.g. ``&quot;dandi&quot;`` (default) or ``&quot;dandi-sandbox&quot;``.
+Embargoed dandisets need the instance&#x27;s API key in the environment
+(``DANDI_API_KEY`` for ``&quot;dandi&quot;``, ``DANDI_SANDBOX_API_KEY`` for ``&quot;dandi-sandbox&quot;``).
 
 **Returns**
 
@@ -114,13 +168,15 @@ def dandiset_load(dandiset: str,
                   version: str,
                   files: List[str],
                   pose_estimation_series: List[str],
-                  out_dir: Path | str = ".") -> List[str]
+                  out_dir: Path | str = ".",
+                  dandi_instance: str = "dandi",
+                  download: bool = False) -> List[str]
 ```
 
 Stream selected files/series from a dandiset into local movement ``.nc`` files.
 
 Only the requested files and the requested pose series (keypoints) are
-fetched. The resulting ``.nc`` files can be passed straight to
+kept. The resulting ``.nc`` files can be passed straight to
 ``vame.init_new_project(..., source_software=&quot;movement&quot;)``.
 
 **Parameters**
@@ -130,6 +186,12 @@ fetched. The resulting ``.nc`` files can be passed straight to
 * **files** (`List[str]`): Asset paths to load (e.g. the ``valid_files`` from :func:`dandiset_parse`).
 * **pose_estimation_series** (`List[str]`): Series (keypoint) names to include; others are not fetched.
 * **out_dir** (`Path or str, optional`): Directory to write the ``.nc`` files into (created if missing). Default &quot;.&quot;.
+* **dandi_instance** (`str, optional`): DANDI instance hosting the dandiset, e.g. ``&quot;dandi&quot;`` (default) or ``&quot;dandi-sandbox&quot;``.
+Embargoed dandisets need the instance&#x27;s API key in the environment
+(``DANDI_API_KEY`` for ``&quot;dandi&quot;``, ``DANDI_SANDBOX_API_KEY`` for ``&quot;dandi-sandbox&quot;``).
+* **download** (`bool, optional`): If True, download each NWB file to a temporary folder and read it locally, deleting it
+afterwards. Faster than streaming for files that hold little besides pose data.
+Default False streams the files.
 
 **Returns**
 

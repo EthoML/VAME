@@ -17,7 +17,6 @@ from vame.schemas.project import SegmentationAlgorithms
 from vame.logging.logger import VameLogger
 from vame.analysis.pose_segmentation import get_motif_usage
 
-
 logger_config = VameLogger(__name__)
 logger = logger_config.logger
 
@@ -260,7 +259,7 @@ def create_cohort_community_bag(
     trans_mat_full: np.ndarray,
     cut_tree: int | None,
     n_clusters: int,
-    segmentation_algorithm: Literal["hmm", "kmeans"],
+    segmentation_algorithm: Literal["hmm", "kmeans", "hmm_warmstart"],
 ) -> list:
     """
     Create cohort community bag for given motif labels, transition matrix,
@@ -465,7 +464,7 @@ def community(
     config : dict
         Configuration parameters.
     cut_tree : int, optional
-        Cut line for tree. Defaults to None.
+        Cut line for tree. Defaults to 3.
     save_logs : bool, optional
         Whether to save logs. Defaults to True.
 

@@ -14,7 +14,7 @@ We are focused on the expanding the analytical capabilities of VAME segmentation
 ![VAME](/img/behavior_structure_crop.gif)
 
 VAME is a framework to cluster behavioral signals obtained from pose-estimation tools. It is a [PyTorch](https://pytorch.org/)-based deep learning framework which leverages the power of recurrent neural networks (RNN) to model sequential data. In order to learn the underlying complex data distribution, we use the RNN in a variational autoencoder setting to extract the latent state of the animal in every step of the input time series.
-The workflow of VAME consists of 5 steps and we explain them in detail [here](https://github.com/LINCellularNeuroscience/VAME/wiki/1.-VAME-Workflow)
+The [step-by-step guide](/docs/getting_started/step_by_step) walks through each step of the VAME workflow.
 
 
 ## Authors and Code Contributors

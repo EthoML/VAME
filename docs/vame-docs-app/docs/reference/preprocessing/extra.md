@@ -22,7 +22,7 @@ For each name in the extra-feature list and each session, checks:
   - The processed ``.nc`` file exists.
   - The data variable is present.
   - Its dims are ``(time,)`` or ``(time, individuals)``.
-  - Its ``time`` length matches the session&#x27;s ``position_processed`` time length.
+  - Its ``time`` length matches the session&#x27;s time length.
   - Its dtype is numeric (float or int).
   - The first-individual slice contains no NaN or Inf values.
 
