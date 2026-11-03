@@ -18,8 +18,6 @@ on:
       - 'pyproject.toml'
       - 'src/**'
       - 'tests/**'
-  # Called by publish_main.yaml before publishing
-  workflow_call:
 
 jobs:
   run:

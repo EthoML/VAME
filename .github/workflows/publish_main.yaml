@@ -13,12 +13,7 @@ permissions:
   contents: write
 
 jobs:
-  test:
-    uses: ./.github/workflows/testing.yaml
-    secrets: inherit
-
   publish:
-    needs: test
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository
